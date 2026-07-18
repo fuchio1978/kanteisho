@@ -1,0 +1,13 @@
+{
+  "name": "kanteisho",
+  "version": "0.1.0",
+  "private": true,
+  "description": "四柱推命鑑定書・Render実証版",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

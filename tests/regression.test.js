@@ -8,7 +8,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,elementCircleDiameters,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,sixYearOptions,buildSixPillarContext,pdfReportContext,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,elementCircleDiameters,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,sixYearOptions,buildSixPillarContext,pdfFortuneCycleContext,pdfReportContext,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -40,6 +40,15 @@ test('PDF鑑定書は原命式と指定年の十二文字・両方の五行得�
   assert.equal(report.annualValue.join(''), '丙午');
   assert.equal(Object.keys(report.natalBalance.scores).length, 5);
   assert.equal(Object.keys(report.sixBalance.scores).length, 5);
+});
+
+test('PDF鑑定書の2ページ目は大運10本と選択年を中心にした年運11年を保持する', () => {
+  const result = calculate('1977-02-01', '10:00', 25, '女性');
+  const report = context.api.pdfReportContext(result.input, result.pillars, 2026);
+  assert.equal(report.fortune.luck.cycles.length, 10);
+  assert.equal(report.fortune.luckModels.length, 10);
+  assert.deepEqual(Array.from(report.fortune.years), [2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2031]);
+  assert.equal(report.fortune.annualModels.length, 11);
 });
 
 test('PDFの十二文字でも火を受けた戌は土の内枠を保持する', () => {

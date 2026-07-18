@@ -99,9 +99,9 @@
       <section class="pdf-mode-section" aria-labelledby="pdfModeTitle">
         <div class="pdf-mode-heading">
           <div>
-            <span>ONE PAGE READING REPORT</span>
+            <span>READING REPORT</span>
             <h2 id="pdfModeTitle">鑑定書PDF出力モード</h2>
-            <p>原命式・五行バランス・指定年の十二文字を、A4横1枚にまとめます。</p>
+            <p>原命式・五行バランス・指定年の十二文字・大運・年運を、A4横2枚にまとめます。</p>
           </div>
           <div class="pdf-mode-controls">
             <label class="pdf-audience-control"><span>鑑定書の用途</span><select id="pdfAudienceInput" aria-label="鑑定書の用途"><option value="client">お客さまお渡し用</option><option value="student">講座生添削用</option></select></label>
@@ -133,6 +133,24 @@
               </section>
             </div>
             <footer class="pdf-report-footer"><span id="pdfReportFooter"></span><span>四柱推命 鑑定書</span></footer>
+          </article>
+          <article class="pdf-report pdf-fortune-report" id="pdfFortuneReport" aria-label="大運・年運PDFプレビュー">
+            <header class="pdf-report-header">
+              <div><span>FORTUNE CYCLES</span><h2>大運・年運</h2><em class="pdf-report-type">講座生添削用</em></div>
+              <div class="pdf-report-person"><strong id="pdfFortuneName"></strong><span id="pdfFortuneMeta"></span></div>
+            </header>
+            <div class="pdf-fortune-grid">
+              <section class="pdf-report-panel pdf-fortune-panel">
+                <div class="pdf-panel-heading pdf-fortune-heading"><div><span>10 YEAR FORTUNE CYCLES</span><h3>大 運</h3></div><p id="pdfLuckSummary"></p></div>
+                <div class="pdf-cycle-grid pdf-luck-grid" id="pdfLuckGrid"></div>
+              </section>
+              <section class="pdf-report-panel pdf-fortune-panel">
+                <div class="pdf-panel-heading pdf-fortune-heading"><div><span>ANNUAL FORTUNE</span><h3>年 運</h3></div><p id="pdfAnnualSummary"></p></div>
+                <div class="pdf-cycle-grid pdf-annual-grid" id="pdfAnnualGrid"></div>
+                <p class="pdf-annual-note">年運は各年の立春（2月4日頃）から切り替わります。</p>
+              </section>
+            </div>
+            <footer class="pdf-report-footer"><span id="pdfFortuneFooter"></span><span>四柱推命 鑑定書　2 / 2</span></footer>
           </article>
         </div>
         <button class="primary pdf-download-button" id="pdfDownloadButton" type="button">PDFとして保存 <span>↓</span></button>

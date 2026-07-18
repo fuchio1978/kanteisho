@@ -52,3 +52,47 @@ python -m http.server 4173
 - 十二文字の五行サークルでは、大運支を3点枠、年運支を1点枠として集計し、時支・日支・月支・年支・大運支・年運支の成立説明を表示する。
 
 資料に具体的な減点量がない支合・冲の「互いに弱め合う」作用、近貼の性質付加、刑・破・害は得点へ反映していません。
+
+## Render実証版
+
+既存の鑑定画面を、1つのRender Web Serviceからログイン必須で配信できます。実証版では共通アクセスパスワードを使用し、ログイン後は署名付き・HttpOnly・SameSite Cookieで認証状態を保持します。
+
+### 現在の実証範囲
+
+- 未ログイン時は鑑定画面、JavaScript、CSS、認証済みAPIを配信しない
+- `/health` はRenderのヘルスチェック用として公開する
+- `server.js`、テスト、環境変数などのサーバー内部ファイルは配信しない
+- ログイン失敗を同一接続元ごとに制限する
+- 計算結果と既存UIは変更せず、全自動テストを維持する
+
+この第1段階では計算処理はまだ `app.js` に含まれています。未ログインの第三者からは保護されますが、ログインを許可された利用者のブラウザには配信されます。計算ロジック自体の保護は、計算エンジンをAPIへ分離する第2段階で完了します。
+
+### ローカル確認
+
+PowerShellで環境変数を設定して起動します。
+
+```powershell
+$env:KANTEISHO_ACCESS_PASSWORD='実証用パスワード'
+$env:SESSION_SECRET='十分に長いランダム文字列'
+npm start
+```
+
+ブラウザで `http://localhost:3000` を開きます。環境変数を設定しない開発環境では、ローカル確認専用パスワード `local-test-only` が使用されます。本番環境では環境変数がなければ起動しません。
+
+### Render設定
+
+リポジトリ直下の `render.yaml` を使うか、既存Web Serviceへ次を設定します。
+
+- Build Command: `npm install`
+- Start Command: `npm start`
+- Health Check Path: `/health`
+- `NODE_ENV`: `production`
+- `KANTEISHO_ACCESS_PASSWORD`: 講座生へ知らせる実証用パスワード
+- `SESSION_SECRET`: Renderで生成する長いランダム値
+- `SESSION_HOURS`: `12`
+
+`KANTEISHO_ACCESS_PASSWORD` と `SESSION_SECRET` はGitHubへ保存せず、Render Dashboardの Environment に登録します。
+
+### 独自ドメイン
+
+Renderの Custom Domains に `kanteisho.fuchilabo.com` を追加し、ドメイン管理画面のDNSへRenderが案内するCNAMEを設定します。接続確認後は Render Subdomain を無効化すると、`onrender.com` 側からのアクセスを遮断できます。
