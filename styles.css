@@ -1,0 +1,251 @@
+:root{--ink:#18374b;--blue:#1766b1;--sky:#eaf4fa;--line:#c7d7df;--paper:#fff;--warm:#f6f2ea}
+.pillars{direction:ltr!important}
+.luck-section{margin-top:72px;border-top:1px solid #dbe5ea;padding-top:46px;position:relative;z-index:1}.luck-heading{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:26px}.luck-heading span{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}.luck-heading h2{font-family:"Klee One",serif;font-size:38px;font-weight:600;color:var(--blue);margin:4px 0 0}.luck-heading p{font-family:"Klee One",serif;color:var(--blue);margin:0}.luck-scroll{overflow-x:auto;padding:7px 2px 20px;scrollbar-color:#b8ccd6 transparent}.luck-grid{display:grid;grid-template-columns:repeat(10,minmax(84px,1fr));gap:12px;min-width:970px}.luck-card{position:relative;text-align:center;border-radius:15px;padding:15px 7px 12px;background:#fbfcfc;border:1px solid #cddbe2}.luck-card.is-current{border:2px solid var(--blue);padding:14px 6px 11px;background:#f0f8fc;box-shadow:0 8px 20px rgba(23,102,177,.12)}.current-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--blue);color:white!important;border-radius:999px;padding:3px 9px;font:600 10px sans-serif!important;letter-spacing:.08em!important;white-space:nowrap}.luck-age{font-family:"Klee One";font-size:13px;color:#3e667c;white-space:nowrap}.luck-date{font-family:"Klee One";font-size:11px;color:#8aa0ac;margin:2px 0 10px}.luck-kanji{border:1px solid #78909d;border-radius:11px;background:white;overflow:hidden}.luck-kanji span{display:grid;place-items:center;height:55px;font-family:"Klee One",serif;font-size:34px;color:#111}.luck-kanji span+span{border-top:1px solid #dbe3e7}@media(max-width:650px){.luck-section{margin-top:50px;padding-top:34px}.luck-heading{display:block}.luck-heading p{margin-top:8px}.luck-grid{min-width:850px;gap:9px}}
+.annual-section{margin-top:58px;border-top:1px solid #dbe5ea;padding-top:46px;position:relative;z-index:1}.annual-heading{display:flex;justify-content:space-between;align-items:end;gap:24px;margin-bottom:26px}.annual-heading span{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}.annual-heading h2{font-family:"Klee One",serif;font-size:38px;font-weight:600;color:var(--blue);margin:4px 0 0}.annual-heading p{font-family:"Klee One",serif;color:var(--blue);margin:0}.annual-scroll{overflow-x:auto;padding:7px 2px 20px;scrollbar-color:#b8ccd6 transparent}.annual-grid{display:grid;grid-template-columns:repeat(11,minmax(76px,1fr));gap:10px;min-width:940px}.annual-card{position:relative;text-align:center;border-radius:14px;padding:14px 6px 10px;background:#fbfcfc;border:1px solid #cddbe2}.annual-card.is-current{border:2px solid var(--blue);padding:13px 5px 9px;background:#f0f8fc;box-shadow:0 8px 20px rgba(23,102,177,.12)}.annual-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--blue);color:#fff;border-radius:999px;padding:3px 9px;font:600 10px sans-serif;white-space:nowrap}.annual-year{font-family:"Klee One";font-size:14px;color:#3e667c;margin-bottom:8px}.annual-kanji{border:1px solid #78909d;border-radius:10px;background:#fff;overflow:hidden}.annual-kanji span{display:grid;place-items:center;height:51px;font-family:"Klee One",serif;font-size:31px;color:#111}.annual-kanji span+span{border-top:1px solid #dbe3e7}.annual-note{text-align:right;font-size:11px;color:#8aa0ac;margin:2px 0 0}@media(max-width:650px){.annual-section{margin-top:46px;padding-top:34px}.annual-heading{display:block}.annual-heading p{margin-top:8px}.annual-grid{min-width:850px;gap:8px}.annual-note{text-align:left}}
+.annual-marks{position:absolute;top:-13px;left:50%;transform:translateX(-50%);display:flex;justify-content:center;gap:4px;z-index:2}.annual-marks .annual-badge{position:static;transform:none}.annual-luck-badge{background:#fff;color:var(--blue);border:1px solid var(--blue);border-radius:999px;padding:2px 7px;font:600 10px "Klee One",serif;white-space:nowrap}
+.annual-scroll{padding-top:22px}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:linear-gradient(135deg,#f8fbfc,#f3eee5);font-family:"Noto Serif JP",serif;min-height:100vh}main{width:min(1120px,calc(100% - 32px));margin:32px auto}.form-view,.result-view{background:rgba(255,255,255,.95);border-radius:30px;box-shadow:0 22px 70px rgba(34,64,78,.12);padding:clamp(28px,5vw,70px)}.eyebrow{font:600 11px/1.4 sans-serif;letter-spacing:.24em;color:#7391a3}h1{margin:8px 0 4px;font-family:"Klee One",serif;font-size:clamp(32px,5vw,55px);font-weight:600;color:var(--blue)}.lead{margin:0 0 42px;color:#708694}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px 32px}.field{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:9px}.field.wide{grid-column:1/-1}.field>span,.field legend{font-size:13px;font-weight:600;letter-spacing:.08em;margin-bottom:9px}.field small{font-weight:400;color:#8296a2}input,select{width:100%;border:0;border-bottom:1px solid var(--line);background:#f8fbfc;padding:14px 12px;color:var(--ink);font:16px inherit;border-radius:8px 8px 0 0}input:focus,select:focus{outline:2px solid #8ec1de;outline-offset:2px}.segmented{display:flex;gap:8px}.segmented input{position:absolute;opacity:0}.segmented span{display:block;padding:13px 28px;border:1px solid var(--line);border-radius:999px;cursor:pointer}.segmented input:checked+span{background:var(--ink);color:#fff;border-color:var(--ink)}.time-row{display:flex;gap:12px;align-items:center}.unknown{white-space:nowrap}.unknown input{width:auto}.note{font-size:12px;color:#8295a0;margin:24px 0}.primary,.secondary,.text-button{font:600 15px inherit;cursor:pointer}.primary{border:0;border-radius:999px;padding:18px 28px;color:white;background:var(--blue);box-shadow:0 10px 24px rgba(23,102,177,.22)}.primary span{margin-left:32px}.result-view{min-height:680px;position:relative;overflow:hidden}.result-view:after{content:"";position:absolute;width:420px;height:420px;border:1px solid #d6e2e8;border-radius:50%;right:-190px;bottom:-240px;pointer-events:none}.result-header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.result-name{font-family:"Klee One";font-size:24px;color:var(--blue);margin:0}.result-meta{font-family:"Klee One";color:var(--blue);margin:4px 0}.text-button{border:0;background:none;color:#65808e;border-bottom:1px solid}.title-block{text-align:center;margin:60px 0 34px}.title-block span{font-size:11px;letter-spacing:.3em;color:#8a9ca6}.title-block h2{font-family:"Klee One";font-size:48px;color:var(--blue);margin:2px}.title-block p{font-size:12px;color:#8a9ca6}.pillars{display:flex;justify-content:center;gap:clamp(10px,3vw,32px);direction:ltr}.pillar{direction:ltr;text-align:center}.pillar-label{font-size:13px;letter-spacing:.15em;margin-bottom:10px;color:#617d8d}.kanji-box{width:clamp(68px,12vw,116px);border:2px solid #2b4351;border-radius:18px;background:#fff;overflow:hidden;box-shadow:0 8px 20px rgba(28,61,78,.08)}.kanji{height:clamp(72px,11vw,105px);display:grid;place-items:center;font-family:"Klee One",serif;font-size:clamp(40px,7vw,66px);color:#111}.kanji+.kanji{border-top:1px solid #d9e1e5}.unknown-pillar .kanji{color:#b3c0c7}.solar-time{text-align:center;font-family:"Klee One";color:var(--blue);margin:32px 0}.secondary{display:block;margin:30px auto 0;border:1px solid var(--line);background:#fff;border-radius:999px;padding:13px 24px;color:var(--ink)}@media(max-width:650px){main{margin:12px auto;width:calc(100% - 20px)}.form-view,.result-view{padding:26px 18px;border-radius:20px}.form-grid{grid-template-columns:1fr;gap:22px}.field.wide{grid-column:auto}.pillars{gap:7px}.kanji-box{border-radius:12px}.result-header{display:block}.text-button{margin-top:12px}.title-block{margin-top:42px}}
+
+/* 原命式8文字の五行カラー */
+:root{--wood:#7ed957;--fire:#f42e2e;--earth:#ffae5c;--metal:#898888;--water:#38b6ff}
+.pillars .kanji-box{display:grid;gap:7px;border:0;border-radius:0;background:transparent;overflow:visible;box-shadow:none}
+.pillars .kanji{position:relative;border:3px solid var(--element-color,#8ca0ab);border-radius:16px;background:#fff;box-shadow:0 7px 18px rgba(28,61,78,.07)}
+.pillars .kanji+.kanji{border-top:3px solid var(--element-color,#8ca0ab)}
+.pillars .element-wood{--element-color:var(--wood)}
+.pillars .element-fire{--element-color:var(--fire)}
+.pillars .element-earth{--element-color:var(--earth)}
+.pillars .element-metal{--element-color:var(--metal)}
+.pillars .element-water{--element-color:var(--water)}
+.pillars .fire-earth-root{border-color:var(--fire);box-shadow:inset 0 0 0 5px #fff,inset 0 0 0 8px var(--earth),0 7px 18px rgba(28,61,78,.07)}
+.pillars .unknown-pillar .kanji{border-color:#c8d3d9;box-shadow:none}
+.pillars .element-inactive{border-color:transparent!important;box-shadow:none}
+
+/* 上下左右に隣接する同一五行の連結枠 */
+.pillars{--pillar-gap:clamp(10px,3vw,32px);--row-gap:7px;gap:var(--pillar-gap)}
+.pillars .pillar,.pillars .kanji-box,.pillars .kanji{overflow:visible}
+.pillars .group-wood{--group-color:var(--wood)}
+.pillars .group-fire{--group-color:var(--fire)}
+.pillars .group-earth{--group-color:var(--earth)}
+.pillars .group-metal{--group-color:var(--metal)}
+.pillars .group-water{--group-color:var(--water)}
+.pillars .kanji.group-rect-member{border-color:transparent!important;box-shadow:none}
+.pillars .group-rect-start::before{content:"";position:absolute;z-index:4;left:-3px;top:-3px;width:var(--group-width);height:var(--group-height);border:3px solid var(--group-color);border-radius:18px;pointer-events:none}
+.pillars .group-w-1{--group-width:calc(100% + 6px)}
+.pillars .group-w-2{--group-width:calc(200% + var(--pillar-gap) + 6px)}
+.pillars .group-w-3{--group-width:calc(300% + var(--pillar-gap) + var(--pillar-gap) + 6px)}
+.pillars .group-w-4{--group-width:calc(400% + var(--pillar-gap) + var(--pillar-gap) + var(--pillar-gap) + 6px)}
+.pillars .group-h-1{--group-height:calc(100% + 6px)}
+.pillars .group-h-2{--group-height:calc(200% + var(--row-gap) + 6px)}
+.pillars .group-rect-member.fire-earth-root{border-color:transparent;box-shadow:inset 0 0 0 5px #fff,inset 0 0 0 8px var(--fire)}
+.pillars .element-grouped.fire-earth-root:not(.group-rect-member){border-color:var(--group-color);box-shadow:inset 0 0 0 5px #fff,inset 0 0 0 8px var(--fire)}
+.pillars .connect-right::before{content:"";position:absolute;right:calc(0px - var(--pillar-gap) - 3px);top:-3px;width:calc(var(--pillar-gap) + 6px);height:calc(100% + 6px);background:#fff;border-top:3px solid var(--group-color);border-bottom:3px solid var(--group-color);z-index:2}
+.pillars .connect-down::after{content:"";position:absolute;left:-3px;top:calc(100% - 3px);width:calc(100% + 6px);height:calc(var(--row-gap) + 6px);background:#fff;border-left:3px solid var(--group-color);border-right:3px solid var(--group-color);z-index:2}
+.pillars .connect-right{border-right-color:transparent;border-top-right-radius:0;border-bottom-right-radius:0}
+.pillars .connect-left{border-left-color:transparent;border-top-left-radius:0;border-bottom-left-radius:0}
+.pillars .connect-down{border-bottom-color:transparent;border-bottom-left-radius:0;border-bottom-right-radius:0}
+.pillars .connect-up{border-top-color:transparent;border-top-left-radius:0;border-top-right-radius:0}
+
+/* 連結形状は各マスの継ぎ目ではなく、まとまった外周をSVGで一度だけ描く */
+.pillars{position:relative}
+.pillars .element-grouped{border-color:transparent!important;border-radius:16px!important;box-shadow:none}
+.pillars .element-grouped.fire-earth-root{border-color:transparent!important;box-shadow:inset 0 0 0 5px #fff,inset 0 0 0 8px var(--fire)}
+.pillars .element-grouped.fire-earth-root.fire-inner-grouped{box-shadow:none}
+.pillars .inner-wood{--inner-element-color:var(--wood)}
+.pillars .inner-fire{--inner-element-color:var(--fire)}
+.pillars .inner-earth{--inner-element-color:var(--earth)}
+.pillars .inner-metal{--inner-element-color:var(--metal)}
+.pillars .inner-water{--inner-element-color:var(--water)}
+.pillars .extra-wood{--extra-element-color:var(--wood)}
+.pillars .extra-fire{--extra-element-color:var(--fire)}
+.pillars .extra-earth{--extra-element-color:var(--earth)}
+.pillars .extra-metal{--extra-element-color:var(--metal)}
+.pillars .extra-water{--extra-element-color:var(--water)}
+.pillars .extra-element-outline{position:absolute;inset:15px;border:3px solid var(--extra-element-color);border-radius:11px;z-index:6;pointer-events:none}
+.pillars .has-inner-element:not(.fire-earth-root){box-shadow:inset 0 0 0 5px #fff,inset 0 0 0 8px var(--inner-element-color),0 7px 18px rgba(28,61,78,.07)}
+.pillars .element-grouped.has-inner-element:not(.fire-earth-root){box-shadow:inset 0 0 0 5px #fff,inset 0 0 0 8px var(--inner-element-color)}
+.pillars .group-rect-start::before,.pillars .connect-right::before,.pillars .connect-down::after{content:none!important}
+.element-group-overlay{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:5}
+.element-group-outline{fill:none;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.element-group-outline.group-wood{stroke:var(--wood)}
+.element-group-outline.group-fire{stroke:var(--fire)}
+.element-group-outline.group-earth{stroke:var(--earth)}
+.element-group-outline.group-metal{stroke:var(--metal)}
+.element-group-outline.group-water{stroke:var(--water)}
+.fire-inner-outline{stroke-width:3}
+
+/* 命式内の成立関係スタンプ */
+.pillars .relation-stamps{position:absolute;left:50%;transform:translateX(-50%);display:flex;justify-content:center;gap:3px;z-index:7;pointer-events:none;white-space:nowrap}
+.pillars .stem-stamps{top:-17px}
+.pillars .branch-stamps{bottom:-17px}
+.pillars .bridge-stamps{left:calc(100% + var(--pillar-gap)/2)}
+.pillars .relation-stamp{display:inline-block;padding:2px 7px;border-radius:6px;font:600 10px/1.35 "Klee One",serif;font-style:normal;letter-spacing:.04em;background:#eef3f5;color:#607783;box-shadow:0 1px 3px rgba(24,55,75,.08)}
+.pillars .stamp-wood{color:#429f25;background:#eefbe9}
+.pillars .stamp-fire{color:#d92121;background:#fff0f0}
+.pillars .stamp-earth{color:#d8791d;background:#fff4e9}
+.pillars .stamp-metal{color:#656565;background:#f0f0f0}
+.pillars .stamp-water{color:#198bd0;background:#eaf7ff}
+.pillars .stamp-clash{color:#626a70;background:#eceff1;border:1px solid #cbd1d5;padding:1px 6px}
+.pillars .transformed-stem{position:absolute;left:7px;top:5px;z-index:7;padding:1px 5px;border-radius:6px;font:600 16px/1.25 "Klee One",serif;box-shadow:0 1px 4px rgba(24,55,75,.1);pointer-events:none}
+
+/* 地支の下に表示する蔵干と、採用中の五行得点 */
+.hidden-stems{margin-top:13px;min-height:54px;text-align:center;font-family:"Klee One",serif;color:#9aabb4}
+.hidden-stems-list{display:flex;flex-direction:column;align-items:center;gap:1px}
+.hidden-stem{display:inline-flex;align-items:baseline;justify-content:center;gap:2px;min-height:17px;font-size:13px;line-height:1.15;white-space:nowrap}
+.hidden-stem b{font-weight:400}.hidden-stem i{font:600 9px/1 sans-serif;font-style:normal}
+.hidden-stem-combined b{letter-spacing:.06em}
+.hidden-stem.is-selected{font-weight:600}
+.hidden-wood{color:#4caf2c}.hidden-fire{color:#e32626}.hidden-earth{color:#e58b31}.hidden-metal{color:#6d6d6d}.hidden-water{color:#219fe9}
+.hide-hidden-stems .hidden-stems{display:none!important}
+.hidden-stems-toggle{display:block;margin:8px auto 0;padding:7px 16px;border:1px solid #c7d7df;border-radius:999px;background:#fff;color:#607d8d;font:600 12px "Klee One",serif;cursor:pointer}
+.hidden-stems-toggle:hover{border-color:var(--blue);color:var(--blue)}
+.hidden-stems-toggle:focus-visible{outline:2px solid #8ec1de;outline-offset:2px}
+.six-mode-section>.hidden-stems-toggle{margin-top:0}
+
+/* 大運・年運にも原命式と同じ五行カラーと連結枠を適用 */
+.luck-grid,.annual-grid{position:relative}
+.luck-kanji,.annual-kanji{display:grid;gap:5px;border:0;border-radius:0;background:transparent;overflow:visible}
+:is(.luck-grid,.annual-grid) .kanji{position:relative;border:3px solid var(--element-color,#8ca0ab);border-radius:11px;background:#fff;box-shadow:0 5px 12px rgba(28,61,78,.06)}
+:is(.luck-grid,.annual-grid) .kanji+.kanji{border-top:3px solid var(--element-color,#8ca0ab)}
+:is(.luck-grid,.annual-grid) .element-wood{--element-color:var(--wood)}
+:is(.luck-grid,.annual-grid) .element-fire{--element-color:var(--fire)}
+:is(.luck-grid,.annual-grid) .element-earth{--element-color:var(--earth)}
+:is(.luck-grid,.annual-grid) .element-metal{--element-color:var(--metal)}
+:is(.luck-grid,.annual-grid) .element-water{--element-color:var(--water)}
+:is(.luck-grid,.annual-grid) .fire-earth-root{border-color:var(--fire);box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 6px var(--earth)}
+:is(.luck-grid,.annual-grid) .element-grouped{border-color:transparent!important;box-shadow:none}
+:is(.luck-grid,.annual-grid) .element-grouped.fire-earth-root{border-color:transparent!important;box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 6px var(--fire)}
+:is(.luck-grid,.annual-grid) .element-inactive{border-color:transparent!important;box-shadow:none}
+
+/* 原命式の五行サークル */
+.five-elements-section{margin-top:58px;border-top:1px solid #dbe5ea;padding-top:42px}
+.five-elements-heading{text-align:center}
+.five-elements-heading>span{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}
+.five-elements-heading h2{font-family:"Klee One",serif;font-size:36px;font-weight:600;color:var(--blue);margin:5px 0 2px}
+.five-elements-heading p{font-size:12px;color:#8a9ca6;margin:0}
+.five-elements-chart{width:min(100%,420px);margin:6px auto 0;text-align:center}
+.five-elements-chart svg{display:block;width:100%;height:auto;overflow:visible}
+.five-elements-orbit{fill:none;stroke:#888;stroke-width:1.6}
+.five-element-node .element-name{fill:#fff;font-family:"Klee One",serif;font-weight:600}
+.five-elements-score-toggle{margin:-16px auto 0;padding:7px 16px;border:1px solid #c7d7df;border-radius:999px;background:#fff;color:#607d8d;font:600 12px "Klee One",serif;cursor:pointer}
+.five-elements-score-toggle:hover{border-color:var(--blue);color:var(--blue)}
+.five-elements-score-toggle:focus-visible{outline:2px solid #8ec1de;outline-offset:2px}
+.five-elements-details[hidden]{display:none}
+.five-elements-scores{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin-top:14px;color:#526f7e;font:600 13px "Klee One",serif}
+.five-elements-scores span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.five-elements-scores i{width:10px;height:10px;border-radius:50%;background:var(--score-color);display:inline-block}
+.body-strength{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
+.body-strength span{white-space:nowrap}.body-strength b{color:#315f77;font-weight:600}
+.body-strength strong{padding:4px 13px;border-radius:999px;font-size:13px;letter-spacing:.08em}
+.strength-strong{color:#c56612;background:#fff1df}.strength-middle{color:#277496;background:#eaf7fc}.strength-weak{color:#68757c;background:#eef2f4}
+.five-elements-basis-label{margin:12px 0 2px;color:var(--blue);font:600 11px "Klee One",serif;text-align:left}
+.five-elements-transformations{list-style:none;padding:0;margin:12px auto 0;max-width:560px;color:#78909c;font:12px/1.75 "Klee One",serif;text-align:left}
+.five-elements-transformations li{display:grid;grid-template-columns:48px 1fr;gap:8px;padding:3px 0}
+.five-elements-transformations strong{color:var(--blue);font-weight:600;white-space:nowrap}
+.five-elements-calculation-log{margin:7px 0 0;color:#78909c;font:10px/1.5 "Klee One",serif;text-align:left}
+@media(max-width:650px){.five-elements-section{margin-top:44px;padding-top:34px}.five-elements-heading h2{font-size:31px}.five-elements-chart{margin-top:0}.five-elements-score-toggle{margin-top:-8px}.five-elements-scores{margin-top:12px;gap:7px 12px;font-size:12px}}
+
+/* 原命式＋大運＋年運の六柱推命モード */
+.six-mode-section{margin-top:62px;border-top:1px solid #dbe5ea;padding-top:46px;position:relative;z-index:1}
+.six-mode-heading{display:flex;justify-content:space-between;align-items:end;gap:28px;margin-bottom:10px}
+.six-mode-heading>div>span{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}
+.six-mode-heading h2{font-family:"Klee One",serif;font-size:38px;font-weight:600;color:var(--blue);margin:4px 0 0}
+.six-mode-heading p{font-size:12px;color:#8a9ca6;margin:2px 0 0}
+.six-year-control{width:150px;display:grid;gap:6px;color:#607d8d;font:600 12px "Klee One",serif}
+.six-year-control select{padding:10px 34px 10px 12px;background:#fff;border:1px solid #c7d7df;border-radius:10px;font-size:14px;color:#17384b}
+.six-mode-summary{text-align:center;color:var(--blue);font-family:"Klee One",serif;margin:22px 0 28px}
+.six-pillars-wrap{overflow-x:auto;padding:20px 4px 25px;scrollbar-color:#b8ccd6 transparent}
+.six-pillars{min-width:830px;--pillar-gap:clamp(12px,2.2vw,25px);--six-group-gap:34px}
+.six-pillars .pillar:nth-child(5){margin-left:var(--six-group-gap)}
+.six-pillars .pillar:nth-child(4) .bridge-stamps{left:calc(100% + var(--pillar-gap)/2 + var(--six-group-gap)/2)}
+.six-pillars .kanji-box{width:clamp(76px,10vw,105px)}
+.six-elements-heading{margin-top:36px}
+#sixElementsChart{margin-top:4px}
+@media(max-width:650px){.six-mode-section{margin-top:48px;padding-top:34px}.six-mode-heading{display:block}.six-mode-heading h2{font-size:31px}.six-year-control{margin-top:18px;width:100%}.six-pillars-wrap{margin-inline:-10px}.six-pillars{--six-group-gap:24px}.six-mode-summary{text-align:left;margin-top:18px}.six-elements-heading{margin-top:26px}}
+
+/* A4横1枚の鑑定書PDFプレビュー */
+.pdf-mode-section{margin-top:62px;border-top:1px solid #dbe5ea;padding-top:46px;position:relative;z-index:1}
+.pdf-mode-heading{display:flex;justify-content:space-between;align-items:end;gap:28px;margin-bottom:24px}
+.pdf-mode-heading>div>span{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}
+.pdf-mode-heading h2{font-family:"Klee One",serif;font-size:38px;font-weight:600;color:var(--blue);margin:4px 0 0}
+.pdf-mode-heading p{font-size:12px;color:#8a9ca6;margin:2px 0 0}
+.pdf-mode-controls{display:flex;align-items:end;gap:10px;flex:0 0 auto}
+.pdf-year-control,.pdf-audience-control{width:190px;display:grid;gap:6px;color:#607d8d;font:600 12px "Klee One",serif;flex:0 0 auto}
+.pdf-year-control select,.pdf-audience-control select{padding:10px 34px 10px 12px;background:#fff;border:1px solid #c7d7df;border-radius:10px;font-size:14px;color:#17384b}
+.pdf-audience-control{width:170px}
+.pdf-preview-wrap{overflow-x:auto;margin-inline:calc(clamp(28px,5vw,70px)*-1);padding:18px clamp(28px,5vw,70px) 28px;background:#eef3f5;border-block:1px solid #d8e3e8}
+.pdf-report{width:1040px;height:735px;margin:0 auto;padding:30px 36px 20px;background:#fff;color:var(--ink);box-shadow:0 12px 32px rgba(24,55,75,.16);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden}
+.pdf-report-header{display:flex;justify-content:space-between;align-items:end;border-bottom:2px solid var(--blue);padding-bottom:10px;margin-bottom:14px}
+.pdf-report-header>div:first-child>span,.pdf-panel-heading>span{font:600 8px sans-serif;letter-spacing:.22em;color:#8ca1ac}
+.pdf-report-header h2{font-family:"Klee One",serif;color:var(--blue);font-size:25px;line-height:1;margin:3px 0 0}
+.pdf-report-type{display:none;margin:4px 0 0;padding:2px 8px;border-radius:999px;background:#eaf7ff;color:#198bd0;font:600 8px "Klee One",serif;font-style:normal;letter-spacing:.08em}
+.pdf-training .pdf-report-type{display:inline-block}
+.pdf-report-person{text-align:right;display:grid;gap:2px;font-family:"Klee One",serif;color:var(--blue)}
+.pdf-report-person strong{font-size:16px}.pdf-report-person span{font-size:10px}
+.pdf-report-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1.08fr;gap:12px 14px;min-height:0}
+.pdf-report-panel{border:1px solid #d8e3e8;border-radius:14px;padding:11px 14px;min-width:0;min-height:0;overflow:visible;position:relative}
+.pdf-panel-heading{text-align:left}.pdf-panel-heading h3{font-family:"Klee One",serif;font-size:18px;color:var(--blue);line-height:1.1;margin:2px 0 0}.pdf-panel-heading p{font:10px "Klee One",serif;color:#52798f;margin:3px 0 0}
+.pdf-pillars-panel{display:grid;grid-template-rows:auto 1fr}.pdf-pillars-panel>.pillars{align-self:center}
+.pdf-report .pillars{--pillar-gap:13px;--row-gap:5px;gap:var(--pillar-gap)}
+.pdf-report .pillar-label{font-size:9px;margin-bottom:5px}
+.pdf-report .kanji-box{width:70px;gap:var(--row-gap)}
+.pdf-report .kanji{height:72px;font-size:43px;border-width:2px;border-radius:11px;box-shadow:none}
+.pdf-report .kanji+.kanji{border-top-width:2px}
+.pdf-report .fire-earth-root{box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 5px var(--earth)}
+.pdf-report .has-inner-element:not(.fire-earth-root){box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 5px var(--inner-element-color)}
+.pdf-report .element-grouped.fire-earth-root{box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 5px var(--fire)}
+.pdf-report .element-grouped.fire-earth-root.fire-inner-grouped{box-shadow:none}
+.pdf-report .extra-element-outline{inset:10px;border-width:2px;border-radius:7px}
+.pdf-report .hidden-stems{margin-top:6px;min-height:34px}
+.pdf-report:not(.pdf-training) .hidden-stems{display:none!important}
+.pdf-report.pdf-training .hidden-stems{display:block!important}
+.pdf-report.pdf-training .hidden-stems{margin-top:18px}
+.pdf-report .hidden-stems-list{gap:0}
+.pdf-report .hidden-stem{min-height:11px;font-size:9px;line-height:1}
+.pdf-report .hidden-stem i{font-size:6.5px}
+.pdf-report .six-pillars .hidden-stems{margin-top:5px;min-height:30px}
+.pdf-report.pdf-training .six-pillars .hidden-stems{margin-top:17px}
+.pdf-report .six-pillars .hidden-stem{min-height:10px;font-size:8px}
+.pdf-report .relation-stamp{font-size:7px;padding:1px 4px;border-radius:4px}
+.pdf-report .transformed-stem{left:4px;top:3px;padding:0 3px;border-radius:4px;font-size:9px}
+.pdf-report .stem-stamps{top:-12px}.pdf-report .branch-stamps{bottom:-12px}
+.pdf-report .element-group-outline{stroke-width:2}
+.pdf-report .six-pillars{min-width:0;--six-group-gap:19px;gap:9px}
+.pdf-report .six-pillars .pillar:nth-child(5){margin-left:var(--six-group-gap)}
+.pdf-report .six-pillars .pillar:nth-child(4) .bridge-stamps{left:calc(100% + 9px/2 + var(--six-group-gap)/2)}
+.pdf-report .six-pillars .kanji-box{width:56px}
+.pdf-report .six-pillars .kanji{height:62px;font-size:36px}
+.pdf-balance-panel{display:grid;grid-template-rows:auto 1fr}
+.pdf-elements-chart{width:260px;margin:-8px auto 0;align-self:center}
+.pdf-elements-chart .five-elements-score-toggle,.pdf-elements-chart .five-elements-details{display:none!important}
+.pdf-training .pdf-elements-chart{width:100%;margin:0;display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px;align-items:center;text-align:left}
+.pdf-training .pdf-elements-chart svg{width:160px}
+.pdf-training .pdf-elements-chart .five-elements-details{display:block!important;min-width:0}
+.pdf-training .five-elements-scores{display:grid;grid-template-columns:repeat(3,max-content);justify-content:start;gap:3px 8px;margin:0;font-size:8px}
+.pdf-training .five-elements-scores i{width:7px;height:7px}
+.pdf-training .body-strength{justify-content:start;gap:3px 8px;margin:4px 0 0;font-size:7.5px}
+.pdf-training .body-strength strong{padding:1px 6px;font-size:8px}
+.pdf-training .five-elements-basis-label{margin:6px 0 1px;font-size:8px}
+.pdf-training .five-elements-transformations{margin:0;font-size:7px;line-height:1.25;max-width:none}
+.pdf-training .five-elements-transformations li{grid-template-columns:34px 1fr;gap:3px;padding:1px 0}
+.pdf-training .five-elements-transformations li[hidden]{display:none!important}
+.pdf-training .five-elements-calculation-log{margin-top:4px;font-size:6.5px;line-height:1.25}
+.pdf-report-footer{border-top:1px solid #d8e3e8;margin-top:10px;padding-top:7px;display:flex;justify-content:space-between;color:#7b929e;font:9px "Klee One",serif}
+.pdf-download-button{display:block;margin:24px auto 0;padding:14px 26px}.pdf-download-button span{margin-left:20px}
+.pdf-save-note{text-align:center;color:#8295a0;font-size:11px;margin:9px 0 0}
+@media(max-width:650px){.pdf-mode-section{margin-top:48px;padding-top:34px}.pdf-mode-heading{display:block}.pdf-mode-heading h2{font-size:31px}.pdf-mode-controls{display:grid;grid-template-columns:1fr;margin-top:18px}.pdf-year-control,.pdf-audience-control{width:100%}.pdf-preview-wrap{margin-inline:-18px;padding-inline:18px}}
+
+@page{size:A4 landscape;margin:0}
+@media print{
+  html,body{width:297mm;height:210mm;margin:0!important;background:#fff!important}
+  body.printing-pdf-report{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.printing-pdf-report main{width:297mm;height:210mm;margin:0!important}
+  body.printing-pdf-report #formView{display:none!important}
+  body.printing-pdf-report .result-view{display:block!important;width:297mm;height:210mm;min-height:0;margin:0;padding:0;border-radius:0;box-shadow:none;background:#fff;overflow:visible}
+  body.printing-pdf-report .result-view:after{display:none}
+  body.printing-pdf-report .result-view>*{display:none!important}
+  body.printing-pdf-report .result-view>.pdf-mode-section{display:block!important;margin:0;padding:0;border:0}
+  body.printing-pdf-report .pdf-mode-section>*{display:none!important}
+  body.printing-pdf-report .pdf-mode-section>.pdf-preview-wrap{display:block!important;margin:0;padding:0;border:0;overflow:visible;background:#fff}
+  body.printing-pdf-report .pdf-report{display:grid!important;width:297mm;height:210mm;margin:0;padding:9mm 10mm 6mm;box-shadow:none}
+}
+

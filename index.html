@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="生年月日時から四柱推命の八字を作成します。">
+  <title>四柱推命 鑑定書｜八字作成</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=Noto+Serif+JP:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <section class="form-view" id="formView">
+      <div class="eyebrow">FOUR PILLARS OF DESTINY</div>
+      <h1>八字を作成する</h1>
+      <p class="lead">生まれた瞬間の暦を、四つの柱に映します。</p>
+
+      <form id="baziForm">
+        <div class="form-grid">
+          <label class="field wide"><span>お名前 <small>任意</small></span><input id="name" name="name" autocomplete="name" placeholder="例）A"></label>
+          <fieldset class="field"><legend>性別</legend><div class="segmented"><label><input type="radio" name="sex" value="男性"><span>男性</span></label><label><input type="radio" name="sex" value="女性" checked><span>女性</span></label></div></fieldset>
+          <label class="field"><span>暦</span><select id="calendarSystem" aria-label="暦"><option value="western">西暦</option></select></label>
+          <label class="field"><span>生年月日</span><input id="birthDate" name="birthDate" type="date" min="0001-01-01" max="9999-12-31" value="1977-02-01" required><small class="field-help">例：845年は「0845/08/01」</small></label>
+          <fieldset class="field"><legend>出生時刻</legend><div class="time-row"><input id="birthTime" name="birthTime" type="time" value="10:00"><label class="unknown"><input id="unknownTime" type="checkbox"><span>不明</span></label></div></fieldset>
+          <label class="field"><span>標準時経度</span><select id="timezoneLongitude"></select></label>
+          <label class="field"><span>半球</span><select id="hemisphere"><option value="north">北半球</option><option value="south">南半球</option></select></label>
+          <label class="field wide"><span>出生地（地方時差）</span><select id="localOffset"></select><input id="customOffset" type="number" min="-90" max="90" placeholder="地方時差（分）" hidden></label>
+        </div>
+        <p class="note">出生時刻は、地方時差・日別の均時差を自動補正します。1948〜1951年の日本のサマータイム期間は、さらに1時間を自動で戻します。時刻が分からない場合は「不明」を選択してください。</p>
+        <button class="primary" type="submit">八字を作成する <span>→</span></button>
+      </form>
+    </section>
+
+    <section class="result-view" id="resultView" hidden aria-live="polite">
+      <header class="result-header">
+        <div><p class="result-name" id="resultName"></p><p class="result-meta" id="resultMeta"></p></div>
+        <button class="text-button" id="editButton" type="button">入力内容を変更</button>
+      </header>
+      <div class="title-block"><span>命式</span><h2>八 字</h2><p>生まれた瞬間に巡っていた、天と地のしるし</p></div>
+      <div class="pillars" id="pillars"></div>
+      <div class="solar-time" id="solarTime"></div>
+      <button class="hidden-stems-toggle" id="hiddenStemsToggle" type="button" aria-pressed="true">蔵干を非表示</button>
+      <section class="five-elements-section" aria-labelledby="fiveElementsTitle">
+        <div class="five-elements-heading">
+          <span>ORIGINAL FIVE ELEMENTS</span>
+          <h2 id="fiveElementsTitle">五行サークル</h2>
+          <p>原命式の五行バランス</p>
+        </div>
+        <div class="five-elements-chart" id="fiveElementsChart"></div>
+      </section>
+      <section class="luck-section" aria-labelledby="luckTitle">
+        <div class="luck-heading">
+          <div>
+            <span>10 YEAR FORTUNE CYCLES</span>
+            <h2 id="luckTitle">大 運</h2>
+          </div>
+          <p id="luckSummary"></p>
+        </div>
+        <div class="luck-scroll" tabindex="0" aria-label="大運一覧">
+          <div class="luck-grid" id="luckGrid"></div>
+        </div>
+      </section>
+      <section class="annual-section" aria-labelledby="annualTitle">
+        <div class="annual-heading">
+          <div>
+            <span>ANNUAL FORTUNE</span>
+            <h2 id="annualTitle">年 運</h2>
+          </div>
+          <p>今年を中心に前後5年</p>
+        </div>
+        <div class="annual-scroll" tabindex="0" aria-label="年運一覧">
+          <div class="annual-grid" id="annualGrid"></div>
+        </div>
+        <p class="annual-note">年運は各年の立春（2月4日頃）から切り替わります。</p>
+      </section>
+      <section class="six-mode-section" aria-labelledby="sixModeTitle">
+        <div class="six-mode-heading">
+          <div>
+            <span>SIX PILLARS MODE</span>
+            <h2 id="sixModeTitle">六柱推命モード</h2>
+            <p id="sixModeDescription">原命式＋大運＋年運の十二文字</p>
+          </div>
+          <label class="six-year-control"><span>年運を選択</span><select id="sixYearInput" aria-label="年運を選択"></select></label>
+        </div>
+        <p class="six-mode-summary" id="sixModeSummary"></p>
+        <div class="six-pillars-wrap">
+          <div class="pillars six-pillars" id="sixPillars"></div>
+        </div>
+        <button class="hidden-stems-toggle" id="sixHiddenStemsToggle" type="button" aria-pressed="true">蔵干を非表示</button>
+        <div class="five-elements-heading six-elements-heading">
+          <span>TWELVE CHARACTER FIVE ELEMENTS</span>
+          <h2 id="sixElementsTitle">十二文字の五行サークル</h2>
+          <p id="sixElementsDescription">原命式・大運・年運を合わせた五行バランス</p>
+        </div>
+        <div class="five-elements-chart" id="sixElementsChart"></div>
+      </section>
+      <section class="pdf-mode-section" aria-labelledby="pdfModeTitle">
+        <div class="pdf-mode-heading">
+          <div>
+            <span>ONE PAGE READING REPORT</span>
+            <h2 id="pdfModeTitle">鑑定書PDF出力モード</h2>
+            <p>原命式・五行バランス・指定年の十二文字を、A4横1枚にまとめます。</p>
+          </div>
+          <div class="pdf-mode-controls">
+            <label class="pdf-audience-control"><span>鑑定書の用途</span><select id="pdfAudienceInput" aria-label="鑑定書の用途"><option value="client">お客さまお渡し用</option><option value="student">講座生添削用</option></select></label>
+            <label class="pdf-year-control"><span>鑑定年を選択</span><select id="pdfYearInput" aria-label="PDFに掲載する鑑定年を選択"></select></label>
+          </div>
+        </div>
+        <div class="pdf-preview-wrap">
+          <article class="pdf-report" id="pdfReport" aria-label="鑑定書PDFプレビュー">
+            <header class="pdf-report-header">
+              <div><span>FOUR PILLARS READING</span><h2>四柱推命 鑑定書</h2><em class="pdf-report-type" id="pdfReportType">講座生添削用</em></div>
+              <div class="pdf-report-person"><strong id="pdfReportName"></strong><span id="pdfReportMeta"></span></div>
+            </header>
+            <div class="pdf-report-grid">
+              <section class="pdf-report-panel pdf-pillars-panel">
+                <div class="pdf-panel-heading"><span>ORIGINAL CHART</span><h3>原命式</h3></div>
+                <div class="pillars pdf-original-pillars" id="pdfOriginalPillars"></div>
+              </section>
+              <section class="pdf-report-panel pdf-balance-panel">
+                <div class="pdf-panel-heading"><span>ORIGINAL FIVE ELEMENTS</span><h3>原命式の五行バランス</h3></div>
+                <div class="five-elements-chart pdf-elements-chart" id="pdfOriginalElements"></div>
+              </section>
+              <section class="pdf-report-panel pdf-pillars-panel pdf-six-panel">
+                <div class="pdf-panel-heading"><span>SELECTED YEAR CHART</span><h3 id="pdfSixTitle">指定年の十二文字</h3><p id="pdfSixSummary"></p></div>
+                <div class="pillars six-pillars pdf-six-pillars" id="pdfSixPillars"></div>
+              </section>
+              <section class="pdf-report-panel pdf-balance-panel">
+                <div class="pdf-panel-heading"><span>SELECTED YEAR FIVE ELEMENTS</span><h3 id="pdfSixElementsTitle">十二文字の五行バランス</h3></div>
+                <div class="five-elements-chart pdf-elements-chart" id="pdfSixElements"></div>
+              </section>
+            </div>
+            <footer class="pdf-report-footer"><span id="pdfReportFooter"></span><span>四柱推命 鑑定書</span></footer>
+          </article>
+        </div>
+        <button class="primary pdf-download-button" id="pdfDownloadButton" type="button">PDFとして保存 <span>↓</span></button>
+        <p class="pdf-save-note">印刷画面が開いたら、送信先で「PDFに保存」を選択してください。</p>
+      </section>
+      <button class="secondary" id="backButton" type="button">← 入力画面へ戻る</button>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
