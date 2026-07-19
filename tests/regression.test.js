@@ -609,6 +609,17 @@ test('亡神は最優先で4支の変化可能枠を同一五行へ変える', (
   assert.equal(result.scores.water, 6);
 });
 
+test('亡神は中心支の1枠で月支辰も水1まで変化させ無作用2を残す', () => {
+  const states = [
+    context.api.makeBranchState('申', 'minor', 0), context.api.makeBranchState('亥', 'minor', 1),
+    context.api.makeBranchState('辰', 'major', 2), context.api.makeBranchState('子', 'minor', 3),
+  ];
+  context.api.applyNatalBranchTransformations(states, { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 }, '辰', []);
+  assert.equal(context.api.branchStateScores(states[2]).water, 1);
+  assert.equal(states[2].flex.filter(part => part.element === null).reduce((sum,part) => sum + part.amount, 0), 2);
+  assert.equal(states[3].remainingTransformCapacity, 0);
+});
+
 test('亡神成立後も正支の残り変化力で未採用の同系支へ半会を続ける', () => {
   const pillars = {
     hour: ['戊', '申'], day: ['壬', '申'], month: ['庚', '申'], year: ['癸', '亥'],
@@ -726,6 +737,35 @@ test('三合火局の戌は土干がなくても午との半会だけで火1土1
   assert.deepEqual({ ...dog }, { wood: 0, fire: 1, earth: 1, metal: 0, water: 0 });
   assert.deepEqual({ ...tiger }, { wood: 2, fire: 1, earth: 0, metal: 0, water: 0 });
   assert.ok(result.states[3].relations.some(relation => relation.label === '半会' && relation.dualEarth));
+});
+
+test('年運午が中心の三合火局は大運戌を火1土1まで変化させ無作用2を残す', () => {
+  const pillars = { hour: ['壬', '寅'], day: ['壬', '申'], month: ['壬', '辰'], year: ['辛', '亥'] };
+  const result = context.api.resolveSixPillarFiveElements(pillars, ['丙', '戌'], ['丙', '午']);
+  assert.deepEqual({ ...context.api.branchStateScores(result.states[0]) }, { wood: 0, fire: 1, earth: 0, metal: 0, water: 0 });
+  assert.deepEqual({ ...context.api.branchStateScores(result.states[4]) }, { wood: 0, fire: 1, earth: 1, metal: 0, water: 0 });
+  assert.equal(result.states[4].flex.filter(part => part.element === null).reduce((sum,part) => sum + part.amount, 0), 2);
+  assert.deepEqual({ ...context.api.branchStateScores(result.states[5]) }, { wood: 0, fire: 1, earth: 0, metal: 0, water: 0 });
+  assert.equal(result.states[5].remainingTransformCapacity, 0);
+  assert.ok(result.states[1].stamps.includes('疑似局'));
+  assert.ok(result.states[2].stamps.includes('疑似局'));
+  assert.ok(result.states[3].stamps.includes('疑似局'));
+  assert.deepEqual({ ...context.api.branchStateScores(result.states[1]) }, { wood: 0, fire: 0, earth: 0, metal: 0, water: 1 });
+  assert.deepEqual({ ...context.api.branchStateScores(result.states[2]) }, { wood: 0, fire: 0, earth: 0, metal: 0, water: 1 });
+  assert.equal(result.states[2].flex.filter(part => part.element === null).reduce((sum,part) => sum + part.amount, 0), 2);
+  assert.deepEqual({ ...context.api.branchStateScores(result.states[3]) }, { wood: 0, fire: 0, earth: 0, metal: 0, water: 1 });
+});
+
+test('同じ支を共有する亡神・会局・疑似局もそれぞれ同時成立する', () => {
+  const pillars = { hour: ['壬', '申'], day: ['壬', '亥'], month: ['壬', '辰'], year: ['辛', '子'] };
+  const result = context.api.resolveSixPillarFiveElements(pillars, ['甲', '子'], ['甲', '申']);
+  for (const label of ['亡神', '三合水局', '疑似局']) {
+    assert.ok(result.notes.some(note => note.startsWith(label)), label);
+  }
+  assert.ok(result.states[0].stamps.includes('亡神'));
+  assert.ok(result.states[0].stamps.includes('三合水局'));
+  assert.ok(result.states[0].stamps.includes('疑似局'));
+  assert.equal(result.states[4].remainingTransformCapacity, 2);
 });
 
 test('三合木局の成立後も酉戌の半方合金化と戌卯の支合を表示する', () => {

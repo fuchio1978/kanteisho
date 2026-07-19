@@ -116,16 +116,17 @@ function applyTransformationDemands(states,demands,budgets,priority,label){
   }
   return usable.filter(demand=>demand.actual>0);
 }
-function findFormation(states,chars){
+function findFormation(states,chars,excluded=new Set()){
   const used=new Set(),indices=[];
-  for(const char of chars){const index=states.findIndex((state,i)=>state.char===char&&!used.has(i));if(index<0)return null;used.add(index);indices.push(index)}
+  for(const char of chars){const index=states.findIndex((state,i)=>state.char===char&&!used.has(i)&&!excluded.has(i));if(index<0)return null;used.add(index);indices.push(index)}
   return indices;
 }
-function applyFormation(states,entries,priority,label,condition=()=>true,amount=Infinity){
-  for(const [element,chars] of entries){const indices=findFormation(states,chars);if(!indices||!condition(element,chars,indices))continue;
+function applyFormation(states,entries,priority,label,condition=()=>true,amount=Infinity,excluded=new Set()){
+  for(const [element,chars] of entries){const indices=findFormation(states,chars,excluded);if(!indices||!condition(element,chars,indices))continue;
     const resolvedLabel=typeof label==='function'?label(element):label;
-    for(const index of indices){assignFlexible(states[index],element,amount,priority,resolvedLabel);if(Number.isFinite(amount))for(const part of states[index].flex)part.priority=Math.min(part.priority,priority);states[index].transformations.push(resolvedLabel);addStateStamp(states[index],resolvedLabel);addStateRelation(states[index],{type:'formation',label:resolvedLabel,element})}
-    return{element,chars,indices,label:resolvedLabel,priority};
+    const changedByIndex={};
+    for(const index of indices){changedByIndex[index]=assignFlexible(states[index],element,amount,priority,resolvedLabel);if(Number.isFinite(amount))for(const part of states[index].flex)part.priority=Math.min(part.priority,priority);states[index].transformations.push(resolvedLabel);addStateStamp(states[index],resolvedLabel);addStateRelation(states[index],{type:'formation',label:resolvedLabel,element})}
+    return{element,chars,indices,label:resolvedLabel,priority,changedByIndex};
   }
   return null;
 }
@@ -139,26 +140,35 @@ function adjacentPairs(states){const pairs=[];for(let i=0;i<states.length-1;i++)
 function relationFactor(a,b){return[1,.5,.25][Math.min(2,Math.max(0,Math.abs(a-b)-1))]}
 function applyNatalBranchTransformations(states,stemScores,monthBranch,stemElements,options={}){
   const notes=[],pairs=options.adjacentPairs||adjacentPairs(states),distance=options.relationFactor||relationFactor;
-  let complete=applyFormation(states,FORMATIONS.bojin,1,'亡神');
-  if(!complete)complete=applyFormation(states,FORMATIONS.direction,2,element=>({water:'北方合',wood:'東方合',fire:'南方合',metal:'西方合'})[element]);
-  if(!complete)complete=applyFormation(states,FORMATIONS.meeting,3,element=>`三合${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`);
-  if(!complete)complete=applyFormation(states,FORMATIONS.pseudo,4,'疑似局',(element,chars)=>stemElements.includes(element)||monthBranch===chars[0],1);
+  const completes=[],collectFormations=(entries,priority,label,condition,amount)=>{
+    for(const entry of entries){
+      const claimedWithinFormation=new Set();let complete;
+      while((complete=applyFormation(states,[entry],priority,label,condition,amount,claimedWithinFormation))){
+        completes.push(complete);
+        for(const index of complete.indices)claimedWithinFormation.add(index);
+      }
+    }
+  };
+  collectFormations(FORMATIONS.bojin,1,'亡神',()=>true,1);
+  collectFormations(FORMATIONS.direction,2,element=>({water:'北方合',wood:'東方合',fire:'南方合',metal:'西方合'})[element],()=>true,Infinity);
+  collectFormations(FORMATIONS.meeting,3,element=>`三合${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`,()=>true,1);
+  collectFormations(FORMATIONS.pseudo,4,'疑似局',(element,chars)=>stemElements.includes(element)||monthBranch===chars[0],1);
   let formationBudgets=null;
-  if(complete){
-    if(complete.label==='三合火局'){
+  if(completes.length){
+    for(const complete of completes)if(complete.label==='三合火局'){
       const dogIndex=states.findIndex(state=>state.char==='戌'),horseIndex=states.findIndex(state=>state.char==='午');
       if(dogIndex>=0&&horseIndex>=0){const dog=states[dogIndex],fire=branchStateScores(dog).fire,earth=branchStateScores(dog).earth,amount=Math.max(0,fire-earth);if(amount>0){dog.overlays.earth=(dog.overlays.earth||0)+amount;dog.transformations.push(`半会:earth${amount}`);addStateRelation(states[horseIndex],{type:'influence',direction:'out',label:'半会',partner:dogIndex,element:'fire',amount,dualEarth:true});addStateRelation(dog,{type:'influence',direction:'in',label:'半会',partner:horseIndex,element:'fire',amount,dualEarth:true})}}
     }
     formationBudgets=states.map(initialTransformCapacity);
-    const centerByElement={water:'子',wood:'卯',fire:'午',metal:'酉'},source=complete.indices.find(index=>states[index].char===centerByElement[complete.element]);
-    if(source!==undefined){
-      if(complete.label==='亡神'||complete.label.startsWith('三合'))formationBudgets[source]=Math.max(0,formationBudgets[source]-Math.min(1,formationBudgets[source]));
-      else if(['北方合','東方合','南方合','西方合'].includes(complete.label)){const changed=complete.indices.reduce((sum,index)=>sum+states[index].transformations.reduce((partSum,item)=>{const match=item.match(new RegExp(`^${complete.label}:${complete.element}([\\d.]+)$`));return partSum+(match?Number(match[1]):0)},0),0);formationBudgets[source]=Math.max(0,formationBudgets[source]-Math.min(changed,formationBudgets[source]))}
+    for(const complete of completes){
+      const centerByElement={water:'子',wood:'卯',fire:'午',metal:'酉'},source=complete.indices.find(index=>states[index].char===centerByElement[complete.element]);
+      if(source!==undefined){
+        if(complete.label==='亡神'||complete.label.startsWith('三合')){const changed=Object.values(complete.changedByIndex).reduce((sum,amount)=>sum+amount,0);if(changed>0)formationBudgets[source]=Math.max(0,formationBudgets[source]-Math.min(1,formationBudgets[source]));}
+        else if(['北方合','東方合','南方合','西方合'].includes(complete.label)){const changed=complete.indices.reduce((sum,index)=>sum+states[index].transformations.reduce((partSum,item)=>{const match=item.match(new RegExp(`^${complete.label}:${complete.element}([\\d.]+)$`));return partSum+(match?Number(match[1]):0)},0),0);formationBudgets[source]=Math.max(0,formationBudgets[source]-Math.min(changed,formationBudgets[source]))}
+      }
+      if(complete.label==='疑似局'){const changed=Object.values(complete.changedByIndex).reduce((sum,amount)=>sum+amount,0),pseudoCenter=complete.indices[1];if(changed>0)formationBudgets[pseudoCenter]=Math.max(0,formationBudgets[pseudoCenter]-Math.min(1,formationBudgets[pseudoCenter]))}
+      notes.push(`${complete.label}(${complete.chars.join('・')})→${complete.element}`);
     }
-    if(complete.label==='疑似局'){
-      const pseudoCenter=complete.indices[1];formationBudgets[pseudoCenter]=Math.max(0,formationBudgets[pseudoCenter]-Math.min(1,formationBudgets[pseudoCenter]));
-    }
-    notes.push(`${complete.label}(${complete.chars.join('・')})→${complete.element}`);
   }
 
   const blockedPairs=new Set(),pairId=(a,b)=>a<b?`${a}:${b}`:`${b}:${a}`,cold=['亥','子','丑'].includes(monthBranch),hot=['巳','午','未'].includes(monthBranch),budgets=formationBudgets||states.map(initialTransformCapacity),supportDemands=[];
