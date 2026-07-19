@@ -142,6 +142,10 @@
 .five-elements-transformations li{display:grid;grid-template-columns:48px 1fr;gap:8px;padding:3px 0}
 .five-elements-transformations strong{color:var(--blue);font-weight:600;white-space:nowrap}
 .five-elements-calculation-log{margin:7px 0 0;color:#78909c;font:10px/1.5 "Klee One",serif;text-align:left}
+.five-elements-basis-panel{width:min(100%,720px);margin:18px auto 0;padding:0 18px;box-sizing:border-box}
+.five-elements-basis-panel .five-elements-basis-label{margin-top:0}
+.five-elements-basis-panel .five-elements-transformations{max-width:none}
+.six-mode-section .five-elements-basis-panel{margin-top:18px}
 @media(max-width:650px){.five-elements-section{margin-top:44px;padding-top:34px}.five-elements-heading h2{font-size:31px}.five-elements-chart{margin-top:0}.five-elements-score-toggle{margin-top:-8px}.five-elements-scores{margin-top:12px;gap:7px 12px;font-size:12px}}
 
 /* 原命式＋大運＋年運の六柱推命モード */
