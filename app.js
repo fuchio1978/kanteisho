@@ -121,10 +121,10 @@ function findFormation(states,chars){
   for(const char of chars){const index=states.findIndex((state,i)=>state.char===char&&!used.has(i));if(index<0)return null;used.add(index);indices.push(index)}
   return indices;
 }
-function applyFormation(states,entries,priority,label,condition=()=>true){
+function applyFormation(states,entries,priority,label,condition=()=>true,amount=Infinity){
   for(const [element,chars] of entries){const indices=findFormation(states,chars);if(!indices||!condition(element,chars,indices))continue;
     const resolvedLabel=typeof label==='function'?label(element):label;
-    for(const index of indices){assignFlexible(states[index],element,Infinity,priority,resolvedLabel);states[index].transformations.push(resolvedLabel);addStateStamp(states[index],resolvedLabel);addStateRelation(states[index],{type:'formation',label:resolvedLabel,element})}
+    for(const index of indices){assignFlexible(states[index],element,amount,priority,resolvedLabel);if(Number.isFinite(amount))for(const part of states[index].flex)part.priority=Math.min(part.priority,priority);states[index].transformations.push(resolvedLabel);addStateStamp(states[index],resolvedLabel);addStateRelation(states[index],{type:'formation',label:resolvedLabel,element})}
     return{element,chars,indices,label:resolvedLabel,priority};
   }
   return null;
@@ -142,7 +142,7 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
   let complete=applyFormation(states,FORMATIONS.bojin,1,'亡神');
   if(!complete)complete=applyFormation(states,FORMATIONS.direction,2,element=>({water:'北方合',wood:'東方合',fire:'南方合',metal:'西方合'})[element]);
   if(!complete)complete=applyFormation(states,FORMATIONS.meeting,3,element=>`三合${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`);
-  if(!complete)complete=applyFormation(states,FORMATIONS.pseudo,4,'疑似局',(element,chars)=>stemElements.includes(element)||monthBranch===chars[0]);
+  if(!complete)complete=applyFormation(states,FORMATIONS.pseudo,4,'疑似局',(element,chars)=>stemElements.includes(element)||monthBranch===chars[0],1);
   let formationBudgets=null;
   if(complete){
     if(complete.label==='三合火局'){
@@ -154,6 +154,9 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
     if(source!==undefined){
       if(complete.label==='亡神'||complete.label.startsWith('三合'))formationBudgets[source]=Math.max(0,formationBudgets[source]-Math.min(1,formationBudgets[source]));
       else if(['北方合','東方合','南方合','西方合'].includes(complete.label)){const changed=complete.indices.reduce((sum,index)=>sum+states[index].transformations.reduce((partSum,item)=>{const match=item.match(new RegExp(`^${complete.label}:${complete.element}([\\d.]+)$`));return partSum+(match?Number(match[1]):0)},0),0);formationBudgets[source]=Math.max(0,formationBudgets[source]-Math.min(changed,formationBudgets[source]))}
+    }
+    if(complete.label==='疑似局'){
+      const pseudoCenter=complete.indices[1];formationBudgets[pseudoCenter]=Math.max(0,formationBudgets[pseudoCenter]-Math.min(1,formationBudgets[pseudoCenter]));
     }
     notes.push(`${complete.label}(${complete.chars.join('・')})→${complete.element}`);
   }
