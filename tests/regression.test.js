@@ -8,7 +8,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,elementCircleDiameters,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,sixYearOptions,buildSixPillarContext,pdfFortuneCycleContext,pdfReportContext,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,elementCircleDiameters,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,sixYearOptions,buildSixPillarContext,pdfFortuneCycleContext,pdfReportContext,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -22,6 +22,20 @@ function calculate(date, time, localOffset, sex, unknown = false) {
   const text = [pillars.hour, pillars.day, pillars.month, pillars.year].map(x => x ? x.join('') : '？').join(' ');
   return { text, apparent, luck: context.api.getLuckCycles(input, pillars), input, pillars };
 }
+
+test('明治・大正・昭和・平成・令和の元号年を西暦へ換算する', () => {
+  assert.equal(JSON.stringify(context.api.westernDateFromCalendar('meiji', 1, 1, 25)), '{"y":1868,"m":1,"d":25}');
+  assert.equal(JSON.stringify(context.api.westernDateFromCalendar('taisho', 1, 7, 30)), '{"y":1912,"m":7,"d":30}');
+  assert.equal(JSON.stringify(context.api.westernDateFromCalendar('showa', 53, 7, 24)), '{"y":1978,"m":7,"d":24}');
+  assert.equal(JSON.stringify(context.api.westernDateFromCalendar('heisei', 1, 1, 8)), '{"y":1989,"m":1,"d":8}');
+  assert.equal(JSON.stringify(context.api.westernDateFromCalendar('reiwa', 1, 5, 1)), '{"y":2019,"m":5,"d":1}');
+});
+
+test('元号の境界外の日付を受け付けない', () => {
+  assert.throws(() => context.api.westernDateFromCalendar('showa', 64, 1, 8), /存在しない日付/);
+  assert.throws(() => context.api.westernDateFromCalendar('heisei', 1, 1, 7), /存在しない日付/);
+  assert.equal(JSON.stringify(context.api.eraDateFromWestern('showa', 1978, 7, 24)), '{"year":53,"month":7,"day":24}');
+});
 
 test('添付PDFの基準ケース', () => {
   const result = calculate('1977-02-01', '10:00', 25, '女性');

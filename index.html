@@ -21,8 +21,8 @@
         <div class="form-grid">
           <label class="field wide"><span>お名前 <small>任意</small></span><input id="name" name="name" autocomplete="name" placeholder="例）A"></label>
           <fieldset class="field"><legend>性別</legend><div class="segmented"><label><input type="radio" name="sex" value="男性"><span>男性</span></label><label><input type="radio" name="sex" value="女性" checked><span>女性</span></label></div></fieldset>
-          <label class="field"><span>暦</span><select id="calendarSystem" aria-label="暦"><option value="western">西暦</option></select></label>
-          <label class="field"><span>生年月日</span><input id="birthDate" name="birthDate" type="date" min="0001-01-01" max="9999-12-31" value="1977-02-01" required><small class="field-help">例：845年は「0845/08/01」</small></label>
+          <label class="field"><span>暦</span><select id="calendarSystem" aria-label="暦"><option value="meiji">明治</option><option value="taisho">大正</option><option value="showa">昭和</option><option value="heisei">平成</option><option value="reiwa">令和</option><option value="western" selected>西暦</option></select></label>
+          <label class="field"><span>生年月日</span><input id="birthDate" name="birthDate" type="date" min="0001-01-01" max="9999-12-31" value="1977-02-01" required><span class="era-date-input" id="eraDateInput" hidden><span><select id="eraYear" aria-label="元号年"></select><b>年</b></span><span><select id="eraMonth" aria-label="月"></select><b>月</b></span><span><select id="eraDay" aria-label="日"></select><b>日</b></span></span><small class="field-help" id="birthDateHelp">例：845年は「0845/08/01」</small></label>
           <fieldset class="field"><legend>出生時刻</legend><div class="time-row"><input id="birthTime" name="birthTime" type="time" value="10:00"><label class="unknown"><input id="unknownTime" type="checkbox"><span>不明</span></label></div></fieldset>
           <label class="field"><span>標準時経度</span><select id="timezoneLongitude"></select></label>
           <label class="field"><span>半球</span><select id="hemisphere"><option value="north">北半球</option><option value="south">南半球</option></select></label>
