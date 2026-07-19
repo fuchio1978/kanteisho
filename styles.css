@@ -95,7 +95,7 @@
 .hidden-stem-combined b{letter-spacing:.06em}
 .hidden-stem.is-selected{font-weight:600}
 .hidden-wood{color:#4caf2c}.hidden-fire{color:#e32626}.hidden-earth{color:#e58b31}.hidden-metal{color:#6d6d6d}.hidden-water{color:#219fe9}
-.hide-hidden-stems .hidden-stems{display:none!important}
+.hide-hidden-stems .hidden-stems,.hide-hidden-stems .five-elements-basis-panel{display:none!important}
 .hidden-stems-toggle{display:block;margin:8px auto 0;padding:7px 16px;border:1px solid #c7d7df;border-radius:999px;background:#fff;color:#607d8d;font:600 12px "Klee One",serif;cursor:pointer}
 .hidden-stems-toggle:hover{border-color:var(--blue);color:var(--blue)}
 .hidden-stems-toggle:focus-visible{outline:2px solid #8ec1de;outline-offset:2px}
