@@ -116,6 +116,12 @@
 :is(.luck-grid,.annual-grid) .element-grouped{border-color:transparent!important;box-shadow:none}
 :is(.luck-grid,.annual-grid) .element-grouped.fire-earth-root{border-color:transparent!important;box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 6px var(--fire)}
 :is(.luck-grid,.annual-grid) .element-inactive{border-color:transparent!important;box-shadow:none}
+:is(.luck-grid,.annual-grid,.pdf-cycle-kanji) .extra-wood{--extra-element-color:var(--wood)}
+:is(.luck-grid,.annual-grid,.pdf-cycle-kanji) .extra-fire{--extra-element-color:var(--fire)}
+:is(.luck-grid,.annual-grid,.pdf-cycle-kanji) .extra-earth{--extra-element-color:var(--earth)}
+:is(.luck-grid,.annual-grid,.pdf-cycle-kanji) .extra-metal{--extra-element-color:var(--metal)}
+:is(.luck-grid,.annual-grid,.pdf-cycle-kanji) .extra-water{--extra-element-color:var(--water)}
+:is(.luck-grid,.annual-grid) .extra-element-outline{position:absolute;inset:12px;border:3px solid var(--extra-element-color);border-radius:7px;z-index:6;pointer-events:none}
 .cycle-kanji .relation-stamps{position:absolute;left:50%;transform:translateX(-50%);display:flex;justify-content:center;gap:2px;z-index:8;pointer-events:none;white-space:nowrap}
 .cycle-kanji .stem-stamps{top:-13px}.cycle-kanji .branch-stamps{bottom:-13px}
 .cycle-kanji .relation-stamp{display:inline-block;padding:1px 4px;border-radius:5px;font:600 8px/1.3 "Klee One",serif;font-style:normal;letter-spacing:.02em;background:#eef3f5;color:#607783;box-shadow:0 1px 3px rgba(24,55,75,.08)}
@@ -191,6 +197,17 @@
 .pdf-training .pdf-report-type{display:inline-block}
 .pdf-report-person{text-align:right;display:grid;gap:2px;font-family:"Klee One",serif;color:var(--blue)}
 .pdf-report-person strong{font-size:16px}.pdf-report-person span{font-size:10px}
+.pdf-standard-report{position:relative;background:linear-gradient(145deg,#fff 0%,#fff 70%,#f3f9fc 100%)}
+.pdf-standard-report:before{content:"";position:absolute;width:300px;height:300px;border:1px solid #dceaf0;border-radius:50%;right:-130px;bottom:-165px;pointer-events:none}
+.pdf-standard-body{display:grid;grid-template-rows:auto 1fr auto;min-height:0;padding:4px 42px 8px;position:relative;z-index:1}
+.pdf-standard-intro{text-align:center;margin:2px 0 13px}.pdf-standard-intro>span{font:600 8px sans-serif;letter-spacing:.25em;color:#8ca1ac}.pdf-standard-intro h3{margin:3px 0 2px;color:var(--blue);font:500 27px "Klee One",serif}.pdf-standard-intro p{margin:0;color:#8096a2;font-size:10px}
+.pdf-standard-chart-wrap{width:720px;margin:0 auto;align-self:center;position:relative}.pdf-standard-chart-meta{display:flex;justify-content:flex-end;margin:0 1px 5px;color:#7892a0;font:9px "Klee One",serif}
+.standard-chart-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;overflow:hidden;border:1px solid #cbdce4;border-radius:14px;background:#fff;box-shadow:0 10px 28px rgba(29,76,102,.08)}
+.standard-chart-table th,.standard-chart-table td{height:48px;border-right:1px solid #dce6eb;border-bottom:1px solid #dce6eb;text-align:center;padding:4px}.standard-chart-table tr:last-child th,.standard-chart-table tr:last-child td{border-bottom:0}.standard-chart-table th:last-child,.standard-chart-table td:last-child{border-right:0}
+.standard-chart-table thead th{height:43px;background:linear-gradient(110deg,#e9f6fd,#dcedf5);color:#315e77;font:600 14px "Klee One",serif}.standard-chart-table thead th:first-child{width:150px;background:#f5f8f9}.standard-chart-table thead th:nth-child(3){background:linear-gradient(110deg,#dff3fd,#cceafb);color:var(--blue)}
+.standard-chart-table tbody th{background:#f6f9fa;color:#607d8d;font:500 13px "Klee One",serif;letter-spacing:.05em}.standard-chart-table tbody td{background:rgba(255,255,255,.94)}
+.standard-value{font:500 23px "Klee One",serif}.standard-value[data-kind="fortune"],.standard-value[data-kind="god"]{font-size:16px}.standard-empty{color:#b8c5cb}.standard-chart-table .element-wood{color:#46ae31}.standard-chart-table .element-fire{color:#ed3030}.standard-chart-table .element-earth{color:#e99035}.standard-chart-table .element-metal{color:#6f7375}.standard-chart-table .element-water{color:#219fe9}
+.pdf-void-card{width:720px;margin:14px auto 0;border:1px solid #cddfe7;border-radius:13px;overflow:hidden;background:#fff;display:grid;grid-template-columns:180px 1fr;min-height:65px;box-shadow:0 8px 22px rgba(29,76,102,.06)}.pdf-void-card>span{display:grid;place-items:center;background:linear-gradient(120deg,#1766b1,#4aa9d8);color:#fff;font:500 15px "Klee One",serif;letter-spacing:.08em}.pdf-void-card>div{display:flex;align-items:center;justify-content:center;gap:20px}.pdf-void-card small{color:#607d8d;font:13px "Klee One",serif}.pdf-void-card strong{color:var(--blue);font:500 23px "Klee One",serif;letter-spacing:.18em}
 .pdf-report-grid{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1.08fr;gap:12px 14px;min-height:0}
 .pdf-report-panel{border:1px solid #d8e3e8;border-radius:14px;padding:11px 14px;min-width:0;min-height:0;overflow:visible;position:relative}
 .pdf-panel-heading{text-align:left}.pdf-panel-heading h3{font-family:"Klee One",serif;font-size:18px;color:var(--blue);line-height:1.1;margin:2px 0 0}.pdf-panel-heading p{font:10px "Klee One",serif;color:#52798f;margin:3px 0 0}
@@ -267,6 +284,7 @@
 .pdf-cycle-kanji .element-metal{--element-color:var(--metal)}
 .pdf-cycle-kanji .element-water{--element-color:var(--water)}
 .pdf-cycle-kanji .fire-earth-root{border-color:var(--fire);box-shadow:inset 0 0 0 2px #fff,inset 0 0 0 4px var(--earth)}
+.pdf-cycle-kanji .extra-element-outline{position:absolute;inset:7px;border:2px solid var(--extra-element-color);border-radius:5px;z-index:6;pointer-events:none}
 .pdf-cycle-kanji .element-inactive{border-color:transparent!important;box-shadow:none}
 .pdf-annual-note{text-align:right;font:7px "Klee One",serif;color:#8aa0ac;margin:4px 0 0}
 .pdf-download-button{display:block;margin:24px auto 0;padding:14px 26px}.pdf-download-button span{margin-left:20px}
