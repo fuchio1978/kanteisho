@@ -310,7 +310,7 @@ function resolveDownstreamBranch(contextStates,contextValues,value,role,monthBra
   const values=[...contextValues,value],stemScores=EMPTY_SCORES(),stemElements=[];
   for(const item of values)if(item){const element=ELEMENT_BY_CHAR[item[0]];stemScores[element]++;stemElements.push(element)}
   const pairs=Array.from({length:targetIndex},(_,index)=>[index,targetIndex]);
-  applyNatalBranchTransformations(states,stemScores,monthBranch,stemElements,{adjacentPairs:pairs,relationFactor:(a,b)=>a===targetIndex||b===targetIndex?1:relationFactor(a,b),pseudoConditionStateLimit:targetIndex});
+  applyNatalBranchTransformations(states,stemScores,monthBranch,stemElements,{adjacentPairs:pairs,relationFactor:(a,b)=>a===targetIndex||b===targetIndex?1:relationFactor(a,b),pseudoConditionStateLimit:targetIndex+(role==='major'?1:0)});
   applyFireEarthRoot(states,stemElements.includes('earth'));
   return cloneBranchState(states[targetIndex],targetIndex);
 }
@@ -593,13 +593,13 @@ function renderSixMode(x,p,year){const input=document.querySelector('#sixYearInp
 function pdfFortuneCycleContext(x,p,year){
   const selectedYear=Math.trunc(Number(year)),luck=getLuckCycles(x,p),natalValues=[p.hour,p.day,p.month,p.year],natal=resolveNatalFiveElements(p);
   const luckValues=luck.cycles.map(c=>[c.stem,c.branch]);
-  const luckStates=luckValues.map(value=>resolveDownstreamBranch(natal.states,natalValues,value,'major',p.month[1]));
-  const luckModels=elementColumnsModel(luckValues,{branchProfiles:luckStates,connectHorizontal:false});
+  const luckResolutions=luckValues.map(value=>resolveDownstreamPillar(natal.states,natalValues,value,'major',p.month[1]));
+  const luckModels=luckResolutions.map(downstreamPillarColumn);
   const years=Array.from({length:11},(_,i)=>selectedYear-5+i),annualValues=years.map(annualPillarForYear);
-  const annualStates=annualValues.map((value,index)=>{const active=annualRelationLuckForYear(luck,years[index]),luckValue=active?[active.stem,active.branch]:null,luckState=luckValue?resolveDownstreamBranch(natal.states,natalValues,luckValue,'major',p.month[1]):null;return resolveDownstreamBranch(luckState?[...natal.states,luckState]:natal.states,luckValue?[...natalValues,luckValue]:natalValues,value,'minor',p.month[1])});
-  return{selectedYear,luck,luckModels,years,annualModels:elementColumnsModel(annualValues,{branchProfiles:annualStates,connectHorizontal:false}),luckChanges:new Map(luck.cycles.map(c=>[c.start.year,c]))};
+  const annualResolutions=annualValues.map((value,index)=>{const active=annualRelationLuckForYear(luck,years[index]),luckValue=active?[active.stem,active.branch]:null,luckResolution=luckValue?resolveDownstreamPillar(natal.states,natalValues,luckValue,'major',p.month[1]):null;return resolveDownstreamPillar(luckResolution?[...natal.states,luckResolution.state]:natal.states,luckValue?[...natalValues,luckValue]:natalValues,value,'minor',p.month[1])});
+  return{selectedYear,luck,luckModels,years,annualModels:annualResolutions.map(downstreamPillarColumn),luckChanges:new Map(luck.cycles.map(c=>[c.start.year,c]))};
 }
-function pdfCycleKanjiMarkup(model){return model.cells.map(cell=>`<span class="${originalCellClasses(cell)}"${originalCellAttributes(cell)}>${cell.char}</span>`).join('')}
+function pdfCycleKanjiMarkup(model){return model.cells.map(cycleCellMarkup).join('')}
 function pdfLuckMarkup(data){return data.luck.cycles.map((cycle,index)=>{const selected=cycle.start.year<=data.selectedYear&&(index===data.luck.cycles.length-1||data.luck.cycles[index+1].start.year>data.selectedYear);return`<article class="pdf-cycle-card ${selected?'is-selected':''}">${selected?'<span class="pdf-cycle-badge">鑑定年</span>':''}<div class="pdf-cycle-age">${cycle.ageYears}歳${cycle.ageMonths?`${cycle.ageMonths}か月`:''}〜</div><div class="pdf-cycle-date">${cycle.start.year}.${String(cycle.start.month).padStart(2,'0')}</div><div class="pdf-cycle-kanji">${pdfCycleKanjiMarkup(data.luckModels[index])}</div></article>`}).join('')}
 function pdfAnnualMarkup(data){return data.years.map((year,index)=>{const selected=year===data.selectedYear,change=data.luckChanges.get(year);return`<article class="pdf-cycle-card ${selected?'is-selected':''} ${(selected||change)?'has-badge':''}">${selected?'<span class="pdf-cycle-badge">鑑定年</span>':change?`<span class="pdf-cycle-badge luck-change">大運 ${change.stem}${change.branch}</span>`:''}<div class="pdf-cycle-year">${year}</div><div class="pdf-cycle-kanji">${pdfCycleKanjiMarkup(data.annualModels[index])}</div></article>`}).join('')}
 function pdfReportContext(x,p,year){const six=buildSixPillarContext(x,p,year);return{year:six.year,age:six.year-x.y,pre:six.luck.pre,annualValue:six.annualValue,luck:six.luck,natalModel:originalPillarModel(p),natalBalance:natalElementScores(p),sixModel:six.model,sixBalance:six.balance,fortune:pdfFortuneCycleContext(x,p,six.year)}}

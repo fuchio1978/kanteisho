@@ -257,7 +257,10 @@
 .pdf-cycle-date{font:7px "Klee One",serif;color:#8aa0ac;margin:1px 0 5px;white-space:nowrap}
 .pdf-cycle-year{margin-bottom:5px}
 .pdf-cycle-kanji{display:grid;gap:3px}
-.pdf-cycle-kanji .kanji{display:grid;place-items:center;height:43px;border:2px solid var(--element-color,#8ca0ab);border-radius:8px;background:#fff;font:27px "Klee One",serif;color:#111;box-shadow:none}
+.pdf-cycle-kanji .kanji{position:relative;display:grid;place-items:center;height:43px;border:2px solid var(--element-color,#8ca0ab);border-radius:8px;background:#fff;font:27px "Klee One",serif;color:#111;box-shadow:none;overflow:visible}
+.pdf-cycle-kanji .relation-stamps{position:absolute;left:50%;transform:translateX(-50%);display:flex;justify-content:center;gap:1px;z-index:8;white-space:nowrap;pointer-events:none}
+.pdf-cycle-kanji .stem-stamps{top:-8px}.pdf-cycle-kanji .branch-stamps{bottom:-8px}
+.pdf-cycle-kanji .relation-stamp{padding:0 3px;border-radius:4px;font-size:5.5px;line-height:1.35}
 .pdf-cycle-kanji .element-wood{--element-color:var(--wood)}
 .pdf-cycle-kanji .element-fire{--element-color:var(--fire)}
 .pdf-cycle-kanji .element-earth{--element-color:var(--earth)}
