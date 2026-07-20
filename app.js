@@ -140,6 +140,7 @@ function adjacentPairs(states){const pairs=[];for(let i=0;i<states.length-1;i++)
 function relationFactor(a,b){return[1,.5,.25][Math.min(2,Math.max(0,Math.abs(a-b)-1))]}
 function applyNatalBranchTransformations(states,stemScores,monthBranch,stemElements,options={}){
   const notes=[],pairs=options.adjacentPairs||adjacentPairs(states),distance=options.relationFactor||relationFactor;
+  const pseudoConditionLimit=options.pseudoConditionStateLimit??states.length;
   const completes=[],collectFormations=(entries,priority,label,condition,amount)=>{
     for(const entry of entries){
       const claimedWithinFormation=new Set();let complete;
@@ -152,7 +153,7 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
   collectFormations(FORMATIONS.bojin,1,'亡神',()=>true,1);
   collectFormations(FORMATIONS.direction,2,element=>({water:'北方合',wood:'東方合',fire:'南方合',metal:'西方合'})[element],()=>true,Infinity);
   collectFormations(FORMATIONS.meeting,3,element=>`三合${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`,()=>true,1);
-  collectFormations(FORMATIONS.pseudo,4,element=>`疑似${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`,(element,chars)=>stemElements.includes(element)||chars.includes(monthBranch),1);
+  collectFormations(FORMATIONS.pseudo,4,element=>`疑似${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`,(element,chars,indices)=>stemElements.includes(element)||indices.some(index=>index<pseudoConditionLimit&&states[index].char===chars[1]&&states[index].role==='major'),1);
   let formationBudgets=null;
   if(completes.length){
     for(const complete of completes)if(complete.label==='三合火局'){
@@ -309,7 +310,7 @@ function resolveDownstreamBranch(contextStates,contextValues,value,role,monthBra
   const values=[...contextValues,value],stemScores=EMPTY_SCORES(),stemElements=[];
   for(const item of values)if(item){const element=ELEMENT_BY_CHAR[item[0]];stemScores[element]++;stemElements.push(element)}
   const pairs=Array.from({length:targetIndex},(_,index)=>[index,targetIndex]);
-  applyNatalBranchTransformations(states,stemScores,monthBranch,stemElements,{adjacentPairs:pairs,relationFactor:(a,b)=>a===targetIndex||b===targetIndex?1:relationFactor(a,b)});
+  applyNatalBranchTransformations(states,stemScores,monthBranch,stemElements,{adjacentPairs:pairs,relationFactor:(a,b)=>a===targetIndex||b===targetIndex?1:relationFactor(a,b),pseudoConditionStateLimit:targetIndex});
   applyFireEarthRoot(states,stemElements.includes('earth'));
   return cloneBranchState(states[targetIndex],targetIndex);
 }
