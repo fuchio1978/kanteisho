@@ -284,7 +284,8 @@ function resolveStemTransformations(values,states,options={}){
   for(const group of togoGroups)notes.push(`妬合(${group.indices.map(index=>values[index][0]).join('・')})`);
   for(const pair of remainingCandidates){const {index,next,rule}=pair;if(counts.get(index)>1||counts.get(next)>1)continue;
     const forced=options.forceTransformKeys?.has(PAIR_KEY(values[index][0],values[next][0]));
-    if(!forced&&(branchTotals[rule.target]<4||rule.low.some(element=>branchTotals[element]>3)))continue;
+    const lowTotal=rule.low.reduce((sum,element)=>sum+branchTotals[element],0);
+    if(!forced&&(branchTotals[rule.target]<4||lowTotal>3))continue;
     if(!forced&&(index===1||next===1)&&original.some((element,i)=>i!==index&&i!==next&&rule.dayForbidden.includes(element)))continue;
     elements[index]=elements[next]=rule.target;notes.push(`干合(${values[index][0]}・${values[next][0]})→${rule.target}`);
   }

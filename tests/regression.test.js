@@ -1196,6 +1196,32 @@ test('干合は隣接・地支4点・漏財官3点以下を満たすと化気す
   assert.equal(model[0].cells[0].element, 'earth');
 });
 
+test('化金は漏財官の各点ではなく合計が3点以下のときだけ成立する', () => {
+  const base = calculate('1981-11-15', '19:27', 16, '女性');
+  const natalValues = [base.pillars.hour, base.pillars.day, base.pillars.month, base.pillars.year];
+  const natal = context.api.resolveNatalFiveElements(base.pillars);
+
+  const luck = context.api.resolveDownstreamPillar(
+    natal.states, natalValues, ['乙', '巳'], 'major', base.pillars.month[1],
+  );
+  assert.equal(luck.stemElement, 'wood');
+  assert.equal(luck.notes.some(note => note.startsWith('干合(庚・乙)→metal')), false);
+
+  const currentLuck = context.api.resolveDownstreamPillar(
+    natal.states, natalValues, ['癸', '卯'], 'major', base.pillars.month[1],
+  );
+  const annual = context.api.resolveDownstreamPillar(
+    [...natal.states, currentLuck.state],
+    [...natalValues, ['癸', '卯']],
+    context.api.annualPillarForYear(2025),
+    'minor',
+    base.pillars.month[1],
+  );
+  assert.deepEqual(Array.from(annual.value), ['乙', '巳']);
+  assert.equal(annual.stemElement, 'wood');
+  assert.equal(annual.notes.some(note => note.startsWith('干合(庚・乙)→metal')), false);
+});
+
 test('妬合は化気させない', () => {
   const result = context.api.resolveNatalFiveElements({
     hour: ['丁', '卯'], day: ['壬', '亥'], month: ['丁', '卯'], year: ['甲', '辰'],
