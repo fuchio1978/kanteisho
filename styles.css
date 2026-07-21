@@ -196,7 +196,7 @@
 .pdf-report-type{display:none;margin:4px 0 0;padding:2px 8px;border-radius:999px;background:#eaf7ff;color:#198bd0;font:600 8px "Klee One",serif;font-style:normal;letter-spacing:.08em}
 .pdf-training .pdf-report-type{display:inline-block}
 .pdf-report-person{text-align:right;display:grid;gap:2px;font-family:"Klee One",serif;color:var(--blue)}
-.pdf-report-person strong{font-size:16px}.pdf-report-person span{font-size:10px}
+.pdf-report-person strong{font-size:16px}.pdf-report-person span{font-size:10px;white-space:pre-line;line-height:1.45}
 .pdf-standard-report{position:relative;background:linear-gradient(145deg,#fff 0%,#fff 70%,#f3f9fc 100%)}
 .pdf-standard-report:before{content:"";position:absolute;width:300px;height:300px;border:1px solid #dceaf0;border-radius:50%;right:-130px;bottom:-165px;pointer-events:none}
 .pdf-standard-body{display:grid;grid-template-rows:auto 1fr auto;min-height:0;padding:4px 42px 8px;position:relative;z-index:1}
