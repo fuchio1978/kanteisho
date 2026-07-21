@@ -8,7 +8,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,elementCircleDiameters,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -602,6 +602,13 @@ test('五行サークルは1点も読める大きさを保ちながら得点差�
   const capped = context.api.elementCircleDiameters({ wood: 20, fire: 0, earth: 0, metal: 0, water: 0 });
   assert.equal(capped.wood, 160);
   assert.equal(capped.fire, 0);
+});
+
+test('五行得点は整数または小数第1位までで表示する', () => {
+  assert.equal(context.api.formatScore(4), '4');
+  assert.equal(context.api.formatScore(3.4444444444444446), '3.4');
+  assert.equal(context.api.formatScore(4.555555555555555), '4.6');
+  assert.equal(context.api.formatScore(3.5), '3.5');
 });
 
 test('身旺判定は印自と漏財官を集計し月支または大運支への通根を条件にする', () => {

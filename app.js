@@ -525,14 +525,15 @@ function conditionDetails(states,roles){return states.map((state,index)=>{const 
 function elementCircleDiameters(scores){
   return Object.fromEntries(Object.entries(scores).map(([element,score])=>[element,score===0?0:Math.min(160,33+score*16)]));
 }
+function formatScore(value){const rounded=Math.round((Number(value)+Number.EPSILON)*10)/10;return Number.isInteger(rounded)?String(rounded):rounded.toFixed(1)}
 function renderElementCircle(target,data,ariaPrefix='五行得点',options={}){
   if(typeof target==='string')target=document.querySelector(target);if(!target)return;
   const {scores,details,dayMaster,order,notes=[],strength}=data,labels={wood:'木',fire:'火',earth:'土',metal:'金',water:'水'},colors={wood:'#7ed957',fire:'#f42e2e',earth:'#ffae5c',metal:'#898888',water:'#38b6ff'};
   const diameters=elementCircleDiameters(scores);
   const cx=200,cy=190,orbit=112;
   const nodes=order.map((element,index)=>{const score=scores[element],angle=(-90+index*72)*Math.PI/180,x=cx+orbit*Math.cos(angle),y=cy+orbit*Math.sin(angle);if(score===0)return'';const radius=diameters[element]/2,fontSize=Math.max(14,Math.min(32,radius*.72));return`<g class="five-element-node"><circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${colors[element]}"/><text x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" class="element-name" font-size="${fontSize.toFixed(2)}">${labels[element]}</text></g>`}).join('');
-  const scoreList=['wood','fire','earth','metal','water'].map(element=>`<span><i style="--score-color:${colors[element]}"></i>${labels[element]} ${scores[element]}点</span>`).join('');
-  const strengthMarkup=strength?`<div class="body-strength"><span>印自 <b>${strength.inji}点</b></span><span>漏財官 <b>${strength.leakWealthOfficer}点</b></span><strong class="strength-${strength.status==='身旺'?'strong':strength.status==='身弱'?'weak':'middle'}">${strength.status}</strong></div>`:'';
+  const scoreList=['wood','fire','earth','metal','water'].map(element=>`<span><i style="--score-color:${colors[element]}"></i>${labels[element]} ${formatScore(scores[element])}点</span>`).join('');
+  const strengthMarkup=strength?`<div class="body-strength"><span>印自 <b>${formatScore(strength.inji)}点</b></span><span>漏財官 <b>${formatScore(strength.leakWealthOfficer)}点</b></span><strong class="strength-${strength.status==='身旺'?'strong':strength.status==='身弱'?'weak':'middle'}">${strength.status}</strong></div>`:'';
   const conditionList=details.map(item=>`<li><strong>${item.role}</strong><span>${item.phrases.length?item.phrases.join('、'):'成立条件なし'}</span></li>`).join('');
   const basisMarkup=`<p class="five-elements-basis-label">五行変化の根拠</p><ul class="five-elements-transformations">${conditionList}</ul>${notes.length?`<p class="five-elements-calculation-log">成立関係：${notes.join(' ／ ')}</p>`:''}`;
   const basisTarget=typeof options.basisTarget==='string'?document.querySelector(options.basisTarget):options.basisTarget;
