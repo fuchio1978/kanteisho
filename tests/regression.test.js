@@ -220,6 +220,22 @@ test('視太陽時が翌日になる深夜ケース', () => {
   assert.equal(result.text, '甲子 甲午 庚子 丙寅');
 });
 
+test('視太陽時23時台の子刻は翌日の日干を基準に時干を出す', () => {
+  const result = calculate('1966-11-09', '23:00', 19, '男性');
+  assert.equal(result.apparent.getUTCHours(), 23);
+  assert.equal(result.apparent.getUTCMinutes(), 35);
+  assert.equal(result.text, '壬子 壬申 己亥 丙午');
+
+  const before = calculate('1966-11-09', '22:24', 19, '男性');
+  const boundary = calculate('1966-11-09', '22:25', 19, '男性');
+  assert.equal(before.apparent.getUTCHours(), 22);
+  assert.equal(before.apparent.getUTCMinutes(), 59);
+  assert.equal(before.pillars.hour.join(''), '辛亥');
+  assert.equal(boundary.apparent.getUTCHours(), 23);
+  assert.equal(boundary.apparent.getUTCMinutes(), 0);
+  assert.equal(boundary.pillars.hour.join(''), '壬子');
+});
+
 test('添付表の日別均時差を地方時差と合わせて出生時刻へ反映する', () => {
   const july = context.api.correctedBirthTime(1978, 7, 24, 19, 40, 16, 135);
   assert.equal(july.equationOffset, -6);
