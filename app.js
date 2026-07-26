@@ -110,9 +110,17 @@ function lockFlexibleAmount(state,amount,priority){
 }
 function applyTransformationDemands(states,demands,budgets,priority,label){
   const usable=demands.filter(demand=>demand.amount>0&&(demand.consumeSource===false||budgets[demand.source]>0)&&eligibleFlexibleAmount(states[demand.target],priority)>0);
+  const availableBudgets=[...budgets];
+  for(let target=0;target<states.length;target++){
+    const native=nativeTransformElement(states[target].char);
+    const nativeFlexible=states[target].flex.filter(part=>part.element===native&&part.priority>=priority).reduce((sum,part)=>sum+part.amount,0);
+    const incoming=usable.filter(demand=>demand.target===target&&!demand.dualEarth&&demand.element!==native).reduce((sum,demand)=>sum+Math.min(demand.amount,budgets[demand.source]||0),0);
+    availableBudgets[target]=Math.max(0,availableBudgets[target]-Math.min(nativeFlexible,incoming));
+  }
   const bySource=new Map();for(const demand of usable){if(!bySource.has(demand.source))bySource.set(demand.source,[]);bySource.get(demand.source).push(demand)}
-  for(const [source,items] of bySource){let remaining=budgets[source];items.sort((a,b)=>(a.targetOrder??a.priority??priority)-(b.targetOrder??b.priority??priority)||a.target-b.target);for(const item of items){item.provisional=item.consumeSource===false?item.amount:Math.min(item.amount,remaining);if(item.consumeSource!==false)remaining-=item.provisional}}
+  for(const [source,items] of bySource){let remaining=availableBudgets[source];items.sort((a,b)=>(a.targetOrder??a.priority??priority)-(b.targetOrder??b.priority??priority)||a.target-b.target);for(const item of items){item.provisional=item.consumeSource===false?item.amount:Math.min(item.amount,remaining);if(item.consumeSource!==false)remaining-=item.provisional}}
   const byTarget=new Map();for(const demand of usable)if(demand.provisional>0){if(!byTarget.has(demand.target))byTarget.set(demand.target,[]);byTarget.get(demand.target).push(demand)}
+  for(let index=0;index<budgets.length;index++)budgets[index]=Math.min(budgets[index],availableBudgets[index]);
   for(const [target,items] of byTarget){const state=states[target],capacity=eligibleFlexibleAmount(state,priority),sourceTier=source=>source<4?0:source===4?1:2,tierGroups=new Map();
     for(const item of items){const tier=item.equalSourceTier?0:sourceTier(item.source);if(!tierGroups.has(tier))tierGroups.set(tier,[]);tierGroups.get(tier).push(item)}
     let remainingCapacity=capacity;

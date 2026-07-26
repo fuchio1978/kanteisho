@@ -1258,3 +1258,13 @@ test('妬合は化気させない', () => {
   assert.deepEqual(Array.from(result.stemElements), ['fire', 'water', 'fire', 'wood']);
   assert.equal(result.notes.some(note => note.startsWith('干合')), false);
 });
+
+test('亥が卯との半会で木化した場合は水化力を失い丑を水化しない', () => {
+  const result = context.api.resolveNatalFiveElements({
+    hour: ['乙', '丑'], day: ['甲', '辰'], month: ['乙', '卯'], year: ['癸', '亥'],
+  });
+  assert.deepEqual({ ...context.api.branchStateScores(result.states[0]) }, { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 });
+  assert.deepEqual({ ...context.api.branchStateScores(result.states[3]) }, { wood: 1, fire: 0, earth: 0, metal: 0, water: 0 });
+  assert.equal(result.states[0].relations.some(relation => relation.direction === 'in' && relation.element === 'water'), false);
+  assert.equal(result.states[3].remainingTransformCapacity, 0);
+});
