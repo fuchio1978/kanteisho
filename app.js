@@ -140,7 +140,7 @@ function applyFormation(states,entries,priority,label,condition=()=>true,amount=
   for(const [element,chars] of entries){const indices=findFormation(states,chars,excluded);if(!indices||!condition(element,chars,indices))continue;
     const resolvedLabel=typeof label==='function'?label(element):label;
     const changedByIndex={};
-    for(const index of indices){changedByIndex[index]=assignFlexible(states[index],element,amount,priority,resolvedLabel);if(Number.isFinite(amount))for(const part of states[index].flex)part.priority=Math.min(part.priority,priority);states[index].transformations.push(resolvedLabel);addStateStamp(states[index],resolvedLabel);addStateRelation(states[index],{type:'formation',label:resolvedLabel,element})}
+    for(const index of indices){changedByIndex[index]=assignFlexible(states[index],element,amount,priority,resolvedLabel);if(Number.isFinite(amount)&&!resolvedLabel.startsWith('三合'))for(const part of states[index].flex)part.priority=Math.min(part.priority,priority);states[index].transformations.push(resolvedLabel);addStateStamp(states[index],resolvedLabel);addStateRelation(states[index],{type:'formation',label:resolvedLabel,element})}
     return{element,chars,indices,label:resolvedLabel,priority,changedByIndex};
   }
   return null;

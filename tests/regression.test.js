@@ -755,6 +755,21 @@ test('申亥辰の疑似水局は中心の亥1枠で申と辰を各水1にし辰
   assert.equal(pseudo.states[3].remainingTransformCapacity, 0);
 });
 
+test('大運支辰は三合水局・酉との支合・卯との半方合を各1枠に保持する', () => {
+  const result = context.api.resolveSixPillarFiveElements({
+    hour: ['辛', '酉'], day: ['癸', '卯'], month: ['壬', '申'], year: ['甲', '子'],
+  }, ['戊', '辰'], ['丙', '午']);
+  const dragon = result.states[4];
+  assert.deepEqual({ ...context.api.branchStateScores(dragon) }, { wood: 1, fire: 0, earth: 0, metal: 1, water: 1 });
+  assert.ok(dragon.stamps.includes('三合水局'));
+  assert.ok(dragon.stamps.includes('支合'));
+  assert.ok(dragon.relations.some(relation => relation.label === '半方合' && relation.element === 'wood' && relation.amount === 1));
+  const cell = context.api.sixPillarModel({
+    hour: ['辛', '酉'], day: ['癸', '卯'], month: ['壬', '申'], year: ['甲', '子'],
+  }, ['戊', '辰'], ['丙', '午'], result)[4].cells[1];
+  assert.deepEqual([cell.groupElement, cell.innerElement, cell.extraElement], ['wood', 'metal', 'water']);
+});
+
 test('完成方合は東方合・南方合・西方合・北方合の名称で表示する', () => {
   const cases = [
     { branches: ['寅', '卯', '辰', '子'], label: '東方合' },
