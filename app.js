@@ -523,24 +523,24 @@ function bodyStrengthAnalysis(scores,states,dayMaster,majorIndices=[2]){
   const status=!rooted?'身弱':majorRooted&&inji>=leakWealthOfficer*1.2?'身旺':'身中';
   return{inji,leakWealthOfficer,status,rooted,majorRooted,resource};
 }
-function fiveElementStrengths(p){
-  const stems=[p.year?.[0],p.month?.[0],p.day?.[0],p.hour?.[0]],branches=[p.year?.[1],p.month?.[1],p.day?.[1],p.hour?.[1]],f=branches[1],egh=[branches[0],branches[2],branches[3]];
+function fiveElementStrengths(p,extraPillars=[]){
+  const luck=Array.isArray(extraPillars[0])&&extraPillars[0].length>=2?extraPillars[0]:null,annual=Array.isArray(extraPillars[1])&&extraPillars[1].length>=2?extraPillars[1]:null,extras=[luck,annual].filter(Boolean),stems=[p.year?.[0],p.month?.[0],p.day?.[0],p.hour?.[0],...extras.map(value=>value[0])],branches=[p.year?.[1],p.month?.[1],p.day?.[1],p.hour?.[1],...extras.map(value=>value[1])],majorBranches=[p.month?.[1],luck?.[1]].filter(Boolean),egh=[p.year?.[1],p.day?.[1],p.hour?.[1],annual?.[1]].filter(Boolean);
   const count=(values,chars)=>values.filter(value=>chars.includes(value)).length,has=(values,chars)=>count(values,chars)>0,contains=(values,chars)=>[...chars].every(char=>values.includes(char));
   const paired=(left,right,chars)=>chars.includes(left)&&chars.includes(right)&&left!==right;
-  const stemCount=chars=>count(stems,chars),branchCount=chars=>count(branches,chars),outerCount=chars=>count(egh,chars),stemHas=chars=>has(stems,chars),branchHas=chars=>has(branches,chars);
+  const stemCount=chars=>count(stems,chars),branchCount=chars=>count(branches,chars),outerCount=chars=>count(egh,chars),stemHas=chars=>has(stems,chars),branchHas=chars=>has(branches,chars),majorHas=chars=>has(majorBranches,chars);
   const matches=rules=>rules.some(rule=>rule());
   const rules={
     wood:{
       strong:[
         ()=>stemCount('甲乙')>=3&&branchCount('寅卯')>=1,
         ()=>stemCount('甲乙')>=2&&branchCount('寅卯')>=2,
-        ()=>stemCount('甲乙')>=2&&f==='寅'&&outerCount('辰')>=1,
-        ()=>stemCount('甲乙')>=2&&f==='卯'&&outerCount('辰未亥')>=1,
+        ()=>stemCount('甲乙')>=2&&majorHas('寅')&&outerCount('辰')>=1,
+        ()=>stemCount('甲乙')>=2&&majorHas('卯')&&outerCount('辰未亥')>=1,
         ()=>stemCount('甲乙')>=1&&(contains(branches,'寅卯辰')||contains(branches,'卯未亥')),
         ()=>stemHas('甲乙')&&branchCount('寅卯')>=3,
-        ()=>stemHas('甲乙')&&f==='辰'&&outerCount('寅卯')>=2,
-        ()=>stemHas('甲乙')&&'寅卯'.includes(f)&&outerCount('寅卯')>=1,
-        ()=>paired(stems[0],stems[1],'丁壬')&&paired(stems[2],stems[3],'丁壬')&&'寅卯'.includes(f)&&outerCount('寅卯辰未亥')>=2,
+        ()=>stemHas('甲乙')&&majorHas('辰')&&outerCount('寅卯')>=2,
+        ()=>stemHas('甲乙')&&majorHas('寅卯')&&outerCount('寅卯')>=1,
+        ()=>paired(stems[0],stems[1],'丁壬')&&paired(stems[2],stems[3],'丁壬')&&majorHas('寅卯')&&outerCount('寅卯辰未亥')>=2,
       ],
       middle:[
         ()=>stemCount('甲乙')>=3,
@@ -548,8 +548,8 @@ function fiveElementStrengths(p){
         ()=>stemHas('甲乙')&&branchCount('寅卯')>=1,
         ()=>stemHas('甲乙')&&branchCount('辰亥')>=3,
         ()=>branchCount('寅卯')>=2,
-        ()=>f==='寅'&&outerCount('辰')>=1,
-        ()=>f==='卯'&&outerCount('辰未亥')>=1,
+        ()=>majorHas('寅')&&outerCount('辰')>=1,
+        ()=>majorHas('卯')&&outerCount('辰未亥')>=1,
         ()=>contains(branches,'卯未亥')||contains(branches,'卯辰未')||contains(branches,'卯辰亥'),
       ],
     },
@@ -558,13 +558,13 @@ function fiveElementStrengths(p){
         ()=>stemCount('丙丁')>=3&&branchCount('巳午')>=1,
         ()=>stemCount('丙丁')>=3&&branchCount('寅未戌')>=3,
         ()=>stemCount('丙丁')>=2&&branchCount('巳午')>=2,
-        ()=>stemCount('丙丁')>=2&&f==='巳'&&outerCount('未')>=1,
-        ()=>stemCount('丙丁')>=2&&f==='午'&&outerCount('寅未戌')>=1,
+        ()=>stemCount('丙丁')>=2&&majorHas('巳')&&outerCount('未')>=1,
+        ()=>stemCount('丙丁')>=2&&majorHas('午')&&outerCount('寅未戌')>=1,
         ()=>stemCount('丙丁')>=1&&(contains(branches,'巳午未')||contains(branches,'寅午戌')),
         ()=>stemHas('丙丁')&&branchCount('巳午')>=3,
-        ()=>stemHas('丙丁')&&f==='未'&&outerCount('巳午')>=2,
-        ()=>stemHas('丙丁')&&'巳午'.includes(f)&&outerCount('巳午')>=1,
-        ()=>paired(stems[0],stems[1],'戊癸')&&paired(stems[2],stems[3],'戊癸')&&'巳午'.includes(f)&&outerCount('寅巳午未戌')>=2,
+        ()=>stemHas('丙丁')&&majorHas('未')&&outerCount('巳午')>=2,
+        ()=>stemHas('丙丁')&&majorHas('巳午')&&outerCount('巳午')>=1,
+        ()=>paired(stems[0],stems[1],'戊癸')&&paired(stems[2],stems[3],'戊癸')&&majorHas('巳午')&&outerCount('寅巳午未戌')>=2,
       ],
       middle:[
         ()=>stemCount('丙丁')>=3,
@@ -572,8 +572,8 @@ function fiveElementStrengths(p){
         ()=>stemHas('丙丁')&&branchCount('巳午')>=1,
         ()=>stemHas('丙丁')&&branchCount('寅未戌')>=3,
         ()=>branchCount('巳午')>=2,
-        ()=>f==='巳'&&outerCount('未')>=1,
-        ()=>f==='午'&&outerCount('寅未戌')>=1,
+        ()=>majorHas('巳')&&outerCount('未')>=1,
+        ()=>majorHas('午')&&outerCount('寅未戌')>=1,
         ()=>contains(branches,'寅午戌')||contains(branches,'寅午未')||contains(branches,'午未戌'),
       ],
     },
@@ -581,7 +581,7 @@ function fiveElementStrengths(p){
       strong:[
         ()=>stemCount('戊己')>=3&&branchCount('辰巳午未戌')>=1,
         ()=>stemCount('戊己')>=2&&branchCount('辰巳午未戌')>=2,
-        ()=>stemCount('戊己')>=2&&'辰巳午未戌'.includes(f)&&outerCount('丑')>=1,
+        ()=>stemCount('戊己')>=2&&majorHas('辰巳午未戌')&&outerCount('丑')>=1,
         ()=>stemCount('戊己')>=1&&(contains(branches,'巳午未')||contains(branches,'寅午戌')),
         ()=>stemHas('戊己')&&branchCount('辰巳午未戌')>=3,
       ],
@@ -589,7 +589,7 @@ function fiveElementStrengths(p){
         ()=>stemCount('戊己')>=3,
         ()=>stemCount('戊己')>=2&&branchHas('丑辰巳午未戌'),
         ()=>stemHas('戊己')&&branchHas('巳午未'),
-        ()=>stemHas('戊己')&&'辰戌'.includes(f),
+        ()=>stemHas('戊己')&&majorHas('辰戌'),
         ()=>stemHas('戊己')&&outerCount('辰戌')>=2,
         ()=>['丑午','辰巳','辰午','辰未','巳未','巳戌','午未','午戌','未戌'].some(combo=>contains(branches,combo)),
       ],
@@ -598,12 +598,12 @@ function fiveElementStrengths(p){
       strong:[
         ()=>stemCount('庚辛')>=3&&branchCount('申酉')>=1,
         ()=>stemCount('庚辛')>=2&&branchCount('申酉')>=2,
-        ()=>stemCount('庚辛')>=2&&f==='申'&&outerCount('戌')>=1,
-        ()=>stemCount('庚辛')>=2&&f==='酉'&&outerCount('丑巳戌')>=1,
+        ()=>stemCount('庚辛')>=2&&majorHas('申')&&outerCount('戌')>=1,
+        ()=>stemCount('庚辛')>=2&&majorHas('酉')&&outerCount('丑巳戌')>=1,
         ()=>stemCount('庚辛')>=1&&(contains(branches,'申酉戌')||contains(branches,'丑巳酉')),
         ()=>stemHas('庚辛')&&branchCount('申酉')>=3,
-        ()=>stemHas('庚辛')&&f==='戌'&&outerCount('申酉')>=2,
-        ()=>stemHas('庚辛')&&'申酉'.includes(f)&&outerCount('申酉')>=1,
+        ()=>stemHas('庚辛')&&majorHas('戌')&&outerCount('申酉')>=2,
+        ()=>stemHas('庚辛')&&majorHas('申酉')&&outerCount('申酉')>=1,
       ],
       middle:[
         ()=>stemCount('庚辛')>=3,
@@ -611,8 +611,8 @@ function fiveElementStrengths(p){
         ()=>stemHas('庚辛')&&branchCount('申酉')>=1,
         ()=>stemHas('庚辛')&&branchCount('丑戌')>=3,
         ()=>branchCount('申酉')>=2,
-        ()=>f==='申'&&outerCount('戌')>=1,
-        ()=>f==='酉'&&outerCount('丑巳戌')>=1,
+        ()=>majorHas('申')&&outerCount('戌')>=1,
+        ()=>majorHas('酉')&&outerCount('丑巳戌')>=1,
         ()=>contains(branches,'丑巳酉')||contains(branches,'丑酉戌')||contains(branches,'巳酉戌'),
       ],
     },
@@ -621,13 +621,13 @@ function fiveElementStrengths(p){
         ()=>stemCount('壬癸')>=3&&branchCount('子亥')>=1,
         ()=>stemCount('壬癸')>=3&&branchCount('丑辰申')>=3,
         ()=>stemCount('壬癸')>=2&&branchCount('子亥')>=2,
-        ()=>stemCount('壬癸')>=2&&f==='亥'&&outerCount('丑')>=1,
-        ()=>stemCount('壬癸')>=2&&f==='子'&&outerCount('丑辰申')>=1,
+        ()=>stemCount('壬癸')>=2&&majorHas('亥')&&outerCount('丑')>=1,
+        ()=>stemCount('壬癸')>=2&&majorHas('子')&&outerCount('丑辰申')>=1,
         ()=>stemCount('壬癸')>=1&&(contains(branches,'子丑亥')||contains(branches,'子辰申')||contains(branches,'辰申亥')),
         ()=>stemHas('壬癸')&&branchCount('子亥')>=3,
-        ()=>stemHas('壬癸')&&f==='丑'&&outerCount('子亥')>=2,
-        ()=>stemHas('壬癸')&&'子亥'.includes(f)&&outerCount('子亥')>=1,
-        ()=>paired(stems[0],stems[1],'丙辛')&&paired(stems[2],stems[3],'丙辛')&&'子亥'.includes(f)&&outerCount('子丑辰申亥')>=2,
+        ()=>stemHas('壬癸')&&majorHas('丑')&&outerCount('子亥')>=2,
+        ()=>stemHas('壬癸')&&majorHas('子亥')&&outerCount('子亥')>=1,
+        ()=>paired(stems[0],stems[1],'丙辛')&&paired(stems[2],stems[3],'丙辛')&&majorHas('子亥')&&outerCount('子丑辰申亥')>=2,
       ],
       middle:[
         ()=>stemCount('壬癸')>=3,
@@ -635,8 +635,8 @@ function fiveElementStrengths(p){
         ()=>stemHas('壬癸')&&branchCount('子亥')>=1,
         ()=>stemHas('壬癸')&&branchCount('丑辰申')>=3,
         ()=>branchCount('子亥')>=2,
-        ()=>f==='亥'&&outerCount('丑')>=1,
-        ()=>f==='子'&&outerCount('丑辰申')>=1,
+        ()=>majorHas('亥')&&outerCount('丑')>=1,
+        ()=>majorHas('子')&&outerCount('丑辰申')>=1,
         ()=>contains(branches,'子辰申')||contains(branches,'子丑辰')||contains(branches,'子丑申'),
       ],
     },
@@ -648,7 +648,7 @@ function natalElementScores(p){
   const cycle=['wood','fire','earth','metal','water'],dayMaster=resolution.stemElements[1]||ELEMENT_BY_CHAR[p.day?.[0]]||'wood',start=cycle.indexOf(dayMaster);
   return{scores,notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支']),strength:bodyStrengthAnalysis(scores,resolution.states,dayMaster,[2]),elementStrengths:fiveElementStrengths(p),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]};
 }
-function sixElementScores(p,luckValue,annualValue,resolution=resolveSixPillarFiveElements(p,luckValue,annualValue)){const cycle=['wood','fire','earth','metal','water'],dayMaster=resolution.stemElements[1]||ELEMENT_BY_CHAR[p.day?.[0]]||'wood',start=cycle.indexOf(dayMaster);return{scores:resolution.scores,notes:resolution.notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支','大運支','年運支']),strength:bodyStrengthAnalysis(resolution.scores,resolution.states,dayMaster,[2,4]),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]}}
+function sixElementScores(p,luckValue,annualValue,resolution=resolveSixPillarFiveElements(p,luckValue,annualValue)){const cycle=['wood','fire','earth','metal','water'],dayMaster=resolution.stemElements[1]||ELEMENT_BY_CHAR[p.day?.[0]]||'wood',start=cycle.indexOf(dayMaster);return{scores:resolution.scores,notes:resolution.notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支','大運支','年運支']),strength:bodyStrengthAnalysis(resolution.scores,resolution.states,dayMaster,[2,4]),elementStrengths:fiveElementStrengths(p,[luckValue,annualValue]),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]}}
 function formatElementAmount(element,amount){const labels={wood:'木',fire:'火',earth:'土',metal:'金',water:'水'},value=Math.round(amount*100)/100;return`${labels[element]}${value}`}
 function conditionDetails(states,roles){return states.map((state,index)=>{const phrases=[];for(const relation of state.relations){const partner=relation.partner===undefined?'':roles[relation.partner];if(relation.type==='formation')phrases.push(relation.label);else if(relation.type==='pair')phrases.push(`${partner}と${relation.label}`);else if(relation.type==='root')phrases.push(`火土同根で${formatElementAmount('earth',relation.amount)}`);else if(relation.type==='influence'&&relation.direction==='out')phrases.push(`${partner}へ${relation.label}`);else if(relation.type==='influence'){const amount=relation.dualEarth?`火土${Math.round(relation.amount*100)/100}`:formatElementAmount(relation.element,relation.amount);phrases.push(`${partner}からの${relation.label}で${amount}`)}}return{role:roles[index]||`第${index+1}支`,phrases:[...new Set(phrases)]}})}
 function elementCircleDiameters(scores){

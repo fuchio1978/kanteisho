@@ -692,6 +692,27 @@ test('原命式の五行得点データに各五行の強中弱を含める', ()
   assert.match(source, /class="element-strength level-/);
 });
 
+test('六柱推命は原命式に大運・年運を加えて同じ強中弱ロジックを適用する', () => {
+  const pillars = {
+    year: ['丙', '子'], month: ['丁', '丑'], day: ['戊', '巳'], hour: ['己', '午'],
+  };
+  assert.equal(context.api.fiveElementStrengths(pillars).wood, '弱');
+  const six = context.api.sixElementScores(pillars, ['甲', '寅'], ['乙', '卯']);
+  assert.equal(six.elementStrengths.wood, '強');
+  assert.deepEqual(Object.keys(six.elementStrengths), ['wood', 'fire', 'earth', 'metal', 'water']);
+});
+
+test('六柱の強中弱では大運支を月支、年運支を年支と同じ役割で判定する', () => {
+  const pillars = {
+    year: ['甲', '辰'], month: ['乙', '子'], day: ['丙', '丑'], hour: ['丁', '巳'],
+  };
+  assert.equal(context.api.fiveElementStrengths(pillars).wood, '中');
+  assert.equal(context.api.fiveElementStrengths(pillars, [['戊', '寅'], ['己', '午']]).wood, '強', '大運支の寅を月支側として扱う');
+  const annualSide = { ...pillars, year: ['甲', '午'] };
+  assert.equal(context.api.fiveElementStrengths(annualSide, [['戊', '寅'], ['己', '辰']]).wood, '強', '年運支の辰を年支側として扱う');
+  assert.equal(context.api.fiveElementStrengths(annualSide, [['戊', '子'], ['己', '寅']]).wood, '中', '年運支の寅は月支側として扱わない');
+});
+
 test('身旺判定は印自と漏財官を集計し月支または大運支への通根を条件にする', () => {
   const scores = { wood: 3, fire: 1, earth: 0, metal: 3, water: 0 };
   const monthRooted = ['酉', '辰', '巳', '丑'].map((branch, index) => context.api.makeBranchState(branch, index === 2 ? 'major' : 'minor', index));
