@@ -8,7 +8,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -711,6 +711,37 @@ test('六柱の強中弱では大運支を月支、年運支を年支と同じ�
   const annualSide = { ...pillars, year: ['甲', '午'] };
   assert.equal(context.api.fiveElementStrengths(annualSide, [['戊', '寅'], ['己', '辰']]).wood, '強', '年運支の辰を年支側として扱う');
   assert.equal(context.api.fiveElementStrengths(annualSide, [['戊', '子'], ['己', '寅']]).wood, '中', '年運支の寅は月支側として扱わない');
+});
+
+test('推命気温は五行の強中弱と月支温度を表どおり合算する', () => {
+  const allStrong = context.api.destinyTemperature(
+    { wood: '強', fire: '強', earth: '強', metal: '強', water: '強' }, ['巳'],
+  );
+  assert.deepEqual({ ...allStrong.contributions }, { wood: 2, fire: 4, earth: 0, metal: -2, water: -4, monthBranch: 2 });
+  assert.equal(allStrong.total, 2);
+
+  const mixed = context.api.destinyTemperature(
+    { wood: '中', fire: '強', earth: '強', metal: '中', water: '弱' }, ['卯'],
+  );
+  assert.deepEqual({ ...mixed.contributions }, { wood: 1, fire: 4, earth: -2, metal: -1, water: 0, monthBranch: 0 });
+  assert.equal(mixed.total, 2);
+
+  const allWeak = context.api.destinyTemperature(
+    { wood: '弱', fire: '弱', earth: '弱', metal: '弱', water: '弱' }, ['亥'],
+  );
+  assert.equal(allWeak.total, -2);
+});
+
+test('六柱の推命気温は大運支を月支と同じ温度補正に加え、年運支は加えない', () => {
+  const pillars = {
+    year: ['丙', '子'], month: ['丁', '巳'], day: ['戊', '丑'], hour: ['己', '申'],
+  };
+  const natal = context.api.natalElementScores(pillars);
+  const six = context.api.sixElementScores(pillars, ['甲', '亥'], ['乙', '午']);
+  assert.deepEqual([...natal.temperature.majorBranches], ['巳']);
+  assert.deepEqual([...six.temperature.majorBranches], ['巳', '亥']);
+  assert.equal(six.temperature.contributions.monthBranch, 0, '月支巳＋2と大運支亥－2を合算する');
+  assert.match(source, /推命気温/);
 });
 
 test('身旺判定は印自と漏財官を集計し月支または大運支への通根を条件にする', () => {

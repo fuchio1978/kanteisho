@@ -147,6 +147,8 @@
 .five-elements-scores i{width:10px;height:10px;border-radius:50%;background:var(--score-color);display:inline-block}
 .five-elements-scores .element-strength{min-width:1.7em;padding:1px 5px;border-radius:999px;font:600 10px/1.45 "Klee One",serif;text-align:center;font-style:normal}
 .element-strength.level-strong{color:#b62828;background:#fff0f0}.element-strength.level-middle{color:#996b00;background:#fff7dc}.element-strength.level-weak{color:#607d8b;background:#eef4f7}
+.destiny-temperature{display:flex;align-items:center;justify-content:center;gap:9px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
+.destiny-temperature strong{min-width:3.6em;padding:4px 11px;border-radius:999px;color:#146caf;background:#edf7fd;font-size:13px;letter-spacing:.04em}
 .body-strength{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
 .body-strength span{white-space:nowrap}.body-strength b{color:#315f77;font-weight:600}
 .body-strength strong{padding:4px 13px;border-radius:999px;font-size:13px;letter-spacing:.08em}
@@ -251,6 +253,8 @@
 .pdf-training .pdf-elements-chart .five-elements-details{display:block!important;min-width:0}
 .pdf-training .five-elements-scores{display:grid;grid-template-columns:repeat(3,max-content);justify-content:start;gap:3px 8px;margin:0;font-size:8px}
 .pdf-training .five-elements-scores i{width:7px;height:7px}
+.pdf-training .destiny-temperature{justify-content:start;gap:5px;margin:4px 0 0;font-size:7.5px}
+.pdf-training .destiny-temperature strong{min-width:0;padding:1px 6px;font-size:8px}
 .pdf-training .body-strength{justify-content:start;gap:3px 8px;margin:4px 0 0;font-size:7.5px}
 .pdf-training .body-strength strong{padding:1px 6px;font-size:8px}
 .pdf-training .five-elements-basis-label{margin:6px 0 1px;font-size:8px}
