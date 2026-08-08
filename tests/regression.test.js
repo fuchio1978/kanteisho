@@ -749,25 +749,32 @@ test('景色チャートは弱を弱い、中と強を強いとして景色番�
     { wood: '弱', fire: '中', earth: '強', metal: '中', water: '強' }, 'wood',
   );
   assert.equal(number126.number, 126);
-  assert.equal(number126.label, null);
+  assert.equal(number126.label, '甲→癸');
 
   const number46 = context.api.useGodFromStrengths(
     { wood: '弱', fire: '強', earth: '中', metal: '弱', water: '弱' }, 'wood',
   );
   assert.equal(number46.number, 46);
-  assert.equal(number46.label, null);
+  assert.equal(number46.label, '壬');
 
   const number7 = context.api.useGodFromStrengths(
     { wood: '弱', fire: '弱', earth: '中', metal: '弱', water: '弱' }, 'fire',
   );
   assert.equal(number7.number, 7);
-  assert.equal(number7.label, null);
+  assert.equal(number7.label, '甲');
 
   const number155 = context.api.useGodFromStrengths(
     { wood: '中', fire: '強', earth: '中', metal: '強', water: '中' }, 'water',
   );
   assert.equal(number155.number, 155);
-  assert.equal(number155.label, null);
+  assert.equal(number155.label, '地支 亥');
+});
+
+test('景色番号1〜155の用神は新しいPDF資料の候補表を持つ', () => {
+  assert.equal(context.USE_GOD_SOURCE_SEQUENCE?.length, undefined, '内部表は公開APIに含めない');
+  assert.doesNotMatch(source, /PDF本文の個別条件を確認中/);
+  assert.match(source, /USE_GOD_SOURCE_SEQUENCE=\[/);
+  assert.match(source, /PDF本文に記載された十干/);
 });
 
 test('景色番号117はPDF本文どおり日主と月支から十干用神を判定する', () => {

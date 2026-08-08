@@ -660,6 +660,24 @@ function destinyTemperature(elementStrengths,majorBranches=[]){
   const contributions={wood,fire:fireValue,earth,metal,water:waterValue,monthBranch};
   return{total:Object.values(contributions).reduce((sum,value)=>sum+value,0),contributions,majorBranches:majorBranches.filter(Boolean)};
 }
+const USE_GOD_SOURCE_SEQUENCE=[
+  '丙→己→庚','庚','甲→癸→壬→庚→辛','丁→甲→壬','甲→丙','甲','甲','丁→丙','甲→戊','庚',
+  '癸→甲','甲','戊→丙','庚→辛','庚','壬→甲→癸','甲','丙→戊→己','庚','庚→壬→甲',
+  '卯→丙→戊','庚→壬','','庚','丁→甲','癸→辰→丑','庚','壬→癸','甲','丙',
+  '癸→丙','壬→甲→庚','庚→辛','壬','甲→戊','癸→丙','庚→甲','丙→壬→癸','甲→庚','丙→甲→庚',
+  '丙→己','庚','庚→壬→癸','甲','甲→丙','壬→寅→卯','甲→丁→巳→午','丙→丁','庚→辛','庚→壬',
+  '壬→寅→卯','甲→己→午→巳','丁→戊','庚→甲','庚→壬','寅→卯','巳→午→庚','巳→午→壬→癸','甲','丙',
+  '癸→寅→卯','甲→午→巳','戊','庚','庚→壬','寅→卯→丙','巳→午→庚','戊→巳→午→庚','甲→酉','亥→子→甲',
+  '甲→寅→卯','巳→午','戊→壬→癸','庚→壬→甲','子→亥','寅→卯→丙','丁→巳→午','戊→巳→壬→癸','申→庚→甲→壬','子',
+  '卯','庚→巳→午→丁','巳→午→未→戊→壬→癸','申→酉→庚→甲→辛','子→亥','寅→卯','丁→午→巳','巳→午→未→戊','甲→酉→庚→辛','子→亥',
+  '癸→卯','甲→丁→巳→午','丁→丙→巳→午→未→戊','甲→酉→庚','庚→子→亥','申→酉→丙','','壬→癸','甲→壬','',
+  '丙','壬→亥→子','庚','丁→壬','甲→戊','癸','甲','丙','庚→壬','庚',
+  '','庚','壬→癸','甲','丙','癸','子→庚→甲','丁→丙','庚→甲','庚',
+  '癸','甲','丙','','庚','寅→卯→甲→癸','午→丙→巳→甲','巳→午→未→戊','申→酉→庚→甲','子→亥→壬',
+  '丙','甲','','庚→甲','','甲','巳→午','巳→午→未→癸','庚→甲','庚→子→亥',
+  '','午→巳','','庚→辛→甲','','癸→寅→卯→甲','巳→午→甲','丙→巳→午→未','庚','庚',
+  '寅→卯','巳→午→甲→庚','巳→午→未','申→酉→甲→丁→壬','亥',
+];
 function useGodFromStrengths(elementStrengths,dayStem,monthBranch){
   const dayMaster=ELEMENT_BY_CHAR[dayStem]||dayStem;
   const cycle=['wood','fire','earth','metal','water'],dayIndex=cycle.indexOf(dayMaster),relative=dayIndex<0?cycle:[...cycle.slice(dayIndex),...cycle.slice(0,dayIndex)];
@@ -676,7 +694,10 @@ function useGodFromStrengths(elementStrengths,dayStem,monthBranch){
     return{number,label:winter?'甲':'庚',stems:[winter?'甲':'庚'],detail:winter?'亥・子月生まれのため甲':'亥・子月以外のため庚'};
   }
   if(number===117&&dayStem==='丁')return{number,label:'甲からの庚',stems:['甲','庚'],detail:'日主丁は甲からの庚'};
-  return{number,label:null,stems:[],detail:'PDF本文の個別条件を確認中'};
+  const sequence=USE_GOD_SOURCE_SEQUENCE[number-1]||'',items=sequence?sequence.split('→'):[],stems=items.filter(char=>'甲乙丙丁戊己庚辛壬癸'.includes(char)),branches=items.filter(char=>'子丑寅卯辰巳午未申酉戌亥'.includes(char));
+  if(stems.length)return{number,label:stems.join('→'),stems,branches,detail:'PDF本文に記載された十干（条件分岐を含む）'};
+  if(branches.length)return{number,label:`地支 ${branches.join('・')}`,stems:[],branches,detail:'PDF本文は地支で調整（十干指定なし）'};
+  return{number,label:number===23?'該当命式なし':'調整不要',stems:[],branches:[],detail:number===23?'PDF本文では成立しない組み合わせ':'PDF本文では追加の十干指定なし'};
 }
 function natalElementScores(p){
   const resolution=resolveNatalFiveElements(p),{scores,notes}=resolution;
