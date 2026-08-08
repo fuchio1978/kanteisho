@@ -598,6 +598,21 @@ test('五行サークルは月支3点・その他1点で原命式のみを集計
   assert.deepEqual(Array.from(result.order), ['earth', 'metal', 'water', 'wood', 'fire']);
 });
 
+test('日主が干合化気した場合は変化後の五行を自星として扱う', () => {
+  const pillars = {
+    hour: null, day: ['乙', '酉'], month: ['庚', '申'], year: ['癸', '巳'],
+  };
+  const natal = context.api.natalElementScores(pillars);
+  assert.equal(natal.dayMaster, 'metal');
+  assert.equal(natal.order[0], 'metal');
+  assert.equal(natal.strength.inji, natal.scores.earth + natal.scores.metal);
+
+  const six = context.api.sixElementScores(pillars, ['戊', '酉'], ['己', '申']);
+  assert.equal(six.dayMaster, 'metal');
+  assert.equal(six.order[0], 'metal');
+  assert.equal(six.strength.inji, six.scores.earth + six.scores.metal);
+});
+
 test('月支が火土同根なら火3点・土3点を加算する', () => {
   const result = context.api.natalElementScores({
     hour: ['戊', '子'], day: ['甲', '寅'], month: ['乙', '午'], year: ['庚', '申'],
