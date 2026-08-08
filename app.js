@@ -523,10 +523,130 @@ function bodyStrengthAnalysis(scores,states,dayMaster,majorIndices=[2]){
   const status=!rooted?'身弱':majorRooted&&inji>=leakWealthOfficer*1.2?'身旺':'身中';
   return{inji,leakWealthOfficer,status,rooted,majorRooted,resource};
 }
+function fiveElementStrengths(p){
+  const stems=[p.year?.[0],p.month?.[0],p.day?.[0],p.hour?.[0]],branches=[p.year?.[1],p.month?.[1],p.day?.[1],p.hour?.[1]],f=branches[1],egh=[branches[0],branches[2],branches[3]];
+  const count=(values,chars)=>values.filter(value=>chars.includes(value)).length,has=(values,chars)=>count(values,chars)>0,contains=(values,chars)=>[...chars].every(char=>values.includes(char));
+  const paired=(left,right,chars)=>chars.includes(left)&&chars.includes(right)&&left!==right;
+  const stemCount=chars=>count(stems,chars),branchCount=chars=>count(branches,chars),outerCount=chars=>count(egh,chars),stemHas=chars=>has(stems,chars),branchHas=chars=>has(branches,chars);
+  const matches=rules=>rules.some(rule=>rule());
+  const rules={
+    wood:{
+      strong:[
+        ()=>stemCount('甲乙')>=3&&branchCount('寅卯')>=1,
+        ()=>stemCount('甲乙')>=2&&branchCount('寅卯')>=2,
+        ()=>stemCount('甲乙')>=2&&f==='寅'&&outerCount('辰')>=1,
+        ()=>stemCount('甲乙')>=2&&f==='卯'&&outerCount('辰未亥')>=1,
+        ()=>stemCount('甲乙')>=1&&(contains(branches,'寅卯辰')||contains(branches,'卯未亥')),
+        ()=>stemHas('甲乙')&&branchCount('寅卯')>=3,
+        ()=>stemHas('甲乙')&&f==='辰'&&outerCount('寅卯')>=2,
+        ()=>stemHas('甲乙')&&'寅卯'.includes(f)&&outerCount('寅卯')>=1,
+        ()=>paired(stems[0],stems[1],'丁壬')&&paired(stems[2],stems[3],'丁壬')&&'寅卯'.includes(f)&&outerCount('寅卯辰未亥')>=2,
+      ],
+      middle:[
+        ()=>stemCount('甲乙')>=3,
+        ()=>stemCount('甲乙')>=2&&branchHas('寅卯辰未亥'),
+        ()=>stemHas('甲乙')&&branchCount('寅卯')>=1,
+        ()=>stemHas('甲乙')&&branchCount('辰亥')>=3,
+        ()=>branchCount('寅卯')>=2,
+        ()=>f==='寅'&&outerCount('辰')>=1,
+        ()=>f==='卯'&&outerCount('辰未亥')>=1,
+        ()=>contains(branches,'卯未亥')||contains(branches,'卯辰未')||contains(branches,'卯辰亥'),
+      ],
+    },
+    fire:{
+      strong:[
+        ()=>stemCount('丙丁')>=3&&branchCount('巳午')>=1,
+        ()=>stemCount('丙丁')>=3&&branchCount('寅未戌')>=3,
+        ()=>stemCount('丙丁')>=2&&branchCount('巳午')>=2,
+        ()=>stemCount('丙丁')>=2&&f==='巳'&&outerCount('未')>=1,
+        ()=>stemCount('丙丁')>=2&&f==='午'&&outerCount('寅未戌')>=1,
+        ()=>stemCount('丙丁')>=1&&(contains(branches,'巳午未')||contains(branches,'寅午戌')),
+        ()=>stemHas('丙丁')&&branchCount('巳午')>=3,
+        ()=>stemHas('丙丁')&&f==='未'&&outerCount('巳午')>=2,
+        ()=>stemHas('丙丁')&&'巳午'.includes(f)&&outerCount('巳午')>=1,
+        ()=>paired(stems[0],stems[1],'戊癸')&&paired(stems[2],stems[3],'戊癸')&&'巳午'.includes(f)&&outerCount('寅巳午未戌')>=2,
+      ],
+      middle:[
+        ()=>stemCount('丙丁')>=3,
+        ()=>stemCount('丙丁')>=2&&branchHas('寅巳午未戌'),
+        ()=>stemHas('丙丁')&&branchCount('巳午')>=1,
+        ()=>stemHas('丙丁')&&branchCount('寅未戌')>=3,
+        ()=>branchCount('巳午')>=2,
+        ()=>f==='巳'&&outerCount('未')>=1,
+        ()=>f==='午'&&outerCount('寅未戌')>=1,
+        ()=>contains(branches,'寅午戌')||contains(branches,'寅午未')||contains(branches,'午未戌'),
+      ],
+    },
+    earth:{
+      strong:[
+        ()=>stemCount('戊己')>=3&&branchCount('辰巳午未戌')>=1,
+        ()=>stemCount('戊己')>=2&&branchCount('辰巳午未戌')>=2,
+        ()=>stemCount('戊己')>=2&&'辰巳午未戌'.includes(f)&&outerCount('丑')>=1,
+        ()=>stemCount('戊己')>=1&&(contains(branches,'巳午未')||contains(branches,'寅午戌')),
+        ()=>stemHas('戊己')&&branchCount('辰巳午未戌')>=3,
+      ],
+      middle:[
+        ()=>stemCount('戊己')>=3,
+        ()=>stemCount('戊己')>=2&&branchHas('丑辰巳午未戌'),
+        ()=>stemHas('戊己')&&branchHas('巳午未'),
+        ()=>stemHas('戊己')&&'辰戌'.includes(f),
+        ()=>stemHas('戊己')&&outerCount('辰戌')>=2,
+        ()=>['丑午','辰巳','辰午','辰未','巳未','巳戌','午未','午戌','未戌'].some(combo=>contains(branches,combo)),
+      ],
+    },
+    metal:{
+      strong:[
+        ()=>stemCount('庚辛')>=3&&branchCount('申酉')>=1,
+        ()=>stemCount('庚辛')>=2&&branchCount('申酉')>=2,
+        ()=>stemCount('庚辛')>=2&&f==='申'&&outerCount('戌')>=1,
+        ()=>stemCount('庚辛')>=2&&f==='酉'&&outerCount('丑巳戌')>=1,
+        ()=>stemCount('庚辛')>=1&&(contains(branches,'申酉戌')||contains(branches,'丑巳酉')),
+        ()=>stemHas('庚辛')&&branchCount('申酉')>=3,
+        ()=>stemHas('庚辛')&&f==='戌'&&outerCount('申酉')>=2,
+        ()=>stemHas('庚辛')&&'申酉'.includes(f)&&outerCount('申酉')>=1,
+      ],
+      middle:[
+        ()=>stemCount('庚辛')>=3,
+        ()=>stemCount('庚辛')>=2&&branchHas('丑巳申酉戌'),
+        ()=>stemHas('庚辛')&&branchCount('申酉')>=1,
+        ()=>stemHas('庚辛')&&branchCount('丑戌')>=3,
+        ()=>branchCount('申酉')>=2,
+        ()=>f==='申'&&outerCount('戌')>=1,
+        ()=>f==='酉'&&outerCount('丑巳戌')>=1,
+        ()=>contains(branches,'丑巳酉')||contains(branches,'丑酉戌')||contains(branches,'巳酉戌'),
+      ],
+    },
+    water:{
+      strong:[
+        ()=>stemCount('壬癸')>=3&&branchCount('子亥')>=1,
+        ()=>stemCount('壬癸')>=3&&branchCount('丑辰申')>=3,
+        ()=>stemCount('壬癸')>=2&&branchCount('子亥')>=2,
+        ()=>stemCount('壬癸')>=2&&f==='亥'&&outerCount('丑')>=1,
+        ()=>stemCount('壬癸')>=2&&f==='子'&&outerCount('丑辰申')>=1,
+        ()=>stemCount('壬癸')>=1&&(contains(branches,'子丑亥')||contains(branches,'子辰申')||contains(branches,'辰申亥')),
+        ()=>stemHas('壬癸')&&branchCount('子亥')>=3,
+        ()=>stemHas('壬癸')&&f==='丑'&&outerCount('子亥')>=2,
+        ()=>stemHas('壬癸')&&'子亥'.includes(f)&&outerCount('子亥')>=1,
+        ()=>paired(stems[0],stems[1],'丙辛')&&paired(stems[2],stems[3],'丙辛')&&'子亥'.includes(f)&&outerCount('子丑辰申亥')>=2,
+      ],
+      middle:[
+        ()=>stemCount('壬癸')>=3,
+        ()=>stemCount('壬癸')>=2&&branchHas('子丑辰申亥'),
+        ()=>stemHas('壬癸')&&branchCount('子亥')>=1,
+        ()=>stemHas('壬癸')&&branchCount('丑辰申')>=3,
+        ()=>branchCount('子亥')>=2,
+        ()=>f==='亥'&&outerCount('丑')>=1,
+        ()=>f==='子'&&outerCount('丑辰申')>=1,
+        ()=>contains(branches,'子辰申')||contains(branches,'子丑辰')||contains(branches,'子丑申'),
+      ],
+    },
+  };
+  return Object.fromEntries(FIVE_ELEMENTS.map(element=>[element,matches(rules[element].strong)?'強':matches(rules[element].middle)?'中':'弱']));
+}
 function natalElementScores(p){
   const resolution=resolveNatalFiveElements(p),{scores,notes}=resolution;
   const cycle=['wood','fire','earth','metal','water'],dayMaster=resolution.stemElements[1]||ELEMENT_BY_CHAR[p.day?.[0]]||'wood',start=cycle.indexOf(dayMaster);
-  return{scores,notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支']),strength:bodyStrengthAnalysis(scores,resolution.states,dayMaster,[2]),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]};
+  return{scores,notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支']),strength:bodyStrengthAnalysis(scores,resolution.states,dayMaster,[2]),elementStrengths:fiveElementStrengths(p),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]};
 }
 function sixElementScores(p,luckValue,annualValue,resolution=resolveSixPillarFiveElements(p,luckValue,annualValue)){const cycle=['wood','fire','earth','metal','water'],dayMaster=resolution.stemElements[1]||ELEMENT_BY_CHAR[p.day?.[0]]||'wood',start=cycle.indexOf(dayMaster);return{scores:resolution.scores,notes:resolution.notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支','大運支','年運支']),strength:bodyStrengthAnalysis(resolution.scores,resolution.states,dayMaster,[2,4]),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]}}
 function formatElementAmount(element,amount){const labels={wood:'木',fire:'火',earth:'土',metal:'金',water:'水'},value=Math.round(amount*100)/100;return`${labels[element]}${value}`}
@@ -537,11 +657,11 @@ function elementCircleDiameters(scores){
 function formatScore(value){const rounded=Math.round((Number(value)+Number.EPSILON)*10)/10;return Number.isInteger(rounded)?String(rounded):rounded.toFixed(1)}
 function renderElementCircle(target,data,ariaPrefix='五行得点',options={}){
   if(typeof target==='string')target=document.querySelector(target);if(!target)return;
-  const {scores,details,dayMaster,order,notes=[],strength}=data,labels={wood:'木',fire:'火',earth:'土',metal:'金',water:'水'},colors={wood:'#7ed957',fire:'#f42e2e',earth:'#ffae5c',metal:'#898888',water:'#38b6ff'};
+  const {scores,details,dayMaster,order,notes=[],strength,elementStrengths}=data,labels={wood:'木',fire:'火',earth:'土',metal:'金',water:'水'},colors={wood:'#7ed957',fire:'#f42e2e',earth:'#ffae5c',metal:'#898888',water:'#38b6ff'};
   const diameters=elementCircleDiameters(scores);
   const cx=200,cy=190,orbit=112;
   const nodes=order.map((element,index)=>{const score=scores[element],angle=(-90+index*72)*Math.PI/180,x=cx+orbit*Math.cos(angle),y=cy+orbit*Math.sin(angle);if(score===0)return'';const radius=diameters[element]/2,fontSize=Math.max(14,Math.min(32,radius*.72));return`<g class="five-element-node"><circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${colors[element]}"/><text x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" class="element-name" font-size="${fontSize.toFixed(2)}">${labels[element]}</text></g>`}).join('');
-  const scoreList=['wood','fire','earth','metal','water'].map(element=>`<span><i style="--score-color:${colors[element]}"></i>${labels[element]} ${formatScore(scores[element])}点</span>`).join('');
+  const scoreList=['wood','fire','earth','metal','water'].map(element=>`<span><i style="--score-color:${colors[element]}"></i>${labels[element]} ${formatScore(scores[element])}点${elementStrengths?` <em class="element-strength level-${elementStrengths[element]==='強'?'strong':elementStrengths[element]==='中'?'middle':'weak'}">${elementStrengths[element]}</em>`:''}</span>`).join('');
   const strengthMarkup=strength?`<div class="body-strength"><span>印自 <b>${formatScore(strength.inji)}点</b></span><span>漏財官 <b>${formatScore(strength.leakWealthOfficer)}点</b></span><strong class="strength-${strength.status==='身旺'?'strong':strength.status==='身弱'?'weak':'middle'}">${strength.status}</strong></div>`:'';
   const conditionList=details.map(item=>`<li><strong>${item.role}</strong><span>${item.phrases.length?item.phrases.join('、'):'成立条件なし'}</span></li>`).join('');
   const basisMarkup=`<p class="five-elements-basis-label">五行変化の根拠</p><ul class="five-elements-transformations">${conditionList}</ul>${notes.length?`<p class="five-elements-calculation-log">成立関係：${notes.join(' ／ ')}</p>`:''}`;

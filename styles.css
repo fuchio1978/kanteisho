@@ -145,6 +145,8 @@
 .five-elements-scores{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin-top:14px;color:#526f7e;font:600 13px "Klee One",serif}
 .five-elements-scores span{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .five-elements-scores i{width:10px;height:10px;border-radius:50%;background:var(--score-color);display:inline-block}
+.five-elements-scores .element-strength{min-width:1.7em;padding:1px 5px;border-radius:999px;font:600 10px/1.45 "Klee One",serif;text-align:center;font-style:normal}
+.element-strength.level-strong{color:#b62828;background:#fff0f0}.element-strength.level-middle{color:#996b00;background:#fff7dc}.element-strength.level-weak{color:#607d8b;background:#eef4f7}
 .body-strength{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
 .body-strength span{white-space:nowrap}.body-strength b{color:#315f77;font-weight:600}
 .body-strength strong{padding:4px 13px;border-radius:999px;font-size:13px;letter-spacing:.08em}

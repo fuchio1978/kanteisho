@@ -8,7 +8,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -653,6 +653,43 @@ test('五行得点は整数または小数第1位までで表示する', () => {
   assert.equal(context.api.formatScore(3.4444444444444446), '3.4');
   assert.equal(context.api.formatScore(4.555555555555555), '4.6');
   assert.equal(context.api.formatScore(3.5), '3.5');
+});
+
+test('写真の八字判定表に従って木火土金水を強・中・弱に分類する', () => {
+  const pillars = (stems, branches) => ({
+    year: [stems[0], branches[0]], month: [stems[1], branches[1]],
+    day: [stems[2], branches[2]], hour: [stems[3], branches[3]],
+  });
+  const cases = {
+    wood: {
+      strong: pillars('甲乙甲丙', '寅子丑巳'), middle: pillars('甲乙甲丙', '子丑巳申'), weak: pillars('丙丁戊己', '子丑巳午'),
+    },
+    fire: {
+      strong: pillars('丙丁丙甲', '巳子丑卯'), middle: pillars('丙丁丙甲', '子丑卯申'), weak: pillars('甲乙庚辛', '子丑卯申'),
+    },
+    earth: {
+      strong: pillars('戊己戊甲', '辰子寅卯'), middle: pillars('戊己戊甲', '子寅卯申'), weak: pillars('甲乙丙丁', '子寅卯申'),
+    },
+    metal: {
+      strong: pillars('庚辛庚甲', '申子寅卯'), middle: pillars('庚辛庚甲', '子寅卯午'), weak: pillars('甲乙丙丁', '子寅卯午'),
+    },
+    water: {
+      strong: pillars('壬癸壬甲', '子寅卯巳'), middle: pillars('壬癸壬甲', '寅卯巳午'), weak: pillars('甲乙丙丁', '寅卯巳午'),
+    },
+  };
+  for (const [element, charts] of Object.entries(cases)) {
+    assert.equal(context.api.fiveElementStrengths(charts.strong)[element], '強', `${element} 強`);
+    assert.equal(context.api.fiveElementStrengths(charts.middle)[element], '中', `${element} 中`);
+    assert.equal(context.api.fiveElementStrengths(charts.weak)[element], '弱', `${element} 弱`);
+  }
+});
+
+test('原命式の五行得点データに各五行の強中弱を含める', () => {
+  const result = context.api.natalElementScores({
+    year: ['甲', '寅'], month: ['乙', '子'], day: ['甲', '丑'], hour: ['丙', '巳'],
+  });
+  assert.deepEqual({ ...result.elementStrengths }, { wood: '強', fire: '中', earth: '弱', metal: '弱', water: '中' });
+  assert.match(source, /class="element-strength level-/);
 });
 
 test('身旺判定は印自と漏財官を集計し月支または大運支への通根を条件にする', () => {
