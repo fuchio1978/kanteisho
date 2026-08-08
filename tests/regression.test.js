@@ -744,26 +744,40 @@ test('六柱の推命気温は大運支を月支と同じ温度補正に加え�
   assert.match(source, /推命気温/);
 });
 
-test('景色チャートは弱を弱い、中と強を強いとして番号と用神干支を取り出す', () => {
+test('景色チャートは弱を弱い、中と強を強いとして景色番号を取り出す', () => {
   const number126 = context.api.useGodFromStrengths(
     { wood: '弱', fire: '中', earth: '強', metal: '中', water: '強' }, 'wood',
   );
-  assert.deepEqual({ ...number126 }, { number: 126, stem: '己', branch: '巳', label: '己巳' });
+  assert.equal(number126.number, 126);
+  assert.equal(number126.label, null);
 
   const number46 = context.api.useGodFromStrengths(
     { wood: '弱', fire: '強', earth: '中', metal: '弱', water: '弱' }, 'wood',
   );
-  assert.deepEqual({ ...number46 }, { number: 46, stem: '己', branch: '酉', label: '己酉' });
+  assert.equal(number46.number, 46);
+  assert.equal(number46.label, null);
 
   const number7 = context.api.useGodFromStrengths(
     { wood: '弱', fire: '弱', earth: '中', metal: '弱', water: '弱' }, 'fire',
   );
-  assert.deepEqual({ ...number7 }, { number: 7, stem: '庚', branch: '午', label: '庚午' });
+  assert.equal(number7.number, 7);
+  assert.equal(number7.label, null);
 
   const number155 = context.api.useGodFromStrengths(
     { wood: '中', fire: '強', earth: '中', metal: '強', water: '中' }, 'water',
   );
-  assert.deepEqual({ ...number155 }, { number: 155, stem: '戊', branch: '戌', label: '戊戌' });
+  assert.equal(number155.number, 155);
+  assert.equal(number155.label, null);
+});
+
+test('景色番号117はPDF本文どおり日主と月支から十干用神を判定する', () => {
+  const strengths = { wood: '弱', fire: '強', earth: '強', metal: '弱', water: '強' };
+  const winterYangFire = context.api.useGodFromStrengths(strengths, '丙', '亥');
+  assert.deepEqual({ ...winterYangFire, stems: [...winterYangFire.stems] }, { number: 117, label: '甲', stems: ['甲'], detail: '亥・子月生まれのため甲' });
+  const otherYangFire = context.api.useGodFromStrengths(strengths, '丙', '寅');
+  assert.deepEqual({ ...otherYangFire, stems: [...otherYangFire.stems] }, { number: 117, label: '庚', stems: ['庚'], detail: '亥・子月以外のため庚' });
+  const yinFire = context.api.useGodFromStrengths(strengths, '丁', '寅');
+  assert.deepEqual({ ...yinFire, stems: [...yinFire.stems] }, { number: 117, label: '甲からの庚', stems: ['甲', '庚'], detail: '日主丁は甲からの庚' });
 });
 
 test('原命式と六柱の五行得点データに用神表示を含める', () => {
@@ -773,9 +787,9 @@ test('原命式と六柱の五行得点データに用神表示を含める', ()
   const natal = context.api.natalElementScores(pillars);
   const six = context.api.sixElementScores(pillars, ['戊', '申'], ['己', '酉']);
   assert.ok(Number.isInteger(natal.useGod.number));
-  assert.match(natal.useGod.label, /^[甲乙丙丁戊己庚辛壬癸][子丑寅卯辰巳午未申酉戌亥]$/);
   assert.ok(Number.isInteger(six.useGod.number));
   assert.match(source, /class="use-god"/);
+  assert.doesNotMatch(source, /地支 \$\{useGod\.branch\}/);
 });
 
 test('身旺判定は印自と漏財官を集計し月支または大運支への通根を条件にする', () => {

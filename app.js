@@ -660,7 +660,8 @@ function destinyTemperature(elementStrengths,majorBranches=[]){
   const contributions={wood,fire:fireValue,earth,metal,water:waterValue,monthBranch};
   return{total:Object.values(contributions).reduce((sum,value)=>sum+value,0),contributions,majorBranches:majorBranches.filter(Boolean)};
 }
-function useGodFromStrengths(elementStrengths,dayMaster){
+function useGodFromStrengths(elementStrengths,dayStem,monthBranch){
+  const dayMaster=ELEMENT_BY_CHAR[dayStem]||dayStem;
   const cycle=['wood','fire','earth','metal','water'],dayIndex=cycle.indexOf(dayMaster),relative=dayIndex<0?cycle:[...cycle.slice(dayIndex),...cycle.slice(0,dayIndex)];
   const strongPositions=relative.map((element,index)=>elementStrengths[element]==='弱'?null:index).filter(index=>index!==null),key=strongPositions.join('');
   const chartBaseByPattern={
@@ -668,17 +669,21 @@ function useGodFromStrengths(elementStrengths,dayMaster){
     '234':76,'134':81,'124':86,'123':91,'01':26,'02':31,'03':36,'04':41,
     '034':96,'024':101,'023':106,'014':111,'013':116,'012':121,'0234':131,'0134':136,'0124':141,'0123':146,'01234':151,
   };
-  const base=chartBaseByPattern[key],number=base===undefined?null:base+Math.max(0,dayIndex),stems='甲乙丙丁戊己庚辛壬癸',branches='子丑寅卯辰巳午未申酉戌亥';
-  if(number===null)return{number:null,stem:null,branch:null,label:'該当なし'};
-  const stem=stems[mod(number-1,stems.length)],branch=branches[mod(number-1,branches.length)];
-  return{number,stem,branch,label:`${stem}${branch}`};
+  const base=chartBaseByPattern[key],number=base===undefined?null:base+Math.max(0,dayIndex);
+  if(number===null)return{number:null,label:null,stems:[],detail:'チャート該当なし'};
+  if(number===117&&dayStem==='丙'){
+    const winter=['亥','子'].includes(monthBranch);
+    return{number,label:winter?'甲':'庚',stems:[winter?'甲':'庚'],detail:winter?'亥・子月生まれのため甲':'亥・子月以外のため庚'};
+  }
+  if(number===117&&dayStem==='丁')return{number,label:'甲からの庚',stems:['甲','庚'],detail:'日主丁は甲からの庚'};
+  return{number,label:null,stems:[],detail:'PDF本文の個別条件を確認中'};
 }
 function natalElementScores(p){
   const resolution=resolveNatalFiveElements(p),{scores,notes}=resolution;
   const cycle=['wood','fire','earth','metal','water'],dayMaster=resolution.stemElements[1]||ELEMENT_BY_CHAR[p.day?.[0]]||'wood',start=cycle.indexOf(dayMaster),elementStrengths=fiveElementStrengths(p);
-  return{scores,notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支']),strength:bodyStrengthAnalysis(scores,resolution.states,dayMaster,[2]),elementStrengths,temperature:destinyTemperature(elementStrengths,[p.month?.[1]]),useGod:useGodFromStrengths(elementStrengths,dayMaster),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]};
+  return{scores,notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支']),strength:bodyStrengthAnalysis(scores,resolution.states,dayMaster,[2]),elementStrengths,temperature:destinyTemperature(elementStrengths,[p.month?.[1]]),useGod:useGodFromStrengths(elementStrengths,p.day?.[0],p.month?.[1]),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]};
 }
-function sixElementScores(p,luckValue,annualValue,resolution=resolveSixPillarFiveElements(p,luckValue,annualValue)){const cycle=['wood','fire','earth','metal','water'],dayMaster=resolution.stemElements[1]||ELEMENT_BY_CHAR[p.day?.[0]]||'wood',start=cycle.indexOf(dayMaster),elementStrengths=fiveElementStrengths(p,[luckValue,annualValue]);return{scores:resolution.scores,notes:resolution.notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支','大運支','年運支']),strength:bodyStrengthAnalysis(resolution.scores,resolution.states,dayMaster,[2,4]),elementStrengths,temperature:destinyTemperature(elementStrengths,[p.month?.[1],luckValue?.[1]]),useGod:useGodFromStrengths(elementStrengths,dayMaster),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]}}
+function sixElementScores(p,luckValue,annualValue,resolution=resolveSixPillarFiveElements(p,luckValue,annualValue)){const cycle=['wood','fire','earth','metal','water'],dayMaster=resolution.stemElements[1]||ELEMENT_BY_CHAR[p.day?.[0]]||'wood',start=cycle.indexOf(dayMaster),elementStrengths=fiveElementStrengths(p,[luckValue,annualValue]);return{scores:resolution.scores,notes:resolution.notes,details:conditionDetails(resolution.states,['時支','日支','月支','年支','大運支','年運支']),strength:bodyStrengthAnalysis(resolution.scores,resolution.states,dayMaster,[2,4]),elementStrengths,temperature:destinyTemperature(elementStrengths,[p.month?.[1],luckValue?.[1]]),useGod:useGodFromStrengths(elementStrengths,p.day?.[0],p.month?.[1]),dayMaster,order:[...cycle.slice(start),...cycle.slice(0,start)]}}
 function formatElementAmount(element,amount){const labels={wood:'木',fire:'火',earth:'土',metal:'金',water:'水'},value=Math.round(amount*100)/100;return`${labels[element]}${value}`}
 function conditionDetails(states,roles){return states.map((state,index)=>{const phrases=[];for(const relation of state.relations){const partner=relation.partner===undefined?'':roles[relation.partner];if(relation.type==='formation')phrases.push(relation.label);else if(relation.type==='pair')phrases.push(`${partner}と${relation.label}`);else if(relation.type==='root')phrases.push(`火土同根で${formatElementAmount('earth',relation.amount)}`);else if(relation.type==='influence'&&relation.direction==='out')phrases.push(`${partner}へ${relation.label}`);else if(relation.type==='influence'){const amount=relation.dualEarth?`火土${Math.round(relation.amount*100)/100}`:formatElementAmount(relation.element,relation.amount);phrases.push(`${partner}からの${relation.label}で${amount}`)}}return{role:roles[index]||`第${index+1}支`,phrases:[...new Set(phrases)]}})}
 function elementCircleDiameters(scores){
@@ -693,13 +698,13 @@ function renderElementCircle(target,data,ariaPrefix='五行得点',options={}){
   const nodes=order.map((element,index)=>{const score=scores[element],angle=(-90+index*72)*Math.PI/180,x=cx+orbit*Math.cos(angle),y=cy+orbit*Math.sin(angle);if(score===0)return'';const radius=diameters[element]/2,fontSize=Math.max(14,Math.min(32,radius*.72));return`<g class="five-element-node"><circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${colors[element]}"/><text x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" class="element-name" font-size="${fontSize.toFixed(2)}">${labels[element]}</text></g>`}).join('');
   const scoreList=['wood','fire','earth','metal','water'].map(element=>`<span><i style="--score-color:${colors[element]}"></i>${labels[element]} ${formatScore(scores[element])}点${elementStrengths?` <em class="element-strength level-${elementStrengths[element]==='強'?'strong':elementStrengths[element]==='中'?'middle':'weak'}">${elementStrengths[element]}</em>`:''}</span>`).join('');
   const temperatureMarkup=temperature?`<div class="destiny-temperature"><span>推命気温</span><strong>${temperature.total>0?'＋':''}${temperature.total}度</strong></div>`:'';
-  const useGodMarkup=useGod?`<div class="use-god"><span>用神</span><strong>${useGod.label}</strong>${useGod.number?`<small>景色番号 ${useGod.number}（天干 ${useGod.stem}／地支 ${useGod.branch}）</small>`:'<small>チャート該当なし</small>'}</div>`:'';
+  const useGodMarkup=useGod?`<div class="use-god"><span>用神</span>${useGod.label?`<strong>${useGod.label}</strong>`:'<strong class="is-pending">—</strong>'}<small>${useGod.number?`景色番号 ${useGod.number}（${useGod.detail}）`:'チャート該当なし'}</small></div>`:'';
   const strengthMarkup=strength?`<div class="body-strength"><span>印自 <b>${formatScore(strength.inji)}点</b></span><span>漏財官 <b>${formatScore(strength.leakWealthOfficer)}点</b></span><strong class="strength-${strength.status==='身旺'?'strong':strength.status==='身弱'?'weak':'middle'}">${strength.status}</strong></div>`:'';
   const conditionList=details.map(item=>`<li><strong>${item.role}</strong><span>${item.phrases.length?item.phrases.join('、'):'成立条件なし'}</span></li>`).join('');
   const basisMarkup=`<p class="five-elements-basis-label">五行変化の根拠</p><ul class="five-elements-transformations">${conditionList}</ul>${notes.length?`<p class="five-elements-calculation-log">成立関係：${notes.join(' ／ ')}</p>`:''}`;
   const basisTarget=typeof options.basisTarget==='string'?document.querySelector(options.basisTarget):options.basisTarget;
   if(basisTarget)basisTarget.innerHTML=basisMarkup;
-  target.innerHTML=`<svg viewBox="0 0 400 360" role="img" aria-label="${ariaPrefix}。日主は${labels[dayMaster]}。${scoreList.replace(/<[^>]+>/g,' ')}${temperature?`。推命気温${temperature.total}度`:''}${useGod?`。用神${useGod.label}`:''}"><circle class="five-elements-orbit" cx="${cx}" cy="${cy}" r="${orbit}"/>${nodes}</svg><button class="five-elements-score-toggle" type="button" aria-expanded="false">点数を表示</button><div class="five-elements-details" hidden><div class="five-elements-scores">${scoreList}</div>${temperatureMarkup}${useGodMarkup}${strengthMarkup}${basisTarget?'':basisMarkup}</div>`;
+  target.innerHTML=`<svg viewBox="0 0 400 360" role="img" aria-label="${ariaPrefix}。日主は${labels[dayMaster]}。${scoreList.replace(/<[^>]+>/g,' ')}${temperature?`。推命気温${temperature.total}度`:''}${useGod?.label?`。用神${useGod.label}`:''}"><circle class="five-elements-orbit" cx="${cx}" cy="${cy}" r="${orbit}"/>${nodes}</svg><button class="five-elements-score-toggle" type="button" aria-expanded="false">点数を表示</button><div class="five-elements-details" hidden><div class="five-elements-scores">${scoreList}</div>${temperatureMarkup}${useGodMarkup}${strengthMarkup}${basisTarget?'':basisMarkup}</div>`;
   const button=target.querySelector('.five-elements-score-toggle'),detailsPanel=target.querySelector('.five-elements-details');
   button.onclick=()=>{detailsPanel.hidden=!detailsPanel.hidden;button.setAttribute('aria-expanded',String(!detailsPanel.hidden));button.textContent=detailsPanel.hidden?'点数を表示':'点数を非表示'};
 }

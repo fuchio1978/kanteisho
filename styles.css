@@ -151,6 +151,7 @@
 .destiny-temperature strong{min-width:3.6em;padding:4px 11px;border-radius:999px;color:#146caf;background:#edf7fd;font-size:13px;letter-spacing:.04em}
 .use-god{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 9px;margin:8px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
 .use-god strong{padding:4px 13px;border-radius:999px;color:#fff;background:linear-gradient(135deg,#2179b9,#45a9d3);font-size:14px;letter-spacing:.12em}
+.use-god strong.is-pending{color:#78909c;background:#eef4f7}
 .use-god small{color:#78909c;font-size:10px;font-weight:500}
 .body-strength{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
 .body-strength span{white-space:nowrap}.body-strength b{color:#315f77;font-weight:600}
