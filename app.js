@@ -664,15 +664,16 @@ function useGodTextForDayStem(text,dayStem,applicableDayMasters){
   const value=String(text||'').trim(),masters=[...String(applicableDayMasters||'')].filter(char=>'甲乙丙丁戊己庚辛壬癸'.includes(char));
   if(!value||masters.length<2||!masters.includes(dayStem))return value;
   const startsAs=(part,stem)=>{const trimmed=part.trimStart();return [`${stem}→`,`${stem}＝`,`${stem}=`,`${stem}は`].some(prefix=>trimmed.startsWith(prefix))};
+  const withoutDayStemPrefix=result=>result.trim().replace(new RegExp(`^${dayStem}(?:→|＝|=|は)\\s*`),'');
   const partOwner=part=>masters.find(stem=>startsAs(part,stem))||null;
   const slashParts=value.split('／');
   if(slashParts.length>1&&partOwner(slashParts[0])){
     let owner=null;
-    return slashParts.filter(part=>{owner=partOwner(part)||owner;return owner===dayStem}).join('／');
+    return withoutDayStemPrefix(slashParts.filter(part=>{owner=partOwner(part)||owner;return owner===dayStem}).join('／'));
   }
   let sentenceFiltered=value;
   for(const stem of masters.filter(stem=>stem!==dayStem))sentenceFiltered=sentenceFiltered.replace(new RegExp(`${stem}(?:は|＝)[^。]*(?:。|$)`,'g'),'');
-  if(sentenceFiltered!==value)return sentenceFiltered.trim();
+  if(sentenceFiltered!==value)return withoutDayStemPrefix(sentenceFiltered);
   return value;
 }
 function useGodFromStrengths(elementStrengths,dayStem,monthBranch){

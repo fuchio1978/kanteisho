@@ -803,19 +803,19 @@ test('景色番号117は日主別の用神・景色・理由と共通事項だ�
   const strengths = { wood: '弱', fire: '強', earth: '強', metal: '弱', water: '強' };
   const bing = context.api.useGodFromStrengths(strengths, '丙', '亥');
   assert.equal(bing.number, 117);
-  assert.equal(bing.label, '丙→（冬月）甲（木）／それ以外は庚（岩石）');
-  assert.equal(bing.landscape, '丙＝湖のある山に沈む大きな夕日');
-  assert.match(bing.reason, /^丙は寒い季節は木/);
+  assert.equal(bing.label, '（冬月）甲（木）／それ以外は庚（岩石）');
+  assert.equal(bing.landscape, '湖のある山に沈む大きな夕日');
+  assert.match(bing.reason, /^寒い季節は木/);
   assert.doesNotMatch(`${bing.label}${bing.landscape}${bing.reason}`, /丁/);
-  assert.deepEqual([...bing.stems], ['丙', '甲', '庚']);
+  assert.deepEqual([...bing.stems], ['甲', '庚']);
 
   const ding = context.api.useGodFromStrengths(strengths, '丁', '亥');
   assert.equal(ding.number, 117);
-  assert.equal(ding.label, '丁→甲（木）＋庚（岩石）');
-  assert.match(ding.landscape, /^丁＝泥の上で燃える灯火/);
-  assert.match(ding.reason, /^丁は木で土の力/);
+  assert.equal(ding.label, '甲（木）＋庚（岩石）');
+  assert.match(ding.landscape, /^泥の上で燃える灯火/);
+  assert.match(ding.reason, /^木で土の力/);
   assert.doesNotMatch(`${ding.label}${ding.landscape}${ding.reason}`, /丙/);
-  assert.deepEqual([...ding.stems], ['丁', '甲', '庚']);
+  assert.deepEqual([...ding.stems], ['甲', '庚']);
 });
 
 test('原命式と六柱の五行得点データに用神表示を含める', () => {
