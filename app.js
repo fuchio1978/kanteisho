@@ -660,6 +660,21 @@ function destinyTemperature(elementStrengths,majorBranches=[]){
   const contributions={wood,fire:fireValue,earth,metal,water:waterValue,monthBranch};
   return{total:Object.values(contributions).reduce((sum,value)=>sum+value,0),contributions,majorBranches:majorBranches.filter(Boolean)};
 }
+function useGodTextForDayStem(text,dayStem,applicableDayMasters){
+  const value=String(text||'').trim(),masters=[...String(applicableDayMasters||'')].filter(char=>'甲乙丙丁戊己庚辛壬癸'.includes(char));
+  if(!value||masters.length<2||!masters.includes(dayStem))return value;
+  const startsAs=(part,stem)=>{const trimmed=part.trimStart();return [`${stem}→`,`${stem}＝`,`${stem}=`,`${stem}は`].some(prefix=>trimmed.startsWith(prefix))};
+  const partOwner=part=>masters.find(stem=>startsAs(part,stem))||null;
+  const slashParts=value.split('／');
+  if(slashParts.length>1&&partOwner(slashParts[0])){
+    let owner=null;
+    return slashParts.filter(part=>{owner=partOwner(part)||owner;return owner===dayStem}).join('／');
+  }
+  let sentenceFiltered=value;
+  for(const stem of masters.filter(stem=>stem!==dayStem))sentenceFiltered=sentenceFiltered.replace(new RegExp(`${stem}(?:は|＝)[^。]*(?:。|$)`,'g'),'');
+  if(sentenceFiltered!==value)return sentenceFiltered.trim();
+  return value;
+}
 function useGodFromStrengths(elementStrengths,dayStem,monthBranch){
   const dayMaster=ELEMENT_BY_CHAR[dayStem]||dayStem;
   const cycle=['wood','fire','earth','metal','water'],dayIndex=cycle.indexOf(dayMaster),relative=dayIndex<0?cycle:[...cycle.slice(dayIndex),...cycle.slice(0,dayIndex)];
@@ -673,9 +688,9 @@ function useGodFromStrengths(elementStrengths,dayStem,monthBranch){
   if(number===null)return{number:null,label:null,stems:[],branches:[],detail:'チャート該当なし',landscape:'',reason:''};
   const source=globalThis.USE_GOD_LOOKUP_DATA?.[number-1];
   if(!source||source.number!==number)return{number,label:null,stems:[],branches:[],detail:'用神参照データなし',landscape:'',reason:''};
-  const raw=source.useGod||'',stems=[...new Set([...raw].filter(char=>'甲乙丙丁戊己庚辛壬癸'.includes(char)))],branches=[...new Set([...raw].filter(char=>'子丑寅卯辰巳午未申酉戌亥'.includes(char)))];
+  const raw=useGodTextForDayStem(source.useGod,dayStem,source.dayMaster),landscape=useGodTextForDayStem(source.landscape,dayStem,source.dayMaster),reason=useGodTextForDayStem(source.reason,dayStem,source.dayMaster),stems=[...new Set([...raw].filter(char=>'甲乙丙丁戊己庚辛壬癸'.includes(char)))],branches=[...new Set([...raw].filter(char=>'子丑寅卯辰巳午未申酉戌亥'.includes(char)))];
   const unavailable=number===23||raw==='―';
-  return{number,label:unavailable?'該当する組み合わせは存在しません':raw,raw,stems,branches,detail:`日主 ${source.dayMaster}`,dayMaster:source.dayMaster,landscape:source.landscape||'',reason:source.reason||'',hasAlternatives:/①.*②/s.test(raw),unavailable};
+  return{number,label:unavailable?'該当する組み合わせは存在しません':raw,raw,stems,branches,detail:`日主 ${dayStem}`,dayMaster:source.dayMaster,landscape,reason,hasAlternatives:/①.*②/s.test(raw),unavailable};
 }
 function natalElementScores(p){
   const resolution=resolveNatalFiveElements(p),{scores,notes}=resolution;
