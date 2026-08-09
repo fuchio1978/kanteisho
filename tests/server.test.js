@@ -54,6 +54,7 @@ test('正しいパスワードだけが署名付きCookieを受け取りAPIと�
     const page = await fetch(`${base}/`, {headers: {Cookie: cookie}});
     assert.equal(page.status, 200);
     assert.match(await page.text(), /四柱推命 鑑定書/);
+    assert.match(await (await fetch(`${base}/use-god-data.js`, {headers: {Cookie: cookie}})).text(), /USE_GOD_LOOKUP_DATA/);
 
     const api = await fetch(`${base}/api/status`, {headers: {Cookie: cookie}});
     assert.equal(api.status, 200);

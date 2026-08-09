@@ -149,10 +149,9 @@
 .element-strength.level-strong{color:#b62828;background:#fff0f0}.element-strength.level-middle{color:#996b00;background:#fff7dc}.element-strength.level-weak{color:#607d8b;background:#eef4f7}
 .destiny-temperature{display:flex;align-items:center;justify-content:center;gap:9px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
 .destiny-temperature strong{min-width:3.6em;padding:4px 11px;border-radius:999px;color:#146caf;background:#edf7fd;font-size:13px;letter-spacing:.04em}
-.use-god{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 9px;margin:8px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
-.use-god strong{padding:4px 13px;border-radius:999px;color:#fff;background:linear-gradient(135deg,#2179b9,#45a9d3);font-size:14px;letter-spacing:.12em}
-.use-god strong.is-pending{color:#78909c;background:#eef4f7}
-.use-god small{color:#78909c;font-size:10px;font-weight:500}
+.use-god{width:min(680px,100%);margin:12px auto 0;padding:12px 15px;border:1px solid #d7e6ee;border-radius:16px;background:#f8fcfe;color:#496b7d;font:500 12px/1.75 "Klee One",serif;text-align:left}
+.use-god header{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 10px;margin-bottom:7px;color:#1971b7;font-weight:700}.use-god header span{font-size:14px;letter-spacing:.08em}.use-god header small{color:#78909c;font-size:10px;font-weight:500}
+.use-god dl,.use-god dd{margin:0}.use-god dl>div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;padding:6px 0;border-top:1px solid #e6f0f4}.use-god dt{color:#1971b7;font-weight:700}.use-god dd{white-space:pre-wrap;overflow-wrap:anywhere}.use-god p{margin:8px 0 0;padding:7px 10px;border-radius:10px;background:#fff5dd;color:#8b6615;font-size:10px}
 .body-strength{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
 .body-strength span{white-space:nowrap}.body-strength b{color:#315f77;font-weight:600}
 .body-strength strong{padding:4px 13px;border-radius:999px;font-size:13px;letter-spacing:.08em}
@@ -259,8 +258,7 @@
 .pdf-training .five-elements-scores i{width:7px;height:7px}
 .pdf-training .destiny-temperature{justify-content:start;gap:5px;margin:4px 0 0;font-size:7.5px}
 .pdf-training .destiny-temperature strong{min-width:0;padding:1px 6px;font-size:8px}
-.pdf-training .use-god{justify-content:start;gap:3px 5px;margin:3px 0 0;font-size:7.5px}
-.pdf-training .use-god strong{padding:1px 6px;font-size:8px}.pdf-training .use-god small{font-size:6.5px}
+.pdf-training .use-god{margin:3px 0 0;padding:4px 6px;border-radius:7px;font-size:5.8px;line-height:1.35}.pdf-training .use-god header{gap:2px 4px;margin-bottom:2px}.pdf-training .use-god header span{font-size:6.8px}.pdf-training .use-god header small{font-size:5.4px}.pdf-training .use-god dl>div{grid-template-columns:58px minmax(0,1fr);gap:4px;padding:2px 0}.pdf-training .use-god p{margin-top:2px;padding:2px 4px;font-size:5.2px}
 .pdf-training .body-strength{justify-content:start;gap:3px 8px;margin:4px 0 0;font-size:7.5px}
 .pdf-training .body-strength strong{padding:1px 6px;font-size:8px}
 .pdf-training .five-elements-basis-label{margin:6px 0 1px;font-size:8px}

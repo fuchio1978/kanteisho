@@ -3,11 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 
+const dataSource = fs.readFileSync(require('node:path').join(__dirname, '..', 'use-god-data.js'), 'utf8');
 const source = fs.readFileSync(require('node:path').join(__dirname, '..', 'app.js'), 'utf8');
 const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
-  source.replace(/init\(\);\s*$/, '') +
+  dataSource + '\n' + source.replace(/init\(\);\s*$/, '') +
     ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
   context,
 );
@@ -749,42 +750,63 @@ test('景色チャートは弱を弱い、中と強を強いとして景色番�
     { wood: '弱', fire: '中', earth: '強', metal: '中', water: '強' }, 'wood',
   );
   assert.equal(number126.number, 126);
-  assert.equal(number126.label, '甲→癸');
+  assert.equal(number126.label, '寅・卯（根）＋甲（支柱）→癸（雨）');
+  assert.match(number126.landscape, /剪定された小さな木/);
+  assert.match(number126.reason, /支柱/);
 
   const number46 = context.api.useGodFromStrengths(
     { wood: '弱', fire: '強', earth: '中', metal: '弱', water: '弱' }, 'wood',
   );
   assert.equal(number46.number, 46);
-  assert.equal(number46.label, '壬');
+  assert.equal(number46.label, '壬（川の水）→寅・卯（根）');
 
   const number7 = context.api.useGodFromStrengths(
     { wood: '弱', fire: '弱', earth: '中', metal: '弱', water: '弱' }, 'fire',
   );
   assert.equal(number7.number, 7);
-  assert.equal(number7.label, '甲');
+  assert.equal(number7.label, '甲（木）');
 
   const number155 = context.api.useGodFromStrengths(
     { wood: '中', fire: '強', earth: '中', metal: '強', water: '中' }, 'water',
   );
   assert.equal(number155.number, 155);
-  assert.equal(number155.label, '地支 亥');
+  assert.equal(number155.label, '亥・子（水量）');
 });
 
-test('景色番号1〜155の用神は新しいPDF資料の候補表を持つ', () => {
-  assert.equal(context.USE_GOD_SOURCE_SEQUENCE?.length, undefined, '内部表は公開APIに含めない');
-  assert.doesNotMatch(source, /PDF本文の個別条件を確認中/);
-  assert.match(source, /USE_GOD_SOURCE_SEQUENCE=\[/);
-  assert.match(source, /PDF本文に記載された十干/);
+test('景色番号1〜155はExcelの用神・景色・理由を欠損なく保持する', () => {
+  assert.equal(context.USE_GOD_LOOKUP_DATA.length, 155);
+  assert.deepEqual([...context.USE_GOD_LOOKUP_DATA.map(item => item.number)], Array.from({ length: 155 }, (_, index) => index + 1));
+  for (const item of context.USE_GOD_LOOKUP_DATA) {
+    assert.equal(typeof item.dayMaster, 'string');
+    assert.equal(typeof item.useGod, 'string');
+    assert.equal(typeof item.landscape, 'string');
+    assert.equal(typeof item.reason, 'string');
+  }
+  assert.match(context.USE_GOD_LOOKUP_DATA[2].useGod, /①.*②/);
+  assert.match(context.USE_GOD_LOOKUP_DATA[2].reason, /鑑山|鉱山/);
 });
 
-test('景色番号117はPDF本文どおり日主と月支から十干用神を判定する', () => {
+test('Excelの複数候補と該当なしを表示用データへ反映する', () => {
+  const no3 = context.api.useGodFromStrengths({ wood: '弱', fire: '弱', earth: '強', metal: '弱', water: '弱' }, '戊', '辰');
+  assert.equal(no3.number, 3);
+  assert.equal(no3.hasAlternatives, true);
+  assert.match(no3.label, /①甲.*②庚・辛/);
+
+  const no23 = context.api.useGodFromStrengths({ wood: '弱', fire: '強', earth: '弱', metal: '弱', water: '弱' }, '戊', '午');
+  assert.equal(no23.number, 23);
+  assert.equal(no23.unavailable, true);
+  assert.equal(no23.label, '該当する組み合わせは存在しません');
+  assert.match(no23.reason, /火土同根/);
+});
+
+test('景色番号117はExcelの条件分岐・景色・理由をそのまま返す', () => {
   const strengths = { wood: '弱', fire: '強', earth: '強', metal: '弱', water: '強' };
-  const winterYangFire = context.api.useGodFromStrengths(strengths, '丙', '亥');
-  assert.deepEqual({ ...winterYangFire, stems: [...winterYangFire.stems] }, { number: 117, label: '甲', stems: ['甲'], detail: '亥・子月生まれのため甲' });
-  const otherYangFire = context.api.useGodFromStrengths(strengths, '丙', '寅');
-  assert.deepEqual({ ...otherYangFire, stems: [...otherYangFire.stems] }, { number: 117, label: '庚', stems: ['庚'], detail: '亥・子月以外のため庚' });
-  const yinFire = context.api.useGodFromStrengths(strengths, '丁', '寅');
-  assert.deepEqual({ ...yinFire, stems: [...yinFire.stems] }, { number: 117, label: '甲からの庚', stems: ['甲', '庚'], detail: '日主丁は甲からの庚' });
+  const result = context.api.useGodFromStrengths(strengths, '丙', '亥');
+  assert.equal(result.number, 117);
+  assert.equal(result.label, '丙→（冬月）甲（木）／それ以外は庚（岩石）／丁→甲（木）＋庚（岩石）');
+  assert.match(result.landscape, /湖のある山に沈む大きな夕日/);
+  assert.match(result.reason, /寒い季節は木/);
+  assert.deepEqual([...result.stems], ['丙', '甲', '庚', '丁']);
 });
 
 test('原命式と六柱の五行得点データに用神表示を含める', () => {
@@ -795,7 +817,8 @@ test('原命式と六柱の五行得点データに用神表示を含める', ()
   const six = context.api.sixElementScores(pillars, ['戊', '申'], ['己', '酉']);
   assert.ok(Number.isInteger(natal.useGod.number));
   assert.ok(Number.isInteger(six.useGod.number));
-  assert.match(source, /class="use-god"/);
+  assert.match(source, /対応する景色/);
+  assert.match(source, /用神とする理由/);
   assert.doesNotMatch(source, /地支 \$\{useGod\.branch\}/);
 });
 

@@ -660,24 +660,6 @@ function destinyTemperature(elementStrengths,majorBranches=[]){
   const contributions={wood,fire:fireValue,earth,metal,water:waterValue,monthBranch};
   return{total:Object.values(contributions).reduce((sum,value)=>sum+value,0),contributions,majorBranches:majorBranches.filter(Boolean)};
 }
-const USE_GOD_SOURCE_SEQUENCE=[
-  '丙→己→庚','庚','甲→癸→壬→庚→辛','丁→甲→壬','甲→丙','甲','甲','丁→丙','甲→戊','庚',
-  '癸→甲','甲','戊→丙','庚→辛','庚','壬→甲→癸','甲','丙→戊→己','庚','庚→壬→甲',
-  '卯→丙→戊','庚→壬','','庚','丁→甲','癸→辰→丑','庚','壬→癸','甲','丙',
-  '癸→丙','壬→甲→庚','庚→辛','壬','甲→戊','癸→丙','庚→甲','丙→壬→癸','甲→庚','丙→甲→庚',
-  '丙→己','庚','庚→壬→癸','甲','甲→丙','壬→寅→卯','甲→丁→巳→午','丙→丁','庚→辛','庚→壬',
-  '壬→寅→卯','甲→己→午→巳','丁→戊','庚→甲','庚→壬','寅→卯','巳→午→庚','巳→午→壬→癸','甲','丙',
-  '癸→寅→卯','甲→午→巳','戊','庚','庚→壬','寅→卯→丙','巳→午→庚','戊→巳→午→庚','甲→酉','亥→子→甲',
-  '甲→寅→卯','巳→午','戊→壬→癸','庚→壬→甲','子→亥','寅→卯→丙','丁→巳→午','戊→巳→壬→癸','申→庚→甲→壬','子',
-  '卯','庚→巳→午→丁','巳→午→未→戊→壬→癸','申→酉→庚→甲→辛','子→亥','寅→卯','丁→午→巳','巳→午→未→戊','甲→酉→庚→辛','子→亥',
-  '癸→卯','甲→丁→巳→午','丁→丙→巳→午→未→戊','甲→酉→庚','庚→子→亥','申→酉→丙','','壬→癸','甲→壬','',
-  '丙','壬→亥→子','庚','丁→壬','甲→戊','癸','甲','丙','庚→壬','庚',
-  '','庚','壬→癸','甲','丙','癸','子→庚→甲','丁→丙','庚→甲','庚',
-  '癸','甲','丙','','庚','寅→卯→甲→癸','午→丙→巳→甲','巳→午→未→戊','申→酉→庚→甲','子→亥→壬',
-  '丙','甲','','庚→甲','','甲','巳→午','巳→午→未→癸','庚→甲','庚→子→亥',
-  '','午→巳','','庚→辛→甲','','癸→寅→卯→甲','巳→午→甲','丙→巳→午→未','庚','庚',
-  '寅→卯','巳→午→甲→庚','巳→午→未','申→酉→甲→丁→壬','亥',
-];
 function useGodFromStrengths(elementStrengths,dayStem,monthBranch){
   const dayMaster=ELEMENT_BY_CHAR[dayStem]||dayStem;
   const cycle=['wood','fire','earth','metal','water'],dayIndex=cycle.indexOf(dayMaster),relative=dayIndex<0?cycle:[...cycle.slice(dayIndex),...cycle.slice(0,dayIndex)];
@@ -688,16 +670,12 @@ function useGodFromStrengths(elementStrengths,dayStem,monthBranch){
     '034':96,'024':101,'023':106,'014':111,'013':116,'012':121,'0234':131,'0134':136,'0124':141,'0123':146,'01234':151,
   };
   const base=chartBaseByPattern[key],number=base===undefined?null:base+Math.max(0,dayIndex);
-  if(number===null)return{number:null,label:null,stems:[],detail:'チャート該当なし'};
-  if(number===117&&dayStem==='丙'){
-    const winter=['亥','子'].includes(monthBranch);
-    return{number,label:winter?'甲':'庚',stems:[winter?'甲':'庚'],detail:winter?'亥・子月生まれのため甲':'亥・子月以外のため庚'};
-  }
-  if(number===117&&dayStem==='丁')return{number,label:'甲からの庚',stems:['甲','庚'],detail:'日主丁は甲からの庚'};
-  const sequence=USE_GOD_SOURCE_SEQUENCE[number-1]||'',items=sequence?sequence.split('→'):[],stems=items.filter(char=>'甲乙丙丁戊己庚辛壬癸'.includes(char)),branches=items.filter(char=>'子丑寅卯辰巳午未申酉戌亥'.includes(char));
-  if(stems.length)return{number,label:stems.join('→'),stems,branches,detail:'PDF本文に記載された十干（条件分岐を含む）'};
-  if(branches.length)return{number,label:`地支 ${branches.join('・')}`,stems:[],branches,detail:'PDF本文は地支で調整（十干指定なし）'};
-  return{number,label:number===23?'該当命式なし':'調整不要',stems:[],branches:[],detail:number===23?'PDF本文では成立しない組み合わせ':'PDF本文では追加の十干指定なし'};
+  if(number===null)return{number:null,label:null,stems:[],branches:[],detail:'チャート該当なし',landscape:'',reason:''};
+  const source=globalThis.USE_GOD_LOOKUP_DATA?.[number-1];
+  if(!source||source.number!==number)return{number,label:null,stems:[],branches:[],detail:'用神参照データなし',landscape:'',reason:''};
+  const raw=source.useGod||'',stems=[...new Set([...raw].filter(char=>'甲乙丙丁戊己庚辛壬癸'.includes(char)))],branches=[...new Set([...raw].filter(char=>'子丑寅卯辰巳午未申酉戌亥'.includes(char)))];
+  const unavailable=number===23||raw==='―';
+  return{number,label:unavailable?'該当する組み合わせは存在しません':raw,raw,stems,branches,detail:`日主 ${source.dayMaster}`,dayMaster:source.dayMaster,landscape:source.landscape||'',reason:source.reason||'',hasAlternatives:/①.*②/s.test(raw),unavailable};
 }
 function natalElementScores(p){
   const resolution=resolveNatalFiveElements(p),{scores,notes}=resolution;
@@ -711,6 +689,7 @@ function elementCircleDiameters(scores){
   return Object.fromEntries(Object.entries(scores).map(([element,score])=>[element,score===0?0:Math.min(160,33+score*16)]));
 }
 function formatScore(value){const rounded=Math.round((Number(value)+Number.EPSILON)*10)/10;return Number.isInteger(rounded)?String(rounded):rounded.toFixed(1)}
+function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function renderElementCircle(target,data,ariaPrefix='五行得点',options={}){
   if(typeof target==='string')target=document.querySelector(target);if(!target)return;
   const {scores,details,dayMaster,order,notes=[],strength,elementStrengths,temperature,useGod}=data,labels={wood:'木',fire:'火',earth:'土',metal:'金',water:'水'},colors={wood:'#7ed957',fire:'#f42e2e',earth:'#ffae5c',metal:'#898888',water:'#38b6ff'};
@@ -719,7 +698,7 @@ function renderElementCircle(target,data,ariaPrefix='五行得点',options={}){
   const nodes=order.map((element,index)=>{const score=scores[element],angle=(-90+index*72)*Math.PI/180,x=cx+orbit*Math.cos(angle),y=cy+orbit*Math.sin(angle);if(score===0)return'';const radius=diameters[element]/2,fontSize=Math.max(14,Math.min(32,radius*.72));return`<g class="five-element-node"><circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${colors[element]}"/><text x="${x.toFixed(2)}" y="${y.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" class="element-name" font-size="${fontSize.toFixed(2)}">${labels[element]}</text></g>`}).join('');
   const scoreList=['wood','fire','earth','metal','water'].map(element=>`<span><i style="--score-color:${colors[element]}"></i>${labels[element]} ${formatScore(scores[element])}点${elementStrengths?` <em class="element-strength level-${elementStrengths[element]==='強'?'strong':elementStrengths[element]==='中'?'middle':'weak'}">${elementStrengths[element]}</em>`:''}</span>`).join('');
   const temperatureMarkup=temperature?`<div class="destiny-temperature"><span>推命気温</span><strong>${temperature.total>0?'＋':''}${temperature.total}度</strong></div>`:'';
-  const useGodMarkup=useGod?`<div class="use-god"><span>用神</span>${useGod.label?`<strong>${useGod.label}</strong>`:'<strong class="is-pending">—</strong>'}<small>${useGod.number?`景色番号 ${useGod.number}（${useGod.detail}）`:'チャート該当なし'}</small></div>`:'';
+  const useGodMarkup=useGod?`<section class="use-god${useGod.hasAlternatives?' has-alternatives':''}"><header><span>景色番号 ${useGod.number??'—'}</span><small>${escapeHtml(useGod.detail)}</small></header><dl><div><dt>用神</dt><dd>${useGod.label?escapeHtml(useGod.label):'—'}</dd></div><div><dt>対応する景色</dt><dd>${useGod.landscape?escapeHtml(useGod.landscape):'—'}</dd></div><div><dt>用神とする理由</dt><dd>${useGod.reason?escapeHtml(useGod.reason):'—'}</dd></div></dl>${useGod.hasAlternatives?'<p>複数候補があります。最終的にどの用神を採るかは、命式全体と本人の状況を踏まえて鑑定士が判断してください。</p>':''}</section>`:'';
   const strengthMarkup=strength?`<div class="body-strength"><span>印自 <b>${formatScore(strength.inji)}点</b></span><span>漏財官 <b>${formatScore(strength.leakWealthOfficer)}点</b></span><strong class="strength-${strength.status==='身旺'?'strong':strength.status==='身弱'?'weak':'middle'}">${strength.status}</strong></div>`:'';
   const conditionList=details.map(item=>`<li><strong>${item.role}</strong><span>${item.phrases.length?item.phrases.join('、'):'成立条件なし'}</span></li>`).join('');
   const basisMarkup=`<p class="five-elements-basis-label">五行変化の根拠</p><ul class="five-elements-transformations">${conditionList}</ul>${notes.length?`<p class="five-elements-calculation-log">成立関係：${notes.join(' ／ ')}</p>`:''}`;
