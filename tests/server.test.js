@@ -34,6 +34,32 @@ test('Render実証サーバーはヘルスチェックを公開し鑑定画面�
   });
 });
 
+test('講座生版を維持したまま会員版を独立した準備中入口として分離する', async () => {
+  await withServer(async base => {
+    const studentEntry = await fetch(`${base}/students`, {redirect: 'manual'});
+    assert.equal(studentEntry.status, 302);
+    assert.equal(studentEntry.headers.get('location'), '/login');
+
+    const memberEntry = await fetch(`${base}/members`);
+    assert.equal(memberEntry.status, 200);
+    assert.match(memberEntry.headers.get('x-robots-tag'), /noindex/);
+    const html = await memberEntry.text();
+    assert.match(html, /会員版/);
+    assert.match(html, /開発準備中/);
+    assert.doesNotMatch(html, /app\.js/);
+
+    const memberStatus = await fetch(`${base}/members/api/status`);
+    assert.equal(memberStatus.status, 200);
+    const memberStatusText = await memberStatus.text();
+    assert.match(memberStatusText, /memberPortal/);
+    assert.doesNotMatch(memberStatusText, /SERVICE_ROLE|serviceRoleKey/);
+
+    const calculationSource = await fetch(`${base}/app.js`, {redirect: 'manual'});
+    assert.equal(calculationSource.status, 302);
+    assert.equal(calculationSource.headers.get('location'), '/login');
+  });
+});
+
 test('正しいパスワードだけが署名付きCookieを受け取りAPIと画面を利用できる', async () => {
   await withServer(async base => {
     const rejected = await fetch(`${base}/login`, {

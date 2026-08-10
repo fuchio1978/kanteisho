@@ -5,7 +5,8 @@
   "description": "四柱推命鑑定書・Render実証版",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests"
+    "test": "node --test tests",
+    "check:member-db": "node scripts/check-member-db.js"
   },
   "engines": {
     "node": ">=22"

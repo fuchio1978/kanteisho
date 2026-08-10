@@ -2,11 +2,14 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
+const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS} = require('./member-access');
+const {publicMemberReadiness} = require('./supabase-server');
 
 const PORT = Number(process.env.PORT || 3000);
 const COOKIE_NAME = 'kanteisho_session';
 const SESSION_HOURS = Number(process.env.SESSION_HOURS || 12);
 const ROOT = __dirname;
+const MEMBER_ENTRY_PATHS = new Set(['/members', '/members/']);
 const PUBLIC_FILES = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
@@ -112,6 +115,15 @@ function loginPage(message = '') {
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>講座生ログイン｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#f4f8fa;color:#17384b;font-family:serif}.card{width:min(100%,420px);padding:42px 36px;background:#fff;border:1px solid #d7e3e9;border-radius:20px;box-shadow:0 18px 55px rgba(20,63,88,.12)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:8px 0 10px;color:#1766b1;font-size:31px;font-weight:500}p{color:#6e8795;font-size:13px;line-height:1.8}.error{padding:9px 12px;border-radius:8px;background:#fff0f0;color:#b53b3b}label{display:grid;gap:8px;margin-top:24px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button{width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}</style></head><body><main class="card"><div class="eyebrow">STUDENT ACCESS</div><h1>講座生ログイン</h1><p>四柱推命 鑑定書の実証用ページです。お知らせしたパスワードを入力してください。</p>${notice}<form method="post" action="/login"><label>アクセスパスワード<input name="password" type="password" autocomplete="current-password" required autofocus></label><button type="submit">鑑定書を開く</button></form></main></body></html>`;
 }
 
+function memberEntryPage() {
+  const planCards = PUBLIC_PLAN_IDS.map(planId => {
+    const current = PLANS[planId];
+    const labels = current.features.map(feature => FEATURE_LABELS[feature]).join('・');
+    return `<li><strong>${current.label}</strong><span>${labels}</span></li>`;
+  }).join('');
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版準備中｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:min(100%,680px);padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9}.notice{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li{display:grid;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px}li strong{color:#1766b1;font-size:14px}li span{color:#738b98;font-size:12px;line-height:1.6}.student{display:inline-block;margin-top:18px;color:#1766b1;text-underline-offset:4px}@media(max-width:560px){.card{padding:36px 24px}ul{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p><p class="notice">現在は開発準備中のため、会員ログインと鑑定機能はまだ公開していません。以下のプラン内容は開発用の仮設定です。</p><ul>${planCards}</ul><a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -137,6 +149,21 @@ async function handle(req, res) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
+  }
+  if (req.method === 'GET' && MEMBER_ENTRY_PATHS.has(url.pathname)) {
+    return send(res, 200, memberEntryPage(), {
+      'Content-Type': 'text/html; charset=utf-8',
+      'X-Robots-Tag': 'noindex, nofollow',
+    });
+  }
+  if (req.method === 'GET' && url.pathname === '/members/api/status') {
+    return send(res, 200, JSON.stringify(publicMemberReadiness()), {
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Robots-Tag': 'noindex, nofollow',
+    });
+  }
+  if (req.method === 'GET' && (url.pathname === '/students' || url.pathname === '/students/')) {
+    return send(res, 302, '', {Location: validSession(req) ? '/' : '/login'});
   }
   if (req.method === 'GET' && url.pathname === '/login') {
     if (validSession(req)) return send(res, 302, '', {Location: '/'});
