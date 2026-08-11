@@ -5,6 +5,7 @@ const {
   loadSupabaseServerConfig,
   publicMemberReadiness,
   checkSupabaseConnection,
+  authenticateMember,
 } = require('../supabase-server');
 
 const validEnv = {
@@ -62,4 +63,55 @@ test('テーブル未作成と秘密鍵拒否を区別する', async () => {
   assert.equal(schemaPending.status, 'schema_pending');
   const rejected = await checkSupabaseConnection({env: validEnv, fetchImpl: async () => ({ok: false, status: 401})});
   assert.equal(rejected.status, 'credentials_rejected');
+});
+
+test('Supabase Authで本人確認後に有効な会員プロフィールだけを返す', async () => {
+  const requests = [];
+  const responses = [
+    {ok: true, status: 200, json: async () => ({user: {id: 'user-1', email: 'member@example.com'}})},
+    {ok: true, status: 200, json: async () => ([{
+      id: 'user-1', display_name: 'テスト会員', role: 'member', plan_id: 'standard',
+      account_status: 'active', plan_expires_at: null,
+    }])},
+    {ok: true, status: 204, json: async () => null},
+  ];
+  const result = await authenticateMember({
+    email: ' MEMBER@EXAMPLE.COM ', password: 'correct-password', env: validEnv,
+    fetchImpl: async (url, options) => {
+      requests.push({url: String(url), options});
+      return responses.shift();
+    },
+  });
+  assert.deepEqual(result, {
+    ok: true,
+    status: 'authenticated',
+    member: {
+      id: 'user-1', email: 'member@example.com', displayName: 'テスト会員', role: 'member', planId: 'standard',
+    },
+  });
+  assert.match(requests[0].url, /\/auth\/v1\/token\?grant_type=password/);
+  assert.deepEqual(JSON.parse(requests[0].options.body), {email: 'member@example.com', password: 'correct-password'});
+  assert.match(requests[1].url, /\/rest\/v1\/member_profiles/);
+  assert.equal(requests[2].options.method, 'PATCH');
+});
+
+test('パスワード不一致と停止会員を個別ログインから拒否する', async () => {
+  const invalid = await authenticateMember({
+    email: 'member@example.com', password: 'wrong', env: validEnv,
+    fetchImpl: async () => ({ok: false, status: 400, json: async () => ({})}),
+  });
+  assert.equal(invalid.status, 'invalid_credentials');
+
+  const responses = [
+    {ok: true, status: 200, json: async () => ({user: {id: 'user-2', email: 'stopped@example.com'}})},
+    {ok: true, status: 200, json: async () => ([{
+      id: 'user-2', display_name: '', role: 'member', plan_id: 'free',
+      account_status: 'suspended', plan_expires_at: null,
+    }])},
+  ];
+  const stopped = await authenticateMember({
+    email: 'stopped@example.com', password: 'correct', env: validEnv,
+    fetchImpl: async () => responses.shift(),
+  });
+  assert.equal(stopped.status, 'account_inactive');
 });

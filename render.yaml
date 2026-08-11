@@ -16,6 +16,8 @@ services:
         generateValue: true
       - key: SESSION_HOURS
         value: 12
+      - key: MEMBER_SESSION_HOURS
+        value: 24
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY

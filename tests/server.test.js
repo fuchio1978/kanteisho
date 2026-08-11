@@ -7,8 +7,8 @@ process.env.SESSION_HOURS = '1';
 
 const {createServer} = require('../server');
 
-async function withServer(run) {
-  const server = createServer();
+async function withServer(run, dependencies = {}) {
+  const server = createServer(dependencies);
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const {port} = server.address();
   try {
@@ -45,7 +45,8 @@ test('講座生版を維持したまま会員版を独立した準備中入口�
     assert.match(memberEntry.headers.get('x-robots-tag'), /noindex/);
     const html = await memberEntry.text();
     assert.match(html, /会員版/);
-    assert.match(html, /開発準備中/);
+    assert.match(html, /会員版へログイン/);
+    assert.match(html, /メールアドレス/);
     assert.doesNotMatch(html, /app\.js/);
 
     const memberStatus = await fetch(`${base}/members/api/status`);
@@ -58,6 +59,65 @@ test('講座生版を維持したまま会員版を独立した準備中入口�
     assert.equal(calculationSource.status, 302);
     assert.equal(calculationSource.headers.get('location'), '/login');
   });
+});
+
+test('会員版はSupabase認証後だけ個別セッションと契約プランを表示する', async () => {
+  const authenticateMember = async ({email, password}) => {
+    if (email !== 'member@example.com' || password !== 'correct-password') {
+      return {ok: false, status: 'invalid_credentials'};
+    }
+    return {
+      ok: true,
+      status: 'authenticated',
+      member: {
+        id: 'member-user-id',
+        email,
+        displayName: 'テスト会員',
+        role: 'member',
+        planId: 'standard',
+      },
+    };
+  };
+
+  await withServer(async base => {
+    const anonymous = await fetch(`${base}/members/api/session`);
+    assert.deepEqual(await anonymous.json(), {ok: true, authenticated: false});
+
+    const rejected = await fetch(`${base}/members/login`, {
+      method: 'POST', redirect: 'manual',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'email=member%40example.com&password=wrong',
+    });
+    assert.equal(rejected.status, 401);
+    assert.match(await rejected.text(), /メールアドレスまたはパスワードが違います/);
+
+    const accepted = await fetch(`${base}/members/login`, {
+      method: 'POST', redirect: 'manual',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'email=member%40example.com&password=correct-password',
+    });
+    assert.equal(accepted.status, 303);
+    assert.equal(accepted.headers.get('location'), '/members');
+    const cookie = accepted.headers.get('set-cookie').split(';')[0];
+    assert.match(accepted.headers.get('set-cookie'), /HttpOnly/);
+    assert.match(accepted.headers.get('set-cookie'), /Path=\/members/);
+
+    const memberPage = await fetch(`${base}/members`, {headers: {Cookie: cookie}});
+    const memberHtml = await memberPage.text();
+    assert.match(memberHtml, /テスト会員 さん/);
+    assert.match(memberHtml, /スタンダード/);
+    assert.doesNotMatch(memberHtml, /correct-password|SERVICE_ROLE/);
+
+    const session = await fetch(`${base}/members/api/session`, {headers: {Cookie: cookie}});
+    const sessionData = await session.json();
+    assert.equal(sessionData.authenticated, true);
+    assert.equal(sessionData.member.id, 'member-user-id');
+    assert.equal(sessionData.member.planId, 'standard');
+
+    const logout = await fetch(`${base}/members/logout`, {method: 'POST', redirect: 'manual', headers: {Cookie: cookie}});
+    assert.equal(logout.status, 303);
+    assert.match(logout.headers.get('set-cookie'), /Max-Age=0/);
+  }, {authenticateMember});
 });
 
 test('正しいパスワードだけが署名付きCookieを受け取りAPIと画面を利用できる', async () => {
