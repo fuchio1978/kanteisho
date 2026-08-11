@@ -6,7 +6,7 @@ create table public.member_profiles (
   display_name text not null default '',
   role text not null default 'member' check (role in ('member', 'admin')),
   plan_id text not null default 'free'
-    check (plan_id in ('free', 'startup', 'standard', 'premium', 'student', 'admin')),
+    check (plan_id in ('free', 'starter', 'premium', 'student', 'grandstudent', 'admin')),
   account_status text not null default 'active'
     check (account_status in ('invited', 'active', 'suspended', 'expired')),
   max_saved_subjects integer check (max_saved_subjects is null or max_saved_subjects >= 0),

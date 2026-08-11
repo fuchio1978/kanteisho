@@ -2,7 +2,7 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, canUseFeature, savedSubjectLimit} = require('./member-access');
+const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, canUseFeature, savedSubjectLimit} = require('./member-access');
 const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage} = require('./supabase-server');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -165,12 +165,15 @@ function memberEntryPage({member = null, message = ''} = {}) {
   const planCards = PUBLIC_PLAN_IDS.map(planId => {
     const current = PLANS[planId];
     const labels = current.features.map(feature => FEATURE_LABELS[feature]).join('・');
-    return `<li><strong>${current.label}</strong><span>${labels}</span></li>`;
+    const price = current.monthlyPrice ? `月額 ${current.monthlyPrice.toLocaleString('ja-JP')}円` : '無料';
+    return `<li><strong>${escapeHtml(current.label)}　${escapeHtml(price)}</strong><span>${escapeHtml(labels)}</span></li>`;
   }).join('');
   const notice = message ? `<p class="error">${escapeHtml(message)}</p>` : '';
   const adminLink = member && (member.role === 'admin' || member.planId === 'admin') ? '<a class="open-app secondary-link" href="/members/admin">会員利用状況を確認</a>' : '';
+  const memberPlan = member ? getPlan(member.planId) : null;
+  const memberPrice = memberPlan ? (memberPlan.monthlyPrice ? `月額 ${memberPlan.monthlyPrice.toLocaleString('ja-JP')}円` : '無料') : '';
   const memberContent = member ? `
-    <p class="notice"><strong>${escapeHtml(member.displayName || member.email)} さん</strong><br>個別ログインを確認しました。現在のプランは「${escapeHtml(PLANS[member.planId]?.label || member.planId)}」です。</p>
+    <p class="notice"><strong>${escapeHtml(member.displayName || member.email)} さん</strong><br>現在のプランは「${escapeHtml(memberPlan.label)}（${escapeHtml(memberPrice)}）」です。</p>
     <div class="member-menu"><span>保存した命式</span><span>鑑定機能</span><span>契約内容</span></div>
     <a class="open-app" href="/members/app">会員版の鑑定画面を開く</a>
     ${adminLink}
@@ -184,7 +187,7 @@ function memberEntryPage({member = null, message = ''} = {}) {
 }
 
 function adminUsagePage(members = []) {
-  const rows = members.map(member => `<tr><td>${escapeHtml(member.display_name || '名称未設定')}</td><td>${escapeHtml(PLANS[member.plan_id]?.label || member.plan_id)}</td><td>${escapeHtml(member.account_status)}</td><td>${Number(member.saved_subject_count) || 0}件</td><td>${member.last_login_at ? escapeHtml(new Date(member.last_login_at).toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})) : '未ログイン'}</td></tr>`).join('');
+  const rows = members.map(member => `<tr><td>${escapeHtml(member.display_name || '名称未設定')}</td><td>${escapeHtml(getPlan(member.plan_id).label)}</td><td>${escapeHtml(member.account_status)}</td><td>${Number(member.saved_subject_count) || 0}件</td><td>${member.last_login_at ? escapeHtml(new Date(member.last_login_at).toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})) : '未ログイン'}</td></tr>`).join('');
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員利用状況｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f4f8fa;color:#17384b;font-family:serif}main{width:min(1080px,100%);margin:auto}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{color:#1766b1;font-weight:500}a{color:#1766b1}section{margin-top:24px;overflow:auto;background:white;border:1px solid #d7e3e9;border-radius:16px}table{width:100%;border-collapse:collapse;min-width:720px}th,td{text-align:left;padding:14px 16px;border-bottom:1px solid #e2ebef}th{background:#f2f8fb;color:#52798f;font-size:12px}td{font-size:14px}</style></head><body><main><div class="eyebrow">MEMBER ADMIN</div><h1>会員利用状況</h1><p><a href="/members">← 会員版へ戻る</a></p><section><table><thead><tr><th>会員</th><th>プラン</th><th>状態</th><th>保存数</th><th>最終ログイン</th></tr></thead><tbody>${rows || '<tr><td colspan="5">会員はまだいません。</td></tr>'}</tbody></table></section></main></body></html>`;
 }
 

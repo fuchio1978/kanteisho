@@ -19,6 +19,13 @@ test('会員DBはアカウント・保存命式・計算履歴・監査記録を
   }
 });
 
+test('販売プラン移行は旧IDを新IDへ変換し孫生徒を追加する', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202608110002_plan_catalog.sql'), 'utf8');
+  assert.match(migration, /starter.+startup/i);
+  assert.match(migration, /premium.+standard/i);
+  assert.match(migration, /grandstudent/i);
+});
+
 test('パスワードを独自保存せずSupabase Authの利用者へ関連付ける', () => {
   assert.match(sql, /references auth\.users\(id\)/);
   assert.doesNotMatch(sql, /password\s+(text|varchar)/i);

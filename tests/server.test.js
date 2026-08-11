@@ -74,7 +74,7 @@ test('会員版はSupabase認証後だけ個別セッションと契約プラン
         email,
         displayName: 'テスト会員',
         role: 'member',
-        planId: 'standard',
+        planId: 'premium',
       },
     };
   };
@@ -105,14 +105,15 @@ test('会員版はSupabase認証後だけ個別セッションと契約プラン
     const memberPage = await fetch(`${base}/members`, {headers: {Cookie: cookie}});
     const memberHtml = await memberPage.text();
     assert.match(memberHtml, /テスト会員 さん/);
-    assert.match(memberHtml, /スタンダード/);
+    assert.match(memberHtml, /プレミアム/);
+    assert.match(memberHtml, /月額 3,300円/);
     assert.doesNotMatch(memberHtml, /correct-password|SERVICE_ROLE/);
 
     const session = await fetch(`${base}/members/api/session`, {headers: {Cookie: cookie}});
     const sessionData = await session.json();
     assert.equal(sessionData.authenticated, true);
     assert.equal(sessionData.member.id, 'member-user-id');
-    assert.equal(sessionData.member.planId, 'standard');
+    assert.equal(sessionData.member.planId, 'premium');
 
     const logout = await fetch(`${base}/members/logout`, {method: 'POST', redirect: 'manual', headers: {Cookie: cookie}});
     assert.equal(logout.status, 303);
@@ -124,7 +125,7 @@ test('会員本人だけが契約上限内で命式を保存・一覧・呼び�
   const ownerId = '11111111-1111-4111-8111-111111111111';
   const saved = [];
   const dependencies = {
-    authenticateMember: async () => ({ok: true, member: {id: ownerId, email: 'member@example.com', displayName: '保存会員', role: 'member', planId: 'startup'}}),
+    authenticateMember: async () => ({ok: true, member: {id: ownerId, email: 'member@example.com', displayName: '保存会員', role: 'member', planId: 'premium'}}),
     listSavedSubjects: async ({ownerUserId}) => ({ok: true, subjects: ownerUserId === ownerId ? saved : []}),
     countSavedSubjects: async ({ownerUserId}) => ({ok: true, count: ownerUserId === ownerId ? saved.length : 0}),
     createSavedSubject: async ({ownerUserId, subject}) => {
@@ -158,7 +159,7 @@ test('会員本人だけが契約上限内で命式を保存・一覧・呼び�
     assert.equal(created.status, 201);
     const list = await (await fetch(`${base}/members/api/subjects`, {headers: {Cookie: cookie}})).json();
     assert.equal(list.subjects.length, 1);
-    assert.deepEqual(list.usage, {used: 1, limit: 10});
+    assert.deepEqual(list.usage, {used: 1, limit: 100});
     const restored = await (await fetch(`${base}/members/api/subjects/${saved[0].id}`, {headers: {Cookie: cookie}})).json();
     assert.equal(restored.subject.owner_user_id, ownerId);
     const renamed = await (await fetch(`${base}/members/api/subjects/${saved[0].id}`, {method: 'PATCH', headers: {Cookie: cookie, 'Content-Type': 'application/json'}, body: JSON.stringify({displayName: '変更後'})})).json();
@@ -170,7 +171,7 @@ test('会員本人だけが契約上限内で命式を保存・一覧・呼び�
 });
 
 test('管理者だけが会員ごとのプランと保存数を確認できる', async () => {
-  const listMemberUsage = async () => ({ok: true, members: [{id: 'member-1', display_name: '利用者A', plan_id: 'startup', account_status: 'active', saved_subject_count: 3, last_login_at: null}]});
+  const listMemberUsage = async () => ({ok: true, members: [{id: 'member-1', display_name: '利用者A', plan_id: 'starter', account_status: 'active', saved_subject_count: 3, last_login_at: null}]});
   await withServer(async base => {
     const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
     const cookie = login.headers.get('set-cookie').split(';')[0];
@@ -185,7 +186,7 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=member%40example.com&password=correct'});
     const cookie = login.headers.get('set-cookie').split(';')[0];
     assert.equal((await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}})).status, 403);
-  }, {authenticateMember: async () => ({ok: true, member: {id: 'member-user', email: 'member@example.com', displayName: '会員', role: 'member', planId: 'startup'}}), listMemberUsage});
+  }, {authenticateMember: async () => ({ok: true, member: {id: 'member-user', email: 'member@example.com', displayName: '会員', role: 'member', planId: 'starter'}}), listMemberUsage});
 });
 
 test('無料プランは命式保存APIを利用できない', async () => {
