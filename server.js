@@ -2,7 +2,7 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, canUseFeature, savedSubjectLimit} = require('./member-access');
+const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, effectiveFeatures, canUseFeature, savedSubjectLimit} = require('./member-access');
 const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage} = require('./supabase-server');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -251,6 +251,8 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
   }
   if (req.method === 'GET' && url.pathname === '/members/api/session') {
     const member = memberSession(req);
+    const account = member ? memberAccount(member) : null;
+    const currentPlan = member ? getPlan(member.planId) : null;
     return send(res, 200, JSON.stringify(member ? {
       ok: true,
       authenticated: true,
@@ -259,7 +261,14 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
         email: member.email,
         displayName: member.displayName,
         role: member.role,
-        planId: member.planId,
+        planId: currentPlan.id,
+        plan: {
+          id: currentPlan.id,
+          label: currentPlan.label,
+          monthlyPrice: currentPlan.monthlyPrice,
+          maxSavedSubjects: savedSubjectLimit(account),
+        },
+        features: [...effectiveFeatures(account)],
       },
     } : {ok: true, authenticated: false}), {
       'Content-Type': 'application/json; charset=utf-8',

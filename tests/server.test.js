@@ -74,7 +74,7 @@ test('会員版はSupabase認証後だけ個別セッションと契約プラン
         email,
         displayName: 'テスト会員',
         role: 'member',
-        planId: 'premium',
+        planId: 'standard',
       },
     };
   };
@@ -114,6 +114,11 @@ test('会員版はSupabase認証後だけ個別セッションと契約プラン
     assert.equal(sessionData.authenticated, true);
     assert.equal(sessionData.member.id, 'member-user-id');
     assert.equal(sessionData.member.planId, 'premium');
+    assert.equal(sessionData.member.plan.label, 'プレミアム');
+    assert.equal(sessionData.member.plan.monthlyPrice, 3300);
+    assert.equal(sessionData.member.plan.maxSavedSubjects, 100);
+    assert.ok(sessionData.member.features.includes('six_pillars'));
+    assert.ok(sessionData.member.features.includes('saved_subjects'));
 
     const logout = await fetch(`${base}/members/logout`, {method: 'POST', redirect: 'manual', headers: {Cookie: cookie}});
     assert.equal(logout.status, 303);

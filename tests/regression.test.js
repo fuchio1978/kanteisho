@@ -9,7 +9,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   dataSource + '\n' + source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -23,6 +23,20 @@ function calculate(date, time, localOffset, sex, unknown = false) {
   const text = [pillars.hour, pillars.day, pillars.month, pillars.year].map(x => x ? x.join('') : '？').join(' ');
   return { text, apparent, luck: context.api.getLuckCycles(input, pillars), input, pillars };
 }
+
+test('会員版は受け取った権限からプラン別の表示範囲を決める', () => {
+  const free = context.api.memberFeatureVisibility(['original_chart']);
+  assert.deepEqual({...free}, {fiveElements:false,luckCycles:false,annualFortune:false,sixPillars:false,pdfReport:false,savedSubjects:false,changeEvidence:false});
+  const starter = context.api.memberFeatureVisibility(['original_chart','change_evidence','five_element_balance','luck_cycles','annual_fortune','pdf_report']);
+  assert.equal(starter.changeEvidence, true);
+  assert.equal(starter.fiveElements, true);
+  assert.equal(starter.pdfReport, true);
+  assert.equal(starter.sixPillars, false);
+  assert.equal(starter.savedSubjects, false);
+  const premium = context.api.memberFeatureVisibility(['six_pillars','saved_subjects']);
+  assert.equal(premium.sixPillars, true);
+  assert.equal(premium.savedSubjects, true);
+});
 
 test('明治・大正・昭和・平成・令和の元号年を西暦へ換算する', () => {
   assert.equal(JSON.stringify(context.api.westernDateFromCalendar('meiji', 1, 1, 25)), '{"y":1868,"m":1,"d":25}');
