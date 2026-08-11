@@ -24,6 +24,10 @@ test('販売プラン移行は旧IDを新IDへ変換し孫生徒を追加する'
   assert.match(migration, /starter.+startup/i);
   assert.match(migration, /premium.+standard/i);
   assert.match(migration, /grandstudent/i);
+  assert.ok(
+    migration.indexOf('drop constraint') < migration.indexOf("set plan_id = 'starter'"),
+    '旧制約を解除してから新しいプランIDへ更新する',
+  );
 });
 
 test('パスワードを独自保存せずSupabase Authの利用者へ関連付ける', () => {
