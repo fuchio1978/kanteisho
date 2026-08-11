@@ -6,6 +6,9 @@ const {
   publicMemberReadiness,
   checkSupabaseConnection,
   authenticateMember,
+  normalizeSavedSubject,
+  createSavedSubject,
+  getSavedSubject,
 } = require('../supabase-server');
 
 const validEnv = {
@@ -114,4 +117,25 @@ test('パスワード不一致と停止会員を個別ログインから拒否�
     fetchImpl: async () => responses.shift(),
   });
   assert.equal(stopped.status, 'account_inactive');
+});
+
+test('保存命式は入力値を検証し所有者IDを必ずSupabase条件へ含める', async () => {
+  const ownerUserId = '11111111-1111-4111-8111-111111111111';
+  assert.equal(normalizeSavedSubject({birthYear: 2026, birthMonth: 13, birthDay: 1, sex: '女性'}), null);
+  const requests = [];
+  const createdRow = {id: '22222222-2222-4222-8222-222222222222', owner_user_id: ownerUserId, display_name: 'A'};
+  const created = await createSavedSubject({
+    ownerUserId,
+    subject: {displayName: 'A', calendarSystem: 'western', birthYear: 1978, birthMonth: 7, birthDay: 4, birthHour: 19, birthMinute: 40, sex: '女性', localOffsetMinutes: 16, standardLongitude: 135, hemisphere: 'north'},
+    env: validEnv,
+    fetchImpl: async (url, options) => {requests.push({url: String(url), options});return {ok: true, status: 201, json: async () => [createdRow]};},
+  });
+  assert.equal(created.ok, true);
+  assert.match(requests[0].url, /owner_user_id=eq\.11111111/);
+  const sent = JSON.parse(requests[0].options.body);
+  assert.equal(sent.owner_user_id, ownerUserId);
+  assert.equal(sent.birth_hour, 19);
+
+  const restored = await getSavedSubject({ownerUserId, subjectId: createdRow.id, env: validEnv, fetchImpl: async (url) => {assert.match(String(url), /id=eq\.22222222/);return {ok: true, status: 200, json: async () => [createdRow]};}});
+  assert.equal(restored.subject.owner_user_id, ownerUserId);
 });

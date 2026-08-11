@@ -317,3 +317,18 @@
   body.printing-pdf-report .pdf-report:last-child{break-after:auto;page-break-after:auto}
 }
 
+/* 会員版：本人専用の命式保存バー */
+.member-subjects{max-width:1225px;margin:24px auto 0;padding:18px 22px;border:1px solid #d4e4eb;border-radius:16px;background:#f7fbfd;color:#52798f;display:grid;grid-template-columns:minmax(190px,.8fr) minmax(420px,1.7fr);gap:12px 24px;align-items:center}
+.member-subjects[hidden]{display:none}
+.member-subjects>div:first-child{display:grid;gap:4px}
+.member-subjects-label{font:600 9px sans-serif;letter-spacing:.22em;color:#8ca1ac}
+.member-subjects strong{color:#1766b1;font-size:18px;font-weight:500}
+.member-subjects small{font-size:11px}
+.member-subjects-actions{display:grid;grid-template-columns:minmax(190px,1fr) auto auto;gap:8px}
+.member-subjects select,.member-subjects button{min-height:42px;border:1px solid #bfd4df;border-radius:9px;background:#fff;color:#315d73;padding:8px 12px;font:inherit}
+.member-subjects button{cursor:pointer;white-space:nowrap}
+.member-subjects #saveSubjectButton{background:#1766b1;border-color:#1766b1;color:#fff}
+.member-subjects button:disabled{cursor:not-allowed;opacity:.5}
+.member-subjects p{grid-column:1/-1;margin:0;min-height:1.4em;font-size:12px;color:#6d8794}
+.member-subjects p.is-error{color:#b53b3b}
+@media(max-width:760px){.member-subjects{margin:12px 14px 0;grid-template-columns:1fr}.member-subjects-actions{grid-template-columns:1fr 1fr}.member-subjects-actions select{grid-column:1/-1}}

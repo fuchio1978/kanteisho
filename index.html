@@ -12,6 +12,19 @@
 </head>
 <body>
   <main>
+    <section class="member-subjects" id="memberSubjects" hidden aria-label="会員の命式保存">
+      <div>
+        <span class="member-subjects-label">MEMBER LIBRARY</span>
+        <strong id="memberSubjectsTitle">保存した命式</strong>
+        <small id="memberSubjectsPlan"></small>
+      </div>
+      <div class="member-subjects-actions" id="memberSubjectsActions">
+        <select id="savedSubjectSelect" aria-label="保存した命式を選択"><option value="">保存した命式を選択</option></select>
+        <button id="loadSubjectButton" type="button">呼び戻す</button>
+        <button id="saveSubjectButton" type="button">現在の入力を保存</button>
+      </div>
+      <p id="memberSubjectsMessage" role="status"></p>
+    </section>
     <section class="form-view" id="formView">
       <div class="eyebrow">FOUR PILLARS OF DESTINY</div>
       <h1>八字を作成する</h1>

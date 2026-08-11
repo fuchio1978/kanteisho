@@ -157,6 +157,108 @@ async function authenticateMember({email, password, env = process.env, fetchImpl
   }
 }
 
+function normalizeSavedSubject(input = {}) {
+  const integer = (value, fallback = null) => {
+    if (value === '' || value === null || value === undefined) return fallback;
+    const number = Number(value);
+    return Number.isInteger(number) ? number : fallback;
+  };
+  const calendarSystems = new Set(['western', 'meiji', 'taisho', 'showa', 'heisei', 'reiwa']);
+  const sex = input.sex === '男性' ? '男性' : input.sex === '女性' ? '女性' : null;
+  const year = integer(input.birthYear), month = integer(input.birthMonth), day = integer(input.birthDay);
+  if (!year || year < 1 || year > 9999 || !month || month < 1 || month > 12 || !day || day < 1 || day > 31 || !sex) {
+    return null;
+  }
+  const calendarDate = new Date(0);
+  calendarDate.setUTCFullYear(year, month - 1, day);
+  calendarDate.setUTCHours(0, 0, 0, 0);
+  if (calendarDate.getUTCFullYear() !== year || calendarDate.getUTCMonth() !== month - 1 || calendarDate.getUTCDate() !== day) return null;
+  const birthTimeUnknown = Boolean(input.birthTimeUnknown);
+  const birthHour = birthTimeUnknown ? null : integer(input.birthHour);
+  const birthMinute = birthTimeUnknown ? null : integer(input.birthMinute);
+  if (!birthTimeUnknown && (birthHour === null || birthHour < 0 || birthHour > 23 || birthMinute === null || birthMinute < 0 || birthMinute > 59)) return null;
+  const localOffsetMinutes = integer(input.localOffsetMinutes, 0);
+  const standardLongitude = Number(input.standardLongitude);
+  if (localOffsetMinutes < -90 || localOffsetMinutes > 90 || !Number.isFinite(standardLongitude) || standardLongitude < -180 || standardLongitude > 180) return null;
+  const calendarSystem = calendarSystems.has(input.calendarSystem) ? input.calendarSystem : 'western';
+  const selectedAnnualYear = integer(input.selectedAnnualYear);
+  return {
+    display_name: String(input.displayName || '').trim().slice(0, 120),
+    calendar_system: calendarSystem,
+    birth_year: year,
+    birth_month: month,
+    birth_day: day,
+    birth_hour: birthHour,
+    birth_minute: birthMinute,
+    birth_time_unknown: birthTimeUnknown,
+    sex,
+    birthplace_label: String(input.birthplaceLabel || '').trim().slice(0, 160),
+    local_offset_minutes: localOffsetMinutes,
+    standard_longitude: standardLongitude,
+    hemisphere: input.hemisphere === 'south' ? 'south' : 'north',
+    selected_annual_year: selectedAnnualYear && selectedAnnualYear >= 1 && selectedAnnualYear <= 9999 ? selectedAnnualYear : null,
+    notes: String(input.notes || '').trim().slice(0, 2000),
+    input_version: 1,
+    extra_input: input.extraInput && typeof input.extraInput === 'object' && !Array.isArray(input.extraInput) ? input.extraInput : {},
+  };
+}
+
+async function savedSubjectRequest({method = 'GET', ownerUserId, subjectId, body, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+  if (!/^[0-9a-f-]{36}$/i.test(String(ownerUserId || ''))) return {ok: false, status: 'invalid_owner'};
+  if (subjectId && !/^[0-9a-f-]{36}$/i.test(String(subjectId))) return {ok: false, status: 'invalid_subject'};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const endpoint = new URL('/rest/v1/saved_subjects', config.url);
+    endpoint.searchParams.set('owner_user_id', `eq.${ownerUserId}`);
+    if (subjectId) endpoint.searchParams.set('id', `eq.${subjectId}`);
+    endpoint.searchParams.set('select', '*');
+    endpoint.searchParams.set('order', 'updated_at.desc');
+    if (subjectId) endpoint.searchParams.set('limit', '1');
+    const response = await fetchImpl(endpoint, {
+      method,
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: method === 'POST' ? 'return=representation' : 'return=minimal'}),
+      body: method === 'POST' ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    if (!response.ok) return {ok: false, status: response.status === 404 ? 'not_found' : 'database_unavailable'};
+    const rows = await responseJson(response);
+    return {ok: true, status: 'ok', subjects: Array.isArray(rows) ? rows : []};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'database_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function listSavedSubjects(options = {}) {
+  return savedSubjectRequest(options);
+}
+
+async function getSavedSubject(options = {}) {
+  const result = await savedSubjectRequest(options);
+  if (!result.ok) return result;
+  const subject = result.subjects[0] || null;
+  return subject ? {ok: true, status: 'ok', subject} : {ok: false, status: 'not_found'};
+}
+
+async function countSavedSubjects(options = {}) {
+  const result = await listSavedSubjects(options);
+  return result.ok ? {ok: true, status: 'ok', count: result.subjects.length} : result;
+}
+
+async function createSavedSubject({ownerUserId, subject, ...options} = {}) {
+  const normalized = normalizeSavedSubject(subject);
+  if (!normalized) return {ok: false, status: 'invalid_subject'};
+  const result = await savedSubjectRequest({ownerUserId, method: 'POST', body: {...normalized, owner_user_id: ownerUserId}, ...options});
+  if (!result.ok) return result;
+  const created = result.subjects[0] || null;
+  return created ? {ok: true, status: 'created', subject: created} : {ok: false, status: 'database_unavailable'};
+}
+
 async function checkSupabaseConnection({env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 5000} = {}) {
   const config = loadSupabaseServerConfig(env);
   if (!config.configured) return {ok: false, status: config.status, issues: config.issues};
@@ -191,4 +293,9 @@ module.exports = {
   publicMemberReadiness,
   checkSupabaseConnection,
   authenticateMember,
+  normalizeSavedSubject,
+  listSavedSubjects,
+  getSavedSubject,
+  countSavedSubjects,
+  createSavedSubject,
 };

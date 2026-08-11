@@ -2,8 +2,8 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS} = require('./member-access');
-const {publicMemberReadiness, authenticateMember} = require('./supabase-server');
+const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, canUseFeature, savedSubjectLimit} = require('./member-access');
+const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject} = require('./supabase-server');
 
 const PORT = Number(process.env.PORT || 3000);
 const COOKIE_NAME = 'kanteisho_session';
@@ -120,8 +120,8 @@ function sessionCookie(value, maxAge = SESSION_HOURS * 3600) {
   return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secureCookie()}`;
 }
 
-function memberSessionCookie(value, maxAge = MEMBER_SESSION_HOURS * 3600) {
-  return `${MEMBER_COOKIE_NAME}=${encodeURIComponent(value)}; Path=/members; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secureCookie()}`;
+function memberSessionCookie(value, maxAge = MEMBER_SESSION_HOURS * 3600, cookiePath = '/') {
+  return `${MEMBER_COOKIE_NAME}=${encodeURIComponent(value)}; Path=${cookiePath}; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secureCookie()}`;
 }
 
 function passwordMatches(candidate) {
@@ -171,22 +171,23 @@ function memberEntryPage({member = null, message = ''} = {}) {
   const memberContent = member ? `
     <p class="notice"><strong>${escapeHtml(member.displayName || member.email)} さん</strong><br>個別ログインを確認しました。現在のプランは「${escapeHtml(PLANS[member.planId]?.label || member.planId)}」です。</p>
     <div class="member-menu"><span>保存した命式</span><span>鑑定機能</span><span>契約内容</span></div>
-    <p class="preparing">この画面は接続確認用です。保存機能は次の段階で追加します。</p>
+    <a class="open-app" href="/members/app">会員版の鑑定画面を開く</a>
+    <p class="preparing">鑑定画面で、入力情報の保存と呼び戻しができます。保存件数は契約プランにより異なります。</p>
     <form method="post" action="/members/logout"><button class="secondary" type="submit">ログアウト</button></form>` : `
     <p class="notice">販売開始前のテスト運用中です。発行された個別アカウントでログインできます。</p>
     ${notice}
     <form method="post" action="/members/login"><label>メールアドレス<input name="email" type="email" autocomplete="username" required autofocus></label><label>パスワード<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">会員版へログイン</button></form>
     <details><summary>準備中の料金プラン</summary><ul>${planCards}</ul></details>`;
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:680px;max-width:100%;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.secondary{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu span{display:grid;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.student{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}@media(max-width:560px){.card{padding:36px 24px}ul,.member-menu{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}<a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:680px;max-width:100%;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.open-app{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.open-app{display:block;text-align:center;text-decoration:none}.secondary{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu span{display:grid;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.preparing{margin-top:13px}.student{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}@media(max-width:560px){.card{padding:36px 24px}ul,.member-menu{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}<a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
 }
 
-function readBody(req) {
+function readBody(req, maxLength = 4096) {
   return new Promise((resolve, reject) => {
     let body = '';
     req.setEncoding('utf8');
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 4096) reject(new Error('request too large'));
+      if (body.length > maxLength) reject(new Error('request too large'));
     });
     req.on('end', () => resolve(body));
     req.on('error', reject);
@@ -201,7 +202,15 @@ function servePublic(res, pathname) {
   });
 }
 
-async function handle(req, res, dependencies = {authenticateMember}) {
+function memberAccount(member) {
+  return {planId: member.planId, featureGrants: [], featureRevokes: []};
+}
+
+function json(res, status, payload) {
+  return send(res, status, JSON.stringify(payload), {'Content-Type': 'application/json; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
+}
+
+async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject}) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
@@ -211,6 +220,10 @@ async function handle(req, res, dependencies = {authenticateMember}) {
       'Content-Type': 'text/html; charset=utf-8',
       'X-Robots-Tag': 'noindex, nofollow',
     });
+  }
+  if (req.method === 'GET' && url.pathname === '/members/app') {
+    if (!memberSession(req)) return send(res, 302, '', {Location: '/members'});
+    return servePublic(res, '/');
   }
   if (req.method === 'GET' && url.pathname === '/members/api/status') {
     return send(res, 200, JSON.stringify(publicMemberReadiness()), {
@@ -252,13 +265,44 @@ async function handle(req, res, dependencies = {authenticateMember}) {
         return send(res, result.status === 'invalid_credentials' ? 401 : 503, memberEntryPage({message}), {'Content-Type': 'text/html; charset=utf-8'});
       }
       attempts.delete(clientKey(req, 'member'));
-      return send(res, 303, '', {Location: '/members', 'Set-Cookie': memberSessionCookie(createMemberSession(result.member))});
+      return send(res, 303, '', {Location: '/members', 'Set-Cookie': [memberSessionCookie(createMemberSession(result.member)), memberSessionCookie('', 0, '/members')]});
     } catch {
       return send(res, 400, 'Bad Request', {'Content-Type': 'text/plain; charset=utf-8'});
     }
   }
   if (req.method === 'POST' && url.pathname === '/members/logout') {
-    return send(res, 303, '', {Location: '/members', 'Set-Cookie': memberSessionCookie('', 0)});
+    return send(res, 303, '', {Location: '/members', 'Set-Cookie': [memberSessionCookie('', 0), memberSessionCookie('', 0, '/members')]});
+  }
+  if (url.pathname === '/members/api/subjects' || url.pathname.startsWith('/members/api/subjects/')) {
+    const member = memberSession(req);
+    if (!member) return json(res, 401, {ok: false, status: 'unauthenticated'});
+    const account = memberAccount(member);
+    if (!canUseFeature(account, FEATURES.SAVED_SUBJECTS)) return json(res, 403, {ok: false, status: 'plan_restricted', limit: 0});
+    const subjectId = url.pathname.split('/')[4] || '';
+    if (req.method === 'GET' && !subjectId) {
+      const result = await dependencies.listSavedSubjects({ownerUserId: member.uid});
+      return json(res, result.ok ? 200 : 503, result);
+    }
+    if (req.method === 'GET' && subjectId) {
+      const result = await dependencies.getSavedSubject({ownerUserId: member.uid, subjectId});
+      return json(res, result.ok ? 200 : result.status === 'not_found' ? 404 : 503, result);
+    }
+    if (req.method === 'POST' && !subjectId) {
+      const limit = savedSubjectLimit(account);
+      if (limit !== null) {
+        const count = await dependencies.countSavedSubjects({ownerUserId: member.uid});
+        if (!count.ok) return json(res, 503, count);
+        if (count.count >= limit) return json(res, 409, {ok: false, status: 'limit_reached', limit});
+      }
+      try {
+        const subject = JSON.parse(await readBody(req, 32768));
+        const result = await dependencies.createSavedSubject({ownerUserId: member.uid, subject});
+        return json(res, result.ok ? 201 : result.status === 'invalid_subject' ? 400 : 503, result);
+      } catch {
+        return json(res, 400, {ok: false, status: 'invalid_json'});
+      }
+    }
+    return json(res, 405, {ok: false, status: 'method_not_allowed'});
   }
   if (req.method === 'GET' && (url.pathname === '/students' || url.pathname === '/students/')) {
     return send(res, 302, '', {Location: validSession(req) ? '/' : '/login'});
@@ -284,7 +328,7 @@ async function handle(req, res, dependencies = {authenticateMember}) {
   if (req.method === 'POST' && url.pathname === '/logout') {
     return send(res, 303, '', {Location: '/login', 'Set-Cookie': sessionCookie('', 0)});
   }
-  if (!validSession(req)) return send(res, 302, '', {Location: '/login'});
+  if (!validSession(req) && !memberSession(req)) return send(res, 302, '', {Location: '/login'});
   if (req.method === 'GET' && url.pathname === '/api/status') {
     return send(res, 200, JSON.stringify({ok: true, authenticated: true, calculationMode: 'browser-poc'}), {'Content-Type': 'application/json; charset=utf-8'});
   }
@@ -293,7 +337,13 @@ async function handle(req, res, dependencies = {authenticateMember}) {
 }
 
 function createServer(dependencies = {}) {
-  const resolvedDependencies = {authenticateMember: dependencies.authenticateMember || authenticateMember};
+  const resolvedDependencies = {
+    authenticateMember: dependencies.authenticateMember || authenticateMember,
+    listSavedSubjects: dependencies.listSavedSubjects || listSavedSubjects,
+    getSavedSubject: dependencies.getSavedSubject || getSavedSubject,
+    countSavedSubjects: dependencies.countSavedSubjects || countSavedSubjects,
+    createSavedSubject: dependencies.createSavedSubject || createSavedSubject,
+  };
   return http.createServer((req, res) => handle(req, res, resolvedDependencies).catch(error => {
     console.error(error);
     if (!res.headersSent) send(res, 500, 'Internal Server Error', {'Content-Type': 'text/plain; charset=utf-8'});
