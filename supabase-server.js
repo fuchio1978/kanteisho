@@ -218,10 +218,11 @@ async function savedSubjectRequest({method = 'GET', ownerUserId, subjectId, body
     endpoint.searchParams.set('select', '*');
     endpoint.searchParams.set('order', 'updated_at.desc');
     if (subjectId) endpoint.searchParams.set('limit', '1');
+    const writesBody = method === 'POST' || method === 'PATCH';
     const response = await fetchImpl(endpoint, {
       method,
-      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: method === 'POST' ? 'return=representation' : 'return=minimal'}),
-      body: method === 'POST' ? JSON.stringify(body) : undefined,
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: method === 'GET' ? 'return=minimal' : 'return=representation'}),
+      body: writesBody ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
     if (!response.ok) return {ok: false, status: response.status === 404 ? 'not_found' : 'database_unavailable'};
@@ -257,6 +258,55 @@ async function createSavedSubject({ownerUserId, subject, ...options} = {}) {
   if (!result.ok) return result;
   const created = result.subjects[0] || null;
   return created ? {ok: true, status: 'created', subject: created} : {ok: false, status: 'database_unavailable'};
+}
+
+async function renameSavedSubject({ownerUserId, subjectId, displayName, ...options} = {}) {
+  const normalizedName = String(displayName || '').trim().slice(0, 120);
+  if (!normalizedName) return {ok: false, status: 'invalid_name'};
+  const result = await savedSubjectRequest({ownerUserId, subjectId, method: 'PATCH', body: {display_name: normalizedName}, ...options});
+  if (!result.ok) return result;
+  const subject = result.subjects[0] || null;
+  return subject ? {ok: true, status: 'renamed', subject} : {ok: false, status: 'not_found'};
+}
+
+async function deleteSavedSubject({ownerUserId, subjectId, ...options} = {}) {
+  const result = await savedSubjectRequest({ownerUserId, subjectId, method: 'DELETE', ...options});
+  if (!result.ok) return result;
+  const subject = result.subjects[0] || null;
+  return subject ? {ok: true, status: 'deleted', subject} : {ok: false, status: 'not_found'};
+}
+
+async function listMemberUsage({env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const profilesUrl = new URL('/rest/v1/member_profiles', config.url);
+    profilesUrl.searchParams.set('select', 'id,display_name,role,plan_id,account_status,last_login_at,created_at');
+    profilesUrl.searchParams.set('order', 'created_at.desc');
+    const subjectsUrl = new URL('/rest/v1/saved_subjects', config.url);
+    subjectsUrl.searchParams.set('select', 'owner_user_id');
+    const [profilesResponse, subjectsResponse] = await Promise.all([
+      fetchImpl(profilesUrl, {headers: serverHeaders(config), signal: controller.signal}),
+      fetchImpl(subjectsUrl, {headers: serverHeaders(config), signal: controller.signal}),
+    ]);
+    if (!profilesResponse.ok || !subjectsResponse.ok) return {ok: false, status: 'database_unavailable'};
+    const profiles = await responseJson(profilesResponse);
+    const subjects = await responseJson(subjectsResponse);
+    const counts = new Map();
+    for (const subject of Array.isArray(subjects) ? subjects : []) counts.set(subject.owner_user_id, (counts.get(subject.owner_user_id) || 0) + 1);
+    return {
+      ok: true,
+      status: 'ok',
+      members: (Array.isArray(profiles) ? profiles : []).map(profile => ({...profile, saved_subject_count: counts.get(profile.id) || 0})),
+    };
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'database_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function checkSupabaseConnection({env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 5000} = {}) {
@@ -298,4 +348,7 @@ module.exports = {
   getSavedSubject,
   countSavedSubjects,
   createSavedSubject,
+  renameSavedSubject,
+  deleteSavedSubject,
+  listMemberUsage,
 };

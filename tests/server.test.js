@@ -134,6 +134,15 @@ test('会員本人だけが契約上限内で命式を保存・一覧・呼び�
       return {ok: true, status: 'created', subject: created};
     },
     getSavedSubject: async ({ownerUserId, subjectId}) => ownerUserId === ownerId && subjectId === saved[0]?.id ? {ok: true, subject: saved[0]} : {ok: false, status: 'not_found'},
+    renameSavedSubject: async ({ownerUserId, subjectId, displayName}) => {
+      if (ownerUserId !== ownerId || subjectId !== saved[0]?.id) return {ok: false, status: 'not_found'};
+      saved[0].display_name = displayName.trim();
+      return {ok: true, status: 'renamed', subject: saved[0]};
+    },
+    deleteSavedSubject: async ({ownerUserId, subjectId}) => {
+      if (ownerUserId !== ownerId || subjectId !== saved[0]?.id) return {ok: false, status: 'not_found'};
+      return {ok: true, status: 'deleted', subject: saved.shift()};
+    },
   };
   await withServer(async base => {
     assert.equal((await fetch(`${base}/members/api/subjects`)).status, 401);
@@ -146,9 +155,34 @@ test('会員本人だけが契約上限内で命式を保存・一覧・呼び�
     assert.equal(created.status, 201);
     const list = await (await fetch(`${base}/members/api/subjects`, {headers: {Cookie: cookie}})).json();
     assert.equal(list.subjects.length, 1);
+    assert.deepEqual(list.usage, {used: 1, limit: 10});
     const restored = await (await fetch(`${base}/members/api/subjects/${saved[0].id}`, {headers: {Cookie: cookie}})).json();
     assert.equal(restored.subject.owner_user_id, ownerId);
+    const renamed = await (await fetch(`${base}/members/api/subjects/${saved[0].id}`, {method: 'PATCH', headers: {Cookie: cookie, 'Content-Type': 'application/json'}, body: JSON.stringify({displayName: '変更後'})})).json();
+    assert.equal(renamed.subject.display_name, '変更後');
+    const deleted = await fetch(`${base}/members/api/subjects/${saved[0].id}`, {method: 'DELETE', headers: {Cookie: cookie}});
+    assert.equal(deleted.status, 200);
+    assert.equal(saved.length, 0);
   }, dependencies);
+});
+
+test('管理者だけが会員ごとのプランと保存数を確認できる', async () => {
+  const listMemberUsage = async () => ({ok: true, members: [{id: 'member-1', display_name: '利用者A', plan_id: 'startup', account_status: 'active', saved_subject_count: 3, last_login_at: null}]});
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.match(html, /利用者A/);
+    assert.match(html, /3件/);
+  }, {authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}), listMemberUsage});
+
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=member%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    assert.equal((await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}})).status, 403);
+  }, {authenticateMember: async () => ({ok: true, member: {id: 'member-user', email: 'member@example.com', displayName: '会員', role: 'member', planId: 'startup'}}), listMemberUsage});
 });
 
 test('無料プランは命式保存APIを利用できない', async () => {

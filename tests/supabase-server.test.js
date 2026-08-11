@@ -9,6 +9,9 @@ const {
   normalizeSavedSubject,
   createSavedSubject,
   getSavedSubject,
+  renameSavedSubject,
+  deleteSavedSubject,
+  listMemberUsage,
 } = require('../supabase-server');
 
 const validEnv = {
@@ -138,4 +141,33 @@ test('保存命式は入力値を検証し所有者IDを必ずSupabase条件へ�
 
   const restored = await getSavedSubject({ownerUserId, subjectId: createdRow.id, env: validEnv, fetchImpl: async (url) => {assert.match(String(url), /id=eq\.22222222/);return {ok: true, status: 200, json: async () => [createdRow]};}});
   assert.equal(restored.subject.owner_user_id, ownerUserId);
+});
+
+test('保存命式の名前変更と削除は所有者IDと命式IDの両方で制限する', async () => {
+  const ownerUserId = '11111111-1111-4111-8111-111111111111';
+  const subjectId = '22222222-2222-4222-8222-222222222222';
+  const requests = [];
+  const fetchImpl = async (url, options) => {
+    requests.push({url: String(url), options});
+    return {ok: true, status: 200, json: async () => [{id: subjectId, owner_user_id: ownerUserId, display_name: options.method === 'PATCH' ? '変更後' : '変更前'}]};
+  };
+  const renamed = await renameSavedSubject({ownerUserId, subjectId, displayName: ' 変更後 ', env: validEnv, fetchImpl});
+  assert.equal(renamed.subject.display_name, '変更後');
+  assert.equal(requests[0].options.method, 'PATCH');
+  assert.deepEqual(JSON.parse(requests[0].options.body), {display_name: '変更後'});
+  assert.match(requests[0].url, /owner_user_id=eq\.11111111/);
+  assert.match(requests[0].url, /id=eq\.22222222/);
+  const deleted = await deleteSavedSubject({ownerUserId, subjectId, env: validEnv, fetchImpl});
+  assert.equal(deleted.status, 'deleted');
+  assert.equal(requests[1].options.method, 'DELETE');
+  assert.equal(requests[1].options.body, undefined);
+});
+
+test('管理者向け利用状況は会員ごとの保存件数を集計する', async () => {
+  const responses = [
+    {ok: true, status: 200, json: async () => [{id: 'user-1', display_name: '会員A', plan_id: 'startup'}]},
+    {ok: true, status: 200, json: async () => [{owner_user_id: 'user-1'}, {owner_user_id: 'user-1'}]},
+  ];
+  const result = await listMemberUsage({env: validEnv, fetchImpl: async () => responses.shift()});
+  assert.equal(result.members[0].saved_subject_count, 2);
 });
