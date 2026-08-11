@@ -150,7 +150,10 @@ test('会員本人だけが契約上限内で命式を保存・一覧・呼び�
     const cookie = login.headers.get('set-cookie').split(';')[0];
     const memberApp = await fetch(`${base}/members/app`, {headers: {Cookie: cookie}});
     assert.equal(memberApp.status, 200);
-    assert.match(await memberApp.text(), /memberSubjects/);
+    const memberAppHtml = await memberApp.text();
+    assert.match(memberAppHtml, /memberSubjects/);
+    assert.match(memberAppHtml, /newSubjectButton/);
+    assert.doesNotMatch(memberAppHtml, /loadSubjectButton/);
     const created = await fetch(`${base}/members/api/subjects`, {method: 'POST', headers: {Cookie: cookie, 'Content-Type': 'application/json'}, body: JSON.stringify({displayName: '山田花子', birthYear: 1978, birthMonth: 7, birthDay: 4})});
     assert.equal(created.status, 201);
     const list = await (await fetch(`${base}/members/api/subjects`, {headers: {Cookie: cookie}})).json();

@@ -22,10 +22,12 @@
         <input id="savedSubjectSearch" type="search" placeholder="お名前・生年月日で検索" aria-label="保存した命式を検索">
         <select id="savedSubjectSort" aria-label="保存した命式の並び順"><option value="updated-desc">更新が新しい順</option><option value="name-asc">お名前順</option><option value="birth-asc">生年月日順</option></select>
         <select id="savedSubjectSelect" aria-label="保存した命式を選択"><option value="">保存した命式を選択</option></select>
-        <button id="loadSubjectButton" type="button">呼び戻す</button>
-        <button id="renameSubjectButton" type="button">名前変更</button>
-        <button id="deleteSubjectButton" type="button">削除</button>
-        <button id="saveSubjectButton" type="button">現在の入力を保存</button>
+        <div class="member-subject-buttons">
+          <button id="newSubjectButton" type="button">新規追加</button>
+          <button id="renameSubjectButton" type="button">名前変更</button>
+          <button id="deleteSubjectButton" type="button">削除</button>
+          <button id="saveSubjectButton" type="button">現在の入力を保存</button>
+        </div>
       </div>
       <p id="memberSubjectsMessage" role="status"></p>
     </section>
