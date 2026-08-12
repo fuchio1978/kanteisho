@@ -309,6 +309,57 @@ async function listMemberUsage({env = process.env, fetchImpl = globalThis.fetch,
   }
 }
 
+async function updateMemberAccess({actorUserId, targetUserId, planId, accountStatus, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const allowedPlans = new Set(['free', 'starter', 'premium', 'student', 'grandstudent']);
+  const allowedStatuses = new Set(['invited', 'active', 'suspended', 'expired']);
+  if (!userIdPattern.test(String(actorUserId || '')) || !userIdPattern.test(String(targetUserId || '')) || actorUserId === targetUserId) {
+    return {ok: false, status: 'invalid_target'};
+  }
+  if (!allowedPlans.has(planId) || !allowedStatuses.has(accountStatus)) return {ok: false, status: 'invalid_access'};
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const profileUrl = new URL('/rest/v1/member_profiles', config.url);
+    profileUrl.searchParams.set('id', `eq.${targetUserId}`);
+    profileUrl.searchParams.set('role', 'eq.member');
+    profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
+    const profileResponse = await fetchImpl(profileUrl, {
+      method: 'PATCH',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
+      body: JSON.stringify({plan_id: planId, account_status: accountStatus}),
+      signal: controller.signal,
+    });
+    if (!profileResponse.ok) return {ok: false, status: 'database_unavailable'};
+    const profiles = await responseJson(profileResponse);
+    const profile = Array.isArray(profiles) ? profiles[0] : null;
+    if (!profile) return {ok: false, status: 'not_found'};
+
+    const auditUrl = new URL('/rest/v1/admin_audit_logs', config.url);
+    const auditResponse = await fetchImpl(auditUrl, {
+      method: 'POST',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
+      body: JSON.stringify({
+        actor_user_id: actorUserId,
+        target_user_id: targetUserId,
+        action: 'member_access_updated',
+        details: {plan_id: planId, account_status: accountStatus},
+      }),
+      signal: controller.signal,
+    });
+    if (!auditResponse.ok) return {ok: true, status: 'updated_without_audit', profile};
+    return {ok: true, status: 'updated', profile};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'database_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function checkSupabaseConnection({env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 5000} = {}) {
   const config = loadSupabaseServerConfig(env);
   if (!config.configured) return {ok: false, status: config.status, issues: config.issues};
@@ -351,4 +402,5 @@ module.exports = {
   renameSavedSubject,
   deleteSavedSubject,
   listMemberUsage,
+  updateMemberAccess,
 };

@@ -12,6 +12,7 @@ const {
   renameSavedSubject,
   deleteSavedSubject,
   listMemberUsage,
+  updateMemberAccess,
 } = require('../supabase-server');
 
 const validEnv = {
@@ -170,4 +171,35 @@ test('管理者向け利用状況は会員ごとの保存件数を集計する',
   ];
   const result = await listMemberUsage({env: validEnv, fetchImpl: async () => responses.shift()});
   assert.equal(result.members[0].saved_subject_count, 2);
+});
+
+test('管理者によるプラン変更は会員プロフィールと監査記録へ保存する', async () => {
+  const actorUserId = '11111111-1111-4111-8111-111111111111';
+  const targetUserId = '22222222-2222-4222-8222-222222222222';
+  const requests = [];
+  const result = await updateMemberAccess({
+    actorUserId,
+    targetUserId,
+    planId: 'premium',
+    accountStatus: 'active',
+    env: validEnv,
+    fetchImpl: async (url, options) => {
+      requests.push({url: String(url), options});
+      if (String(url).includes('member_profiles')) return {ok: true, status: 200, json: async () => [{id: targetUserId, display_name: '会員A', plan_id: 'premium', account_status: 'active'}]};
+      return {ok: true, status: 201, json: async () => null};
+    },
+  });
+  assert.equal(result.status, 'updated');
+  assert.match(requests[0].url, /id=eq\.22222222/);
+  assert.match(requests[0].url, /role=eq\.member/);
+  assert.deepEqual(JSON.parse(requests[0].options.body), {plan_id: 'premium', account_status: 'active'});
+  assert.match(requests[1].url, /admin_audit_logs/);
+  assert.equal(JSON.parse(requests[1].options.body).action, 'member_access_updated');
+});
+
+test('管理者自身・不正なプラン・不正な利用状態は変更しない', async () => {
+  const userId = '11111111-1111-4111-8111-111111111111';
+  assert.equal((await updateMemberAccess({actorUserId: userId, targetUserId: userId, planId: 'premium', accountStatus: 'active'})).status, 'invalid_target');
+  assert.equal((await updateMemberAccess({actorUserId: userId, targetUserId: '22222222-2222-4222-8222-222222222222', planId: 'admin', accountStatus: 'active'})).status, 'invalid_access');
+  assert.equal((await updateMemberAccess({actorUserId: userId, targetUserId: '22222222-2222-4222-8222-222222222222', planId: 'free', accountStatus: 'unknown'})).status, 'invalid_access');
 });
