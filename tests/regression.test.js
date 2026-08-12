@@ -9,7 +9,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   dataSource + '\n' + source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,savedSubjectReading,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,savedSubjectReading,compatibilityYearOptions,reorderedIds,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -44,6 +44,16 @@ test('相性鑑定は保存した入力から通常画面と同じ命式を再�
   const restored=context.api.savedSubjectReading(subject),direct=calculate('1978-07-04','19:40',16,'男性');
   assert.equal(JSON.stringify(restored.p),JSON.stringify(direct.pillars));
   assert.equal(restored.x.name,'比較対象');
+});
+
+test('相性鑑定年は今年を中心に前後50年をプルダウン表示する', () => {
+  const years=context.api.compatibilityYearOptions(2026);
+  assert.equal(years.length,101);assert.equal(years[0],1976);assert.equal(years[50],2026);assert.equal(years[100],2076);
+});
+
+test('相性鑑定に表示する人の順番を任意に前後できる', () => {
+  assert.deepEqual([...context.api.reorderedIds(['a','b','c'],'c',-1)],['a','c','b']);
+  assert.deepEqual([...context.api.reorderedIds(['a','b','c'],'a',-1)],['a','b','c']);
 });
 
 test('明治・大正・昭和・平成・令和の元号年を西暦へ換算する', () => {

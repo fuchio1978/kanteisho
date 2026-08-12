@@ -194,18 +194,20 @@
 .compatibility-heading h2{font-family:"Klee One",serif;font-size:38px;font-weight:600;color:var(--blue);margin:4px 0 0}
 .compatibility-heading p{font-size:12px;color:#8a9ca6;margin:2px 0 0}
 .compatibility-year-control{width:150px;display:grid;gap:6px;color:#607d8d;font:600 12px "Klee One",serif}
-.compatibility-year-control input{box-sizing:border-box;width:100%;padding:10px 12px;background:#fff;border:1px solid #c7d7df;border-radius:10px;font-size:14px;color:#17384b}
+.compatibility-year-control select{box-sizing:border-box;width:100%;padding:10px 34px 10px 12px;background:#fff;border:1px solid #c7d7df;border-radius:10px;font-size:14px;color:#17384b}
 .compatibility-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:24px}
 .compatibility-picker>p{grid-column:1/-1;color:#78909c;text-align:center}
-.compatibility-picker label{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid #d4e4eb;border-radius:12px;background:#f8fbfd;color:#52798f;cursor:pointer}
-.compatibility-picker label:has(input:checked){border-color:#63a8d4;background:#eef8fd;box-shadow:0 0 0 1px #63a8d4 inset}
+.compatibility-person{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;border:1px solid #d4e4eb;border-radius:12px;background:#f8fbfd;color:#52798f;overflow:hidden}.compatibility-person.is-selected{border-color:#63a8d4;background:#eef8fd;box-shadow:0 0 0 1px #63a8d4 inset}
+.compatibility-picker label{min-width:0;display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer}
 .compatibility-picker input{accent-color:#1766b1}
-.compatibility-picker span{display:grid;min-width:0}.compatibility-picker strong,.compatibility-picker small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.compatibility-picker strong{color:#1766b1;font-weight:500}.compatibility-picker small{font-size:10px}
+.compatibility-picker span{display:grid;min-width:0}.compatibility-picker strong{color:#1766b1;font-weight:500;line-height:1.35;overflow-wrap:anywhere}.compatibility-picker small{font-size:10px;white-space:nowrap}
+.compatibility-order{display:flex;align-items:center;gap:3px;padding-right:8px}.compatibility-order em{min-width:19px;height:19px;border-radius:50%;background:#1766b1;color:#fff;font:600 10px/19px sans-serif;text-align:center;font-style:normal}.compatibility-order button{width:27px;height:27px;padding:0;border:1px solid #a9c9dc;border-radius:7px;background:#fff;color:#1766b1;cursor:pointer}.compatibility-order button:disabled{opacity:.3;cursor:default}
 .compatibility-message{min-height:1.5em;margin:12px 0;color:#6d8794;font-size:12px;text-align:center}
 .compatibility-sheet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .compatibility-card{min-width:0;padding:18px 14px 10px;border:1px solid #d4e4eb;border-radius:18px;background:#fff}
 .compatibility-card header{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:0 5px 10px;border-bottom:1px solid #e5edf1;color:#52798f}.compatibility-card header strong{color:var(--blue);font-size:18px;font-weight:500}.compatibility-card header span{font-size:11px}.compatibility-card header small{grid-column:1/-1;font-size:10px}
-.compatibility-card .compatibility-pillars{min-width:650px;transform-origin:top left;transform:scale(.67);width:149.25%;margin-bottom:-120px;--six-group-gap:28px}
+.compatibility-pillars-stage{height:245px;overflow:hidden;position:relative}
+.compatibility-card .compatibility-pillars{min-width:650px;transform-origin:top left;transform:scale(.67);width:149.25%;--six-group-gap:28px}
 .compatibility-card .compatibility-pillars .kanji-box{width:76px}.compatibility-card .compatibility-pillars .kanji{height:86px;font-size:48px}.compatibility-card .compatibility-pillars .hidden-stems{display:none}
 .compatibility-elements{width:min(100%,270px);margin:0 auto}.compatibility-elements .five-elements-score-toggle,.compatibility-elements .five-elements-details{display:none!important}
 .compatibility-print-button{display:block;margin:25px auto 0}.compatibility-print-button:disabled{opacity:.45;cursor:not-allowed}
@@ -351,7 +353,8 @@
   body.printing-compatibility .compatibility-sheet{display:grid!important;grid-template-columns:repeat(2,1fr);gap:4mm;margin-top:5mm}
   body.printing-compatibility .compatibility-card{height:76mm;box-sizing:border-box;padding:3mm;overflow:hidden;border-radius:4mm}
   body.printing-compatibility .compatibility-card header{padding-bottom:2mm}.printing-compatibility .compatibility-card header strong{font-size:14px}
-  body.printing-compatibility .compatibility-card .compatibility-pillars{transform:scale(.5);width:200%;margin-bottom:-168px}
+  body.printing-compatibility .compatibility-pillars-stage{height:112px}
+  body.printing-compatibility .compatibility-card .compatibility-pillars{transform:scale(.38);width:263.16%}
   body.printing-compatibility .compatibility-elements{width:145px;margin-left:auto;margin-right:auto}
 }
 
