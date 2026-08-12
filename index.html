@@ -117,6 +117,21 @@
         </div>
         <div class="five-elements-chart" id="sixElementsChart"></div>
       </section>
+      <section class="compatibility-section" id="compatibilitySection" aria-labelledby="compatibilityTitle" hidden>
+        <div class="compatibility-heading">
+          <div>
+            <span>COMPATIBILITY READING</span>
+            <h2 id="compatibilityTitle">相性鑑定モード</h2>
+            <p>保存した方から最大4名を選び、同じ年の六柱命式と五行バランスを並べます。</p>
+          </div>
+          <label class="compatibility-year-control"><span>鑑定年</span><input id="compatibilityYearInput" type="number" min="1" max="9999" step="1" aria-label="相性鑑定の鑑定年"></label>
+        </div>
+        <div class="compatibility-picker" id="compatibilityPicker" aria-label="相性鑑定に表示する方を選択"></div>
+        <p class="compatibility-message" id="compatibilityMessage" role="status">相性鑑定に表示する方を選択してください。</p>
+        <div class="compatibility-sheet" id="compatibilitySheet" aria-live="polite"></div>
+        <button class="primary compatibility-print-button" id="compatibilityPrintButton" type="button" disabled>相性シートをPDF保存 <span>↓</span></button>
+        <p class="pdf-save-note">A4横1枚に最大4名を配置します。印刷画面の送信先で「PDFに保存」を選択してください。</p>
+      </section>
       <section class="pdf-mode-section" aria-labelledby="pdfModeTitle">
         <div class="pdf-mode-heading">
           <div>

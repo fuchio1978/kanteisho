@@ -9,7 +9,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   dataSource + '\n' + source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,savedSubjectReading,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -26,7 +26,7 @@ function calculate(date, time, localOffset, sex, unknown = false) {
 
 test('会員版は受け取った権限からプラン別の表示範囲を決める', () => {
   const free = context.api.memberFeatureVisibility(['original_chart']);
-  assert.deepEqual({...free}, {fiveElements:false,luckCycles:false,annualFortune:false,sixPillars:false,pdfReport:false,savedSubjects:false,changeEvidence:false});
+  assert.deepEqual({...free}, {fiveElements:false,luckCycles:false,annualFortune:false,sixPillars:false,pdfReport:false,savedSubjects:false,changeEvidence:false,compatibility:false});
   const starter = context.api.memberFeatureVisibility(['original_chart','change_evidence','five_element_balance','luck_cycles','annual_fortune','pdf_report']);
   assert.equal(starter.changeEvidence, true);
   assert.equal(starter.fiveElements, true);
@@ -36,6 +36,14 @@ test('会員版は受け取った権限からプラン別の表示範囲を決�
   const premium = context.api.memberFeatureVisibility(['six_pillars','saved_subjects']);
   assert.equal(premium.sixPillars, true);
   assert.equal(premium.savedSubjects, true);
+  assert.equal(context.api.memberFeatureVisibility(['compatibility']).compatibility, true);
+});
+
+test('相性鑑定は保存した入力から通常画面と同じ命式を再現する', () => {
+  const subject={display_name:'比較対象',birth_year:1978,birth_month:7,birth_day:4,birth_hour:19,birth_minute:40,birth_time_unknown:false,sex:'男性',birthplace_label:'新潟',local_offset_minutes:16,standard_longitude:135,hemisphere:'north'};
+  const restored=context.api.savedSubjectReading(subject),direct=calculate('1978-07-04','19:40',16,'男性');
+  assert.equal(JSON.stringify(restored.p),JSON.stringify(direct.pillars));
+  assert.equal(restored.x.name,'比較対象');
 });
 
 test('明治・大正・昭和・平成・令和の元号年を西暦へ換算する', () => {
