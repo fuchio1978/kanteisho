@@ -334,7 +334,7 @@
   html,body{width:297mm;height:auto;margin:0!important;background:#fff!important}
   body.printing-pdf-report{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.printing-pdf-report main{width:297mm;height:auto;margin:0!important}
-  body.printing-pdf-report #formView{display:none!important}
+  body.printing-pdf-report main>*{display:none!important}
   body.printing-pdf-report .result-view{display:block!important;width:297mm;height:auto;min-height:0;margin:0;padding:0;border-radius:0;box-shadow:none;background:#fff;overflow:visible}
   body.printing-pdf-report .result-view:after{display:none}
   body.printing-pdf-report .result-view>*{display:none!important}
@@ -350,12 +350,12 @@
   body.printing-compatibility .result-view>*{display:none!important}
   body.printing-compatibility .compatibility-section{display:grid!important;grid-template-rows:auto 1fr;width:297mm;height:210mm;box-sizing:border-box;margin:0;padding:6mm 7mm;border:0;background:#fff;overflow:hidden}
   body.printing-compatibility .compatibility-heading{display:block}.printing-compatibility .compatibility-heading h2{font-size:28px;line-height:1;margin-top:2px}.printing-compatibility .compatibility-heading p{margin:1px 0 0}.printing-compatibility .compatibility-year-control,.printing-compatibility .compatibility-picker,.printing-compatibility .compatibility-message,.printing-compatibility .compatibility-print-button,.printing-compatibility .pdf-save-note{display:none!important}
-  body.printing-compatibility .compatibility-sheet{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:3mm;width:100%;height:100%;min-height:0;margin-top:3mm}
-  body.printing-compatibility .compatibility-card{height:auto;min-height:0;box-sizing:border-box;padding:2.5mm 3mm;overflow:hidden;border-radius:4mm;display:grid;grid-template-rows:auto 36mm 1fr}
+  body.printing-compatibility .compatibility-sheet{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:3mm;width:100%;height:100%;min-width:0;min-height:0;margin-top:3mm;overflow:hidden}
+  body.printing-compatibility .compatibility-card{height:auto;min-width:0;min-height:0;box-sizing:border-box;padding:2.5mm 3mm;overflow:hidden;contain:layout paint;border-radius:4mm;display:grid;grid-template-rows:auto 36mm 1fr}
   body.printing-compatibility .compatibility-card header{padding:0 1mm 1.5mm}.printing-compatibility .compatibility-card header strong{font-size:15px}.printing-compatibility .compatibility-card header span{font-size:9px}.printing-compatibility .compatibility-card header small{font-size:8px}
-  body.printing-compatibility .compatibility-pillars-stage{height:36mm;overflow:visible}
-  body.printing-compatibility .compatibility-card .compatibility-pillars{transform:scale(.48);width:208.34%}
-  body.printing-compatibility .compatibility-elements{width:39mm;margin:-2mm auto 0}
+  body.printing-compatibility .compatibility-pillars-stage{width:100%;height:36mm;overflow:hidden;contain:layout paint}
+  body.printing-compatibility .compatibility-card .compatibility-pillars{width:650px;max-width:none;transform:scale(.48);transform-origin:top left}
+  body.printing-compatibility .compatibility-elements{width:40mm;margin:-2mm auto 0}
 }
 
 /* 会員版：本人専用の命式保存バー */
