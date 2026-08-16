@@ -71,7 +71,7 @@ const PLANS = Object.freeze({
     FEATURES.CHANGE_EVIDENCE,
     FEATURES.COMPATIBILITY,
   ], null),
-  grandstudent: plan('grandstudent', '孫生徒用', 1100, [
+  grandstudent: plan('grandstudent', 'ご紹介用', 1100, [
     FEATURES.ORIGINAL_CHART,
     FEATURES.FIVE_ELEMENT_BALANCE,
     FEATURES.LUCK_CYCLES,

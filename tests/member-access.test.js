@@ -18,6 +18,7 @@ test('確定した5プランは料金と利用範囲を保持する', () => {
   assert.equal(PLANS.premium.monthlyPrice, 3300);
   assert.equal(PLANS.student.monthlyPrice, 1100);
   assert.equal(PLANS.grandstudent.monthlyPrice, 1100);
+  assert.equal(PLANS.grandstudent.label, 'ご紹介用');
   assert.equal(canUseFeature({planId: 'free'}, FEATURES.ORIGINAL_CHART), true);
   assert.equal(canUseFeature({planId: 'free'}, FEATURES.FIVE_ELEMENT_BALANCE), false);
   assert.equal(canUseFeature({planId: 'starter'}, FEATURES.CHANGE_EVIDENCE), true);
@@ -29,7 +30,7 @@ test('確定した5プランは料金と利用範囲を保持する', () => {
   assert.equal(canUseFeature({planId: 'premium'}, FEATURES.COMPATIBILITY), true);
 });
 
-test('講座生と孫生徒は同機能でも別プランとして管理する', () => {
+test('講座生とご紹介用は同機能でも別プランとして管理する', () => {
   assert.equal(canUseFeature({planId: 'student'}, FEATURES.CHANGE_EVIDENCE), true);
   assert.equal(canUseFeature({planId: 'student'}, FEATURES.COMPATIBILITY), true);
   assert.deepEqual(PLANS.student.features, PLANS.grandstudent.features);
