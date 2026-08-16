@@ -30,6 +30,33 @@ test('確定した5プランは料金と利用範囲を保持する', () => {
   assert.equal(canUseFeature({planId: 'premium'}, FEATURES.COMPATIBILITY), true);
 });
 
+test('販売5プランの利用機能を一覧どおり固定する', () => {
+  const featureIds = Object.values(FEATURES).filter(feature => feature !== FEATURES.ADMIN_CONSOLE);
+  const enabled = planId => featureIds.filter(feature => canUseFeature({planId}, feature));
+  assert.deepEqual(enabled('free'), [FEATURES.ORIGINAL_CHART]);
+  assert.deepEqual(enabled('starter'), [
+    FEATURES.ORIGINAL_CHART,
+    FEATURES.FIVE_ELEMENT_BALANCE,
+    FEATURES.LUCK_CYCLES,
+    FEATURES.ANNUAL_FORTUNE,
+    FEATURES.PDF_REPORT,
+    FEATURES.CHANGE_EVIDENCE,
+  ]);
+  assert.deepEqual(enabled('premium'), [
+    FEATURES.ORIGINAL_CHART,
+    FEATURES.FIVE_ELEMENT_BALANCE,
+    FEATURES.LUCK_CYCLES,
+    FEATURES.ANNUAL_FORTUNE,
+    FEATURES.SIX_PILLARS,
+    FEATURES.PDF_REPORT,
+    FEATURES.SAVED_SUBJECTS,
+    FEATURES.CHANGE_EVIDENCE,
+    FEATURES.COMPATIBILITY,
+  ]);
+  assert.deepEqual(enabled('student'), enabled('premium'));
+  assert.deepEqual(enabled('grandstudent'), enabled('premium'));
+});
+
 test('講座生とご紹介用は同機能でも別プランとして管理する', () => {
   assert.equal(canUseFeature({planId: 'student'}, FEATURES.CHANGE_EVIDENCE), true);
   assert.equal(canUseFeature({planId: 'student'}, FEATURES.COMPATIBILITY), true);

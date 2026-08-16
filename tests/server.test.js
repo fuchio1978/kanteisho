@@ -185,6 +185,9 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     const html = await page.text();
     assert.match(html, /利用者A/);
     assert.match(html, /3件/);
+    assert.match(html, /STORES商品対応/);
+    assert.match(html, /ご紹介用/);
+    assert.match(html, /0\/4商品を設定済み/);
   }, {authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}), listMemberUsage});
 
   await withServer(async base => {
@@ -229,6 +232,34 @@ test('無料プランは命式保存APIを利用できない', async () => {
     assert.equal(response.status, 403);
     assert.equal((await response.json()).status, 'plan_restricted');
   }, {authenticateMember: async () => ({ok: true, member: {id: '33333333-3333-4333-8333-333333333333', email: 'free@example.com', displayName: '', role: 'member', planId: 'free'}})});
+});
+
+test('スターターは保存APIを直接呼んでも利用できない', async () => {
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=starter%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const response = await fetch(`${base}/members/api/subjects`, {method: 'POST', headers: {Cookie: cookie, 'Content-Type': 'application/json'}, body: JSON.stringify({displayName: '保存不可'})});
+    assert.equal(response.status, 403);
+    assert.deepEqual(await response.json(), {ok: false, status: 'plan_restricted', limit: 0});
+  }, {authenticateMember: async () => ({ok: true, member: {id: '44444444-4444-4444-8444-444444444444', email: 'starter@example.com', displayName: '', role: 'member', planId: 'starter'}})});
+});
+
+test('プレミアムは100件で保存を止め、講座生・ご紹介用は上限なく保存できる', async () => {
+  for (const [planId, expectedStatus] of [['premium', 409], ['student', 201], ['grandstudent', 201]]) {
+    let created = 0;
+    await withServer(async base => {
+      const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: `email=${planId}%40example.com&password=correct`});
+      const cookie = login.headers.get('set-cookie').split(';')[0];
+      const response = await fetch(`${base}/members/api/subjects`, {method: 'POST', headers: {Cookie: cookie, 'Content-Type': 'application/json'}, body: JSON.stringify({displayName: '保存テスト', birthYear: 1978, birthMonth: 7, birthDay: 4})});
+      assert.equal(response.status, expectedStatus);
+      if (planId === 'premium') assert.deepEqual(await response.json(), {ok: false, status: 'limit_reached', limit: 100});
+    }, {
+      authenticateMember: async () => ({ok: true, member: {id: '55555555-5555-4555-8555-555555555555', email: `${planId}@example.com`, displayName: '', role: 'member', planId}}),
+      countSavedSubjects: async () => ({ok: true, count: 100}),
+      createSavedSubject: async () => { created += 1; return {ok: true, status: 'created', subject: {id: String(created)}}; },
+    });
+    assert.equal(created, planId === 'premium' ? 0 : 1);
+  }
 });
 
 test('正しいパスワードだけが署名付きCookieを受け取りAPIと画面を利用できる', async () => {
