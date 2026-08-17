@@ -169,6 +169,16 @@ test('通常画面は五行変化の根拠を命式下へ分離しPDF配置は�
   assert.match(source, /renderElementCircle\('#pdfSixElements',context\.sixBalance/);
 });
 
+test('五行得点・五行変化の根拠・用神は画面とPDFで読みやすい文字サイズを保つ', () => {
+  const css = fs.readFileSync(require('node:path').join(__dirname, '..', 'styles.css'), 'utf8');
+  assert.match(css, /\.five-elements-scores\{[^}]*font:600 15px/);
+  assert.match(css, /\.use-god\{[^}]*font:500 14px\/1\.75/);
+  assert.match(css, /\.five-elements-transformations\{[^}]*font:14px\/1\.75/);
+  assert.match(css, /\.pdf-training \.five-elements-scores\{[^}]*font-size:9\.5px/);
+  assert.match(css, /\.pdf-training \.use-god\{[^}]*font-size:7px/);
+  assert.match(css, /\.pdf-training \.five-elements-transformations\{[^}]*font-size:8px/);
+});
+
 test('PDFの十二文字でも火を受けた戌は土の内枠を保持する', () => {
   const pillars = {
     hour: ['甲', '辰'], day: ['壬', '子'], month: ['庚', '戌'], year: ['丁', '巳'],

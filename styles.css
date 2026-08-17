@@ -143,30 +143,30 @@
 .five-elements-score-toggle:hover{border-color:var(--blue);color:var(--blue)}
 .five-elements-score-toggle:focus-visible{outline:2px solid #8ec1de;outline-offset:2px}
 .five-elements-details[hidden]{display:none}
-.five-elements-scores{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin-top:14px;color:#526f7e;font:600 13px "Klee One",serif}
+.five-elements-scores{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin-top:14px;color:#526f7e;font:600 15px "Klee One",serif}
 .five-elements-scores span{display:flex;align-items:center;gap:6px;white-space:nowrap}
 .five-elements-scores i{width:10px;height:10px;border-radius:50%;background:var(--score-color);display:inline-block}
-.five-elements-scores .element-strength{min-width:1.7em;padding:1px 5px;border-radius:999px;font:600 10px/1.45 "Klee One",serif;text-align:center;font-style:normal}
+.five-elements-scores .element-strength{min-width:1.7em;padding:1px 5px;border-radius:999px;font:600 11px/1.45 "Klee One",serif;text-align:center;font-style:normal}
 .element-strength.level-strong{color:#b62828;background:#fff0f0}.element-strength.level-middle{color:#996b00;background:#fff7dc}.element-strength.level-weak{color:#607d8b;background:#eef4f7}
 .destiny-temperature{display:flex;align-items:center;justify-content:center;gap:9px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
 .destiny-temperature strong{min-width:3.6em;padding:4px 11px;border-radius:999px;color:#146caf;background:#edf7fd;font-size:13px;letter-spacing:.04em}
-.use-god{width:min(680px,100%);margin:12px auto 0;padding:12px 15px;border:1px solid #d7e6ee;border-radius:16px;background:#f8fcfe;color:#496b7d;font:500 12px/1.75 "Klee One",serif;text-align:left}
-.use-god header{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 10px;margin-bottom:7px;color:#1971b7;font-weight:700}.use-god header span{font-size:14px;letter-spacing:.08em}.use-god header small{color:#78909c;font-size:10px;font-weight:500}
-.use-god dl,.use-god dd{margin:0}.use-god dl>div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;padding:6px 0;border-top:1px solid #e6f0f4}.use-god dt{color:#1971b7;font-weight:700}.use-god dd{white-space:pre-wrap;overflow-wrap:anywhere}.use-god p{margin:8px 0 0;padding:7px 10px;border-radius:10px;background:#fff5dd;color:#8b6615;font-size:10px}
+.use-god{width:min(680px,100%);margin:12px auto 0;padding:12px 15px;border:1px solid #d7e6ee;border-radius:16px;background:#f8fcfe;color:#496b7d;font:500 14px/1.75 "Klee One",serif;text-align:left}
+.use-god header{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 10px;margin-bottom:7px;color:#1971b7;font-weight:700}.use-god header span{font-size:16px;letter-spacing:.08em}.use-god header small{color:#78909c;font-size:12px;font-weight:500}
+.use-god dl,.use-god dd{margin:0}.use-god dl>div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:10px;padding:6px 0;border-top:1px solid #e6f0f4}.use-god dt{color:#1971b7;font-weight:700}.use-god dd{white-space:pre-wrap;overflow-wrap:anywhere}.use-god p{margin:8px 0 0;padding:7px 10px;border-radius:10px;background:#fff5dd;color:#8b6615;font-size:12px}
 .body-strength{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px 16px;margin:11px 0 0;color:#607d8d;font:600 12px "Klee One",serif}
 .body-strength span{white-space:nowrap}.body-strength b{color:#315f77;font-weight:600}
 .body-strength strong{padding:4px 13px;border-radius:999px;font-size:13px;letter-spacing:.08em}
 .strength-strong{color:#c56612;background:#fff1df}.strength-middle{color:#277496;background:#eaf7fc}.strength-weak{color:#68757c;background:#eef2f4}
-.five-elements-basis-label{margin:12px 0 2px;color:var(--blue);font:600 11px "Klee One",serif;text-align:left}
-.five-elements-transformations{list-style:none;padding:0;margin:12px auto 0;max-width:560px;color:#78909c;font:12px/1.75 "Klee One",serif;text-align:left}
+.five-elements-basis-label{margin:12px 0 2px;color:var(--blue);font:600 13px "Klee One",serif;text-align:left}
+.five-elements-transformations{list-style:none;padding:0;margin:12px auto 0;max-width:560px;color:#78909c;font:14px/1.75 "Klee One",serif;text-align:left}
 .five-elements-transformations li{display:grid;grid-template-columns:48px 1fr;gap:8px;padding:3px 0}
 .five-elements-transformations strong{color:var(--blue);font-weight:600;white-space:nowrap}
-.five-elements-calculation-log{margin:7px 0 0;color:#78909c;font:10px/1.5 "Klee One",serif;text-align:left}
+.five-elements-calculation-log{margin:7px 0 0;color:#78909c;font:12px/1.5 "Klee One",serif;text-align:left}
 .five-elements-basis-panel{width:min(100%,720px);margin:18px auto 0;padding:0 18px;box-sizing:border-box}
 .five-elements-basis-panel .five-elements-basis-label{margin-top:0}
 .five-elements-basis-panel .five-elements-transformations{max-width:none}
 .six-mode-section .five-elements-basis-panel{margin-top:18px}
-@media(max-width:650px){.five-elements-section{margin-top:44px;padding-top:34px}.five-elements-heading h2{font-size:31px}.five-elements-chart{margin-top:0}.five-elements-score-toggle{margin-top:-8px}.five-elements-scores{margin-top:12px;gap:7px 12px;font-size:12px}}
+@media(max-width:650px){.five-elements-section{margin-top:44px;padding-top:34px}.five-elements-heading h2{font-size:31px}.five-elements-chart{margin-top:0}.five-elements-score-toggle{margin-top:-8px}.five-elements-scores{margin-top:12px;gap:7px 12px;font-size:14px}}
 
 /* 原命式＋大運＋年運の六柱推命モード */
 .six-mode-section{margin-top:62px;border-top:1px solid #dbe5ea;padding-top:46px;position:relative;z-index:1}
@@ -279,21 +279,22 @@
 .pdf-balance-panel{display:grid;grid-template-rows:auto 1fr}
 .pdf-elements-chart{width:260px;margin:-8px auto 0;align-self:center}
 .pdf-elements-chart .five-elements-score-toggle,.pdf-elements-chart .five-elements-details{display:none!important}
-.pdf-training .pdf-elements-chart{width:100%;margin:0;display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px;align-items:center;text-align:left}
-.pdf-training .pdf-elements-chart svg{width:160px}
+.pdf-training .pdf-elements-chart{width:100%;margin:0;display:grid;grid-template-columns:115px minmax(0,1fr);gap:8px;align-items:center;text-align:left}
+.pdf-training .pdf-elements-chart svg{width:115px}
 .pdf-training .pdf-elements-chart .five-elements-details{display:block!important;min-width:0}
-.pdf-training .five-elements-scores{display:grid;grid-template-columns:repeat(3,max-content);justify-content:start;gap:3px 8px;margin:0;font-size:8px}
+.pdf-training .five-elements-scores{display:grid;grid-template-columns:repeat(5,max-content);justify-content:start;gap:3px 6px;margin:0;font-size:9.5px}
 .pdf-training .five-elements-scores i{width:7px;height:7px}
+.pdf-training .five-elements-scores .element-strength{min-width:0;padding:1px 3px;font-size:7px}
 .pdf-training .destiny-temperature{justify-content:start;gap:5px;margin:4px 0 0;font-size:7.5px}
 .pdf-training .destiny-temperature strong{min-width:0;padding:1px 6px;font-size:8px}
-.pdf-training .use-god{margin:3px 0 0;padding:4px 6px;border-radius:7px;font-size:5.8px;line-height:1.35}.pdf-training .use-god header{gap:2px 4px;margin-bottom:2px}.pdf-training .use-god header span{font-size:6.8px}.pdf-training .use-god header small{font-size:5.4px}.pdf-training .use-god dl>div{grid-template-columns:58px minmax(0,1fr);gap:4px;padding:2px 0}.pdf-training .use-god p{margin-top:2px;padding:2px 4px;font-size:5.2px}
+.pdf-training .use-god{margin:3px 0 0;padding:4px 6px;border-radius:7px;font-size:7px;line-height:1.35}.pdf-training .use-god header{gap:2px 4px;margin-bottom:2px}.pdf-training .use-god header span{font-size:8px}.pdf-training .use-god header small{font-size:6.5px}.pdf-training .use-god dl>div{grid-template-columns:54px minmax(0,1fr);gap:4px;padding:2px 0}.pdf-training .use-god p{margin-top:2px;padding:2px 4px;font-size:6.5px}
 .pdf-training .body-strength{justify-content:start;gap:3px 8px;margin:4px 0 0;font-size:7.5px}
 .pdf-training .body-strength strong{padding:1px 6px;font-size:8px}
-.pdf-training .five-elements-basis-label{margin:6px 0 1px;font-size:8px}
-.pdf-training .five-elements-transformations{margin:0;font-size:7px;line-height:1.25;max-width:none}
+.pdf-training .five-elements-basis-label{margin:6px 0 1px;font-size:9px}
+.pdf-training .five-elements-transformations{margin:0;font-size:8px;line-height:1.25;max-width:none}
 .pdf-training .five-elements-transformations li{grid-template-columns:34px 1fr;gap:3px;padding:1px 0}
 .pdf-training .five-elements-transformations li[hidden]{display:none!important}
-.pdf-training .five-elements-calculation-log{margin-top:4px;font-size:6.5px;line-height:1.25}
+.pdf-training .five-elements-calculation-log{margin-top:4px;font-size:7.5px;line-height:1.25}
 .pdf-report-footer{border-top:1px solid #d8e3e8;margin-top:10px;padding-top:7px;display:flex;justify-content:space-between;color:#7b929e;font:9px "Klee One",serif}
 .pdf-fortune-grid{display:grid;grid-template-rows:1fr 1.05fr;gap:14px;min-height:0}
 .pdf-fortune-panel{display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;padding:15px 18px 11px}
