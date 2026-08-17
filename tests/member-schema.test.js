@@ -65,3 +65,25 @@ test('計算ルール変更前の結果をバージョン付きで保存でき�
   assert.match(sql, /result_payload jsonb not null/);
   assert.match(sql, /chart_snapshots_subject_created_idx/);
 });
+
+test('STORES契約台帳は定期購入と会員プランを安全に紐付ける', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202608160001_stores_subscriptions.sql'), 'utf8');
+  assert.match(migration, /create table public\.stores_subscriptions/);
+  assert.match(migration, /member_user_id uuid references public\.member_profiles\(id\)/);
+  assert.match(migration, /plan_id in \('starter', 'premium', 'student', 'grandstudent'\)/);
+  assert.match(migration, /stores_item_id text not null/);
+  assert.match(migration, /stores_subscription_id text/);
+  assert.match(migration, /purchaser_email text/);
+  assert.match(migration, /alter table public\.stores_subscriptions enable row level security/);
+  assert.match(migration, /revoke all on public\.stores_subscriptions from anon, authenticated/);
+  assert.doesNotMatch(migration, /card_(number|token)|credit_card/i);
+});
+
+test('STORES通知はイベントIDで重複処理を防ぎブラウザへ公開しない', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202608160001_stores_subscriptions.sql'), 'utf8');
+  assert.match(migration, /create table public\.stores_webhook_events/);
+  assert.match(migration, /stores_event_id text not null unique/);
+  assert.match(migration, /processing_status text not null/);
+  assert.match(migration, /revoke all on public\.stores_webhook_events from anon, authenticated/);
+  assert.match(migration, /grant select, insert, update, delete on table public\.stores_webhook_events to service_role/);
+});
