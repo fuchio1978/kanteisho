@@ -360,6 +360,127 @@ async function updateMemberAccess({actorUserId, targetUserId, planId, accountSta
   }
 }
 
+function validMemberEmail(value) {
+  const email = String(value || '').trim().toLowerCase();
+  if (!email || email.length > 254 || email.includes(' ') || email.startsWith('@') || email.endsWith('@')) return null;
+  const at = email.lastIndexOf('@');
+  return at > 0 && email.slice(at + 1).includes('.') ? email : null;
+}
+
+async function inviteMember({actorUserId, email, displayName, planId, redirectUrl, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const allowedPlans = new Set(['free', 'starter', 'premium', 'student', 'grandstudent']);
+  const normalizedEmail = validMemberEmail(email);
+  const normalizedName = String(displayName || '').trim().slice(0, 120);
+  let normalizedRedirect = null;
+  try {
+    const parsed = new URL(String(redirectUrl || ''));
+    if (parsed.protocol === 'https:' || (parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname))) normalizedRedirect = parsed.toString();
+  } catch {}
+  if (!userIdPattern.test(String(actorUserId || '')) || !normalizedEmail || !normalizedName || !allowedPlans.has(planId) || !normalizedRedirect) {
+    return {ok: false, status: 'invalid_invitation'};
+  }
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const inviteUrl = new URL('/auth/v1/invite', config.url);
+    inviteUrl.searchParams.set('redirect_to', normalizedRedirect);
+    const inviteResponse = await fetchImpl(inviteUrl, {
+      method: 'POST',
+      headers: serverHeaders(config, {'Content-Type': 'application/json'}),
+      body: JSON.stringify({email: normalizedEmail, data: {display_name: normalizedName}}),
+      signal: controller.signal,
+    });
+    if (!inviteResponse.ok) {
+      if (inviteResponse.status === 422) return {ok: false, status: 'already_registered'};
+      if (inviteResponse.status === 429) return {ok: false, status: 'rate_limited'};
+      return {ok: false, status: 'invite_unavailable'};
+    }
+    const invitedUser = await responseJson(inviteResponse);
+    if (!invitedUser?.id) return {ok: false, status: 'invite_unavailable'};
+
+    const profileUrl = new URL('/rest/v1/member_profiles', config.url);
+    profileUrl.searchParams.set('id', `eq.${invitedUser.id}`);
+    profileUrl.searchParams.set('role', 'eq.member');
+    profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
+    const profileResponse = await fetchImpl(profileUrl, {
+      method: 'PATCH',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
+      body: JSON.stringify({display_name: normalizedName, plan_id: planId, account_status: 'invited'}),
+      signal: controller.signal,
+    });
+    const profiles = profileResponse.ok ? await responseJson(profileResponse) : null;
+    const profile = Array.isArray(profiles) ? profiles[0] : null;
+    if (!profile) return {ok: false, status: 'profile_unavailable'};
+
+    const auditUrl = new URL('/rest/v1/admin_audit_logs', config.url);
+    await fetchImpl(auditUrl, {
+      method: 'POST',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
+      body: JSON.stringify({actor_user_id: actorUserId, target_user_id: invitedUser.id, action: 'member_invited', details: {plan_id: planId, email: normalizedEmail}}),
+      signal: controller.signal,
+    });
+    return {ok: true, status: 'invited', profile};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'invite_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function completeMemberInvite({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const token = String(accessToken || '').trim();
+  const rawPassword = String(password || '');
+  if (token.length < 20 || token.length > 8192) return {ok: false, status: 'invalid_token'};
+  if (rawPassword.length < 10 || rawPassword.length > 128) return {ok: false, status: 'weak_password'};
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const userUrl = new URL('/auth/v1/user', config.url);
+    const userResponse = await fetchImpl(userUrl, {
+      method: 'PUT',
+      headers: serverHeaders(config, {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'}),
+      body: JSON.stringify({password: rawPassword}),
+      signal: controller.signal,
+    });
+    if (!userResponse.ok) {
+      if (userResponse.status === 401 || userResponse.status === 403) return {ok: false, status: 'invalid_token'};
+      if (userResponse.status === 422) return {ok: false, status: 'weak_password'};
+      return {ok: false, status: 'auth_unavailable'};
+    }
+    const user = await responseJson(userResponse);
+    if (!user?.id) return {ok: false, status: 'auth_unavailable'};
+
+    const profileUrl = new URL('/rest/v1/member_profiles', config.url);
+    profileUrl.searchParams.set('id', `eq.${user.id}`);
+    profileUrl.searchParams.set('role', 'eq.member');
+    profileUrl.searchParams.set('account_status', 'eq.invited');
+    profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
+    const profileResponse = await fetchImpl(profileUrl, {
+      method: 'PATCH',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
+      body: JSON.stringify({account_status: 'active'}),
+      signal: controller.signal,
+    });
+    const profiles = profileResponse.ok ? await responseJson(profileResponse) : null;
+    const profile = Array.isArray(profiles) ? profiles[0] : null;
+    if (!profile) return {ok: false, status: 'profile_unavailable'};
+    return {ok: true, status: 'completed', email: String(user.email || '')};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'auth_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function checkSupabaseConnection({env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 5000} = {}) {
   const config = loadSupabaseServerConfig(env);
   if (!config.configured) return {ok: false, status: config.status, issues: config.issues};
@@ -403,4 +524,6 @@ module.exports = {
   deleteSavedSubject,
   listMemberUsage,
   updateMemberAccess,
+  inviteMember,
+  completeMemberInvite,
 };

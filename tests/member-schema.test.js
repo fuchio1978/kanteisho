@@ -87,3 +87,10 @@ test('STORES通知はイベントIDで重複処理を防ぎブラウザへ公開
   assert.match(migration, /revoke all on public\.stores_webhook_events from anon, authenticated/);
   assert.match(migration, /grant select, insert, update, delete on table public\.stores_webhook_events to service_role/);
 });
+
+test('新規会員はパスワード設定完了まで招待中として作成する', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202608170001_member_invitations.sql'), 'utf8');
+  assert.match(migration, /alter column account_status set default 'invited'/);
+  assert.match(migration, /insert into public\.member_profiles \(id, display_name, account_status\)/);
+  assert.match(migration, /'invited'/);
+});

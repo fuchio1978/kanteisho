@@ -22,6 +22,8 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      - key: PUBLIC_APP_URL
+        value: https://kanteisho.onrender.com
       - key: STORES_STARTER_ITEM_ID
         sync: false
       - key: STORES_PREMIUM_ITEM_ID

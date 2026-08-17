@@ -7,7 +7,7 @@ create table public.member_profiles (
   role text not null default 'member' check (role in ('member', 'admin')),
   plan_id text not null default 'free'
     check (plan_id in ('free', 'starter', 'premium', 'student', 'grandstudent', 'admin')),
-  account_status text not null default 'active'
+  account_status text not null default 'invited'
     check (account_status in ('invited', 'active', 'suspended', 'expired')),
   max_saved_subjects integer check (max_saved_subjects is null or max_saved_subjects >= 0),
   plan_started_at timestamptz,
@@ -124,8 +124,8 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.member_profiles (id, display_name)
-  values (new.id, coalesce(new.raw_user_meta_data ->> 'display_name', ''));
+  insert into public.member_profiles (id, display_name, account_status)
+  values (new.id, coalesce(new.raw_user_meta_data ->> 'display_name', ''), 'invited');
   return new;
 end;
 $$;

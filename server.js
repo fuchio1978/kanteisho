@@ -3,7 +3,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, effectiveFeatures, canUseFeature, savedSubjectLimit} = require('./member-access');
-const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess} = require('./supabase-server');
+const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, completeMemberInvite} = require('./supabase-server');
 const {storesCatalogReadiness} = require('./stores-catalog');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -19,6 +19,7 @@ const PUBLIC_FILES = new Map([
   ['/use-god-data.js', ['use-god-data.js', 'text/javascript; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
+  ['/member-setup.js', ['member-setup.js', 'text/javascript; charset=utf-8']],
 ]);
 const attempts = new Map();
 
@@ -187,6 +188,10 @@ function memberEntryPage({member = null, message = ''} = {}) {
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:680px;max-width:100%;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.open-app{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.open-app{display:block;text-align:center;text-decoration:none}.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu span{display:grid;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.preparing{margin-top:13px}.student{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}@media(max-width:560px){.card{padding:36px 24px}ul,.member-menu{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}<a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
 }
 
+function memberSetupPage() {
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>初期パスワード設定｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:520px;max-width:100%;padding:44px 38px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:31px;font-weight:500}p{color:#6e8795;font-size:14px;line-height:1.8}.status{padding:12px 14px;border-radius:10px;background:#f2f8fb}.status.error{background:#fff0f0;color:#b53b3b}.status.success{background:#eaf7ef;color:#287445}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.login-link{display:block;width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;text-align:center;text-decoration:none;font-size:15px;cursor:pointer}button:disabled{opacity:.55}.login-link[hidden]{display:none}</style></head><body><main class="card"><div class="eyebrow">MEMBER INVITATION</div><h1>初期パスワード設定</h1><p>ご本人だけが分かるパスワードを設定してください。10文字以上で設定できます。</p><p class="status" id="setupStatus">招待情報を確認しています。</p><form id="memberSetupForm" hidden><label>新しいパスワード<input id="newMemberPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label><label>新しいパスワード（確認）<input id="newMemberPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label><button type="submit">パスワードを設定する</button></form><a class="login-link" id="memberLoginLink" href="/members" hidden>会員版へログイン</a></main><script src="/member-setup.js" defer></script></body></html>`;
+}
+
 function adminActionToken(member) {
   return signMember(`admin-access:${member.uid}`);
 }
@@ -207,8 +212,19 @@ function adminUsagePage(members = [], {member, message = '', error = false, stor
   }).join('');
   const storeRows = storeReadiness.products.map(product => `<tr><td>${escapeHtml(product.label)}</td><td>月額 ${product.monthlyPrice.toLocaleString('ja-JP')}円</td><td><code>${escapeHtml(product.planId)}</code></td><td>${product.configured ? '<span class="ready">設定済み</span>' : '<span class="pending">未設定</span>'}</td></tr>`).join('');
   const storeSummary = storeReadiness.ready ? '4商品すべての対応設定が完了しています。' : `${storeReadiness.configured}/${storeReadiness.total}商品を設定済みです。商品IDの登録後も、購入情報の自動反映は次の段階で有効化します。`;
+  const inviteForm = `<section><h2>新しい会員を招待</h2><p class="section-note">購入時と同じメールアドレスを入力してください。お客さまへ初期パスワード設定メールを送信します。</p><form class="invite-form" method="post" action="/members/admin/invite"><input type="hidden" name="token" value="${adminActionToken(member)}"><input name="displayName" maxlength="120" placeholder="お客さまのお名前" required><input name="email" type="email" maxlength="254" placeholder="購入時のメールアドレス" required><select name="planId" aria-label="料金プラン">${planOptions}</select><button type="submit">招待メールを送る</button></form></section>`;
   const notice = message ? `<p class="flash${error ? ' error' : ''}">${escapeHtml(message)}</p>` : '';
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員管理｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f4f8fa;color:#17384b;font-family:serif}main{width:min(1180px,100%);margin:auto}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1,h2{color:#1766b1;font-weight:500}h2{margin:0;padding:20px 20px 0;font-size:21px}a{color:#1766b1}.flash{padding:12px 16px;border-radius:10px;background:#eaf7ef;color:#287445}.flash.error{background:#fff0f0;color:#b53b3b}section{margin-top:24px;overflow:auto;background:white;border:1px solid #d7e3e9;border-radius:16px}.section-note{margin:8px 20px 16px;color:#738b98;font-size:13px}table{width:100%;border-collapse:collapse;min-width:820px}th,td{text-align:left;padding:14px 16px;border-bottom:1px solid #e2ebef}th{background:#f2f8fb;color:#52798f;font-size:12px}td{font-size:14px}code{font-family:monospace;color:#52798f}.ready{color:#287445}.pending{color:#a77821}.access-form{display:flex;gap:8px;align-items:center}.access-form select,.access-form button{min-height:38px;border:1px solid #bfd1db;border-radius:8px;background:#fff;color:#294f63;padding:7px 10px}.access-form button{border-color:#1766b1;background:#1766b1;color:#fff;cursor:pointer}.admin-label{color:#738b98}@media(max-width:600px){body{padding:18px}.access-form{align-items:stretch;flex-direction:column}}</style></head><body><main><div class="eyebrow">MEMBER ADMIN</div><h1>会員管理</h1><p><a href="/members">← 会員版へ戻る</a></p>${notice}<section><h2>会員利用状況</h2><table><thead><tr><th>会員</th><th>料金プラン・利用状態</th><th>保存数</th><th>最終ログイン</th></tr></thead><tbody>${rows || '<tr><td colspan="4">会員はまだいません。</td></tr>'}</tbody></table></section><section><h2>STORES商品対応</h2><p class="section-note">${escapeHtml(storeSummary)}</p><table><thead><tr><th>商品</th><th>料金</th><th>サイト内プラン</th><th>商品ID</th></tr></thead><tbody>${storeRows}</tbody></table></section></main></body></html>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員管理｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f4f8fa;color:#17384b;font-family:serif}main{width:min(1180px,100%);margin:auto}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1,h2{color:#1766b1;font-weight:500}h2{margin:0;padding:20px 20px 0;font-size:21px}a{color:#1766b1}.flash{padding:12px 16px;border-radius:10px;background:#eaf7ef;color:#287445}.flash.error{background:#fff0f0;color:#b53b3b}section{margin-top:24px;overflow:auto;background:white;border:1px solid #d7e3e9;border-radius:16px}.section-note{margin:8px 20px 16px;color:#738b98;font-size:13px}table{width:100%;border-collapse:collapse;min-width:820px}th,td{text-align:left;padding:14px 16px;border-bottom:1px solid #e2ebef}th{background:#f2f8fb;color:#52798f;font-size:12px}td{font-size:14px}code{font-family:monospace;color:#52798f}.ready{color:#287445}.pending{color:#a77821}.access-form,.invite-form{display:flex;gap:8px;align-items:center}.access-form select,.access-form button,.invite-form input,.invite-form select,.invite-form button{min-height:38px;border:1px solid #bfd1db;border-radius:8px;background:#fff;color:#294f63;padding:7px 10px}.access-form button,.invite-form button{border-color:#1766b1;background:#1766b1;color:#fff;cursor:pointer}.invite-form{padding:0 20px 20px;flex-wrap:wrap}.invite-form input{min-width:210px;flex:1}.admin-label{color:#738b98}@media(max-width:600px){body{padding:18px}.access-form,.invite-form{align-items:stretch;flex-direction:column}.invite-form input{width:100%;min-width:0}}</style></head><body><main><div class="eyebrow">MEMBER ADMIN</div><h1>会員管理</h1><p><a href="/members">← 会員版へ戻る</a></p>${notice}${inviteForm}<section><h2>会員利用状況</h2><table><thead><tr><th>会員</th><th>料金プラン・利用状態</th><th>保存数</th><th>最終ログイン</th></tr></thead><tbody>${rows || '<tr><td colspan="4">会員はまだいません。</td></tr>'}</tbody></table></section><section><h2>STORES商品対応</h2><p class="section-note">${escapeHtml(storeSummary)}</p><table><thead><tr><th>商品</th><th>料金</th><th>サイト内プラン</th><th>商品ID</th></tr></thead><tbody>${storeRows}</tbody></table></section></main></body></html>`;
+}
+
+function memberSetupRedirectUrl() {
+  const fallback = process.env.NODE_ENV === 'production' || process.env.RENDER ? 'https://kanteisho.onrender.com' : `http://localhost:${PORT}`;
+  try {
+    const base = new URL(String(process.env.PUBLIC_APP_URL || process.env.RENDER_EXTERNAL_URL || fallback));
+    return new URL('/members/setup', base).toString();
+  } catch {
+    return new URL('/members/setup', fallback).toString();
+  }
 }
 
 function readBody(req, maxLength = 4096) {
@@ -240,7 +256,7 @@ function json(res, status, payload) {
   return send(res, status, JSON.stringify(payload), {'Content-Type': 'application/json; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
 }
 
-async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess}) {
+async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, completeMemberInvite}) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
@@ -250,6 +266,21 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
       'Content-Type': 'text/html; charset=utf-8',
       'X-Robots-Tag': 'noindex, nofollow',
     });
+  }
+  if (req.method === 'GET' && url.pathname === '/members/setup') {
+    return send(res, 200, memberSetupPage(), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
+  }
+  if (req.method === 'GET' && url.pathname === '/member-setup.js') return servePublic(res, url.pathname);
+  if (req.method === 'POST' && url.pathname === '/members/api/complete-invite') {
+    try {
+      const input = JSON.parse(await readBody(req, 16384));
+      if (input.password !== input.passwordConfirmation) return json(res, 400, {ok: false, status: 'password_mismatch'});
+      const result = await dependencies.completeMemberInvite({accessToken: input.accessToken, password: input.password});
+      const status = result.ok ? 200 : result.status === 'invalid_token' ? 401 : result.status === 'weak_password' ? 400 : 503;
+      return json(res, status, result);
+    } catch {
+      return json(res, 400, {ok: false, status: 'invalid_request'});
+    }
   }
   if (req.method === 'GET' && url.pathname === '/members/app') {
     if (!memberSession(req)) return send(res, 302, '', {Location: '/members'});
@@ -261,9 +292,24 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
     if (member.role !== 'admin' && member.planId !== 'admin') return send(res, 403, 'Forbidden', {'Content-Type': 'text/plain; charset=utf-8'});
     const result = await dependencies.listMemberUsage();
     if (!result.ok) return send(res, 503, '会員情報を取得できませんでした。', {'Content-Type': 'text/plain; charset=utf-8'});
-    const saved = url.searchParams.get('saved') === '1';
-    const failed = url.searchParams.get('error') === '1';
-    return send(res, 200, adminUsagePage(result.members, {member, message: saved ? '会員のプランと利用状態を更新しました。次回ログインから反映されます。' : failed ? '変更を保存できませんでした。入力内容をご確認ください。' : '', error: failed}), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
+    const saved = url.searchParams.get('saved') === '1', invited = url.searchParams.get('invited') === '1', failed = url.searchParams.has('error');
+    const errorMessages = {already_registered: 'このメールアドレスはすでに登録されています。', rate_limited: '短時間に送信できる招待数を超えました。時間を置いてお試しください。', invalid_invitation: 'お名前・メールアドレス・プランをご確認ください。', profile_unavailable: '招待メールは作成されましたが、会員情報を設定できませんでした。Supabaseをご確認ください。'};
+    const errorCode = url.searchParams.get('error') || '';
+    const message = invited ? '招待メールを送信しました。お客さまがパスワードを設定すると利用中になります。' : saved ? '会員のプランと利用状態を更新しました。次回ログインから反映されます。' : failed ? (errorMessages[errorCode] || '招待または変更を完了できませんでした。入力内容をご確認ください。') : '';
+    return send(res, 200, adminUsagePage(result.members, {member, message, error: failed}), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
+  }
+  if (req.method === 'POST' && url.pathname === '/members/admin/invite') {
+    const member = memberSession(req);
+    if (!member) return send(res, 302, '', {Location: '/members'});
+    if (member.role !== 'admin' && member.planId !== 'admin') return send(res, 403, 'Forbidden', {'Content-Type': 'text/plain; charset=utf-8'});
+    try {
+      const form = new URLSearchParams(await readBody(req));
+      if (!validAdminActionToken(member, form.get('token'))) return send(res, 403, 'Forbidden', {'Content-Type': 'text/plain; charset=utf-8'});
+      const result = await dependencies.inviteMember({actorUserId: member.uid, email: form.get('email'), displayName: form.get('displayName'), planId: form.get('planId'), redirectUrl: memberSetupRedirectUrl()});
+      return send(res, 303, '', {Location: result.ok ? '/members/admin?invited=1' : `/members/admin?error=${encodeURIComponent(result.status)}`});
+    } catch {
+      return send(res, 303, '', {Location: '/members/admin?error=invalid_invitation'});
+    }
   }
   if (req.method === 'POST' && url.pathname === '/members/admin/access') {
     const member = memberSession(req);
@@ -423,6 +469,8 @@ function createServer(dependencies = {}) {
     deleteSavedSubject: dependencies.deleteSavedSubject || deleteSavedSubject,
     listMemberUsage: dependencies.listMemberUsage || listMemberUsage,
     updateMemberAccess: dependencies.updateMemberAccess || updateMemberAccess,
+    inviteMember: dependencies.inviteMember || inviteMember,
+    completeMemberInvite: dependencies.completeMemberInvite || completeMemberInvite,
   };
   return http.createServer((req, res) => handle(req, res, resolvedDependencies).catch(error => {
     console.error(error);

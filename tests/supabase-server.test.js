@@ -13,6 +13,8 @@ const {
   deleteSavedSubject,
   listMemberUsage,
   updateMemberAccess,
+  inviteMember,
+  completeMemberInvite,
 } = require('../supabase-server');
 
 const validEnv = {
@@ -202,4 +204,46 @@ test('管理者自身・不正なプラン・不正な利用状態は変更し�
   assert.equal((await updateMemberAccess({actorUserId: userId, targetUserId: userId, planId: 'premium', accountStatus: 'active'})).status, 'invalid_target');
   assert.equal((await updateMemberAccess({actorUserId: userId, targetUserId: '22222222-2222-4222-8222-222222222222', planId: 'admin', accountStatus: 'active'})).status, 'invalid_access');
   assert.equal((await updateMemberAccess({actorUserId: userId, targetUserId: '22222222-2222-4222-8222-222222222222', planId: 'free', accountStatus: 'unknown'})).status, 'invalid_access');
+});
+
+test('管理者の招待はSupabase Authへメールを送り会員を招待中にする', async () => {
+  const actorUserId = '11111111-1111-4111-8111-111111111111';
+  const invitedUserId = '22222222-2222-4222-8222-222222222222';
+  const requests = [];
+  const responses = [
+    {ok: true, status: 200, json: async () => ({id: invitedUserId, email: 'customer@example.com'})},
+    {ok: true, status: 200, json: async () => [{id: invitedUserId, display_name: '購入者A', plan_id: 'premium', account_status: 'invited'}]},
+    {ok: true, status: 201, json: async () => null},
+  ];
+  const result = await inviteMember({
+    actorUserId, email: ' Customer@Example.com ', displayName: ' 購入者A ', planId: 'premium',
+    redirectUrl: 'https://kanteisho.onrender.com/members/setup', env: validEnv,
+    fetchImpl: async (url, options) => { requests.push({url: String(url), options}); return responses.shift(); },
+  });
+  assert.equal(result.status, 'invited');
+  assert.match(requests[0].url, /\/auth\/v1\/invite\?redirect_to=/);
+  assert.deepEqual(JSON.parse(requests[0].options.body), {email: 'customer@example.com', data: {display_name: '購入者A'}});
+  assert.deepEqual(JSON.parse(requests[1].options.body), {display_name: '購入者A', plan_id: 'premium', account_status: 'invited'});
+  assert.equal(JSON.parse(requests[2].options.body).action, 'member_invited');
+});
+
+test('招待リンクの本人だけが初期パスワードを設定して利用中になる', async () => {
+  const userId = '22222222-2222-4222-8222-222222222222';
+  const requests = [];
+  const responses = [
+    {ok: true, status: 200, json: async () => ({id: userId, email: 'customer@example.com'})},
+    {ok: true, status: 200, json: async () => [{id: userId, display_name: '購入者A', plan_id: 'starter', account_status: 'active'}]},
+  ];
+  const result = await completeMemberInvite({
+    accessToken: 'invite-access-token-that-is-long-enough', password: 'long-password-123', env: validEnv,
+    fetchImpl: async (url, options) => { requests.push({url: String(url), options}); return responses.shift(); },
+  });
+  assert.equal(result.status, 'completed');
+  assert.match(requests[0].url, /\/auth\/v1\/user$/);
+  assert.equal(requests[0].options.headers.Authorization, 'Bearer invite-access-token-that-is-long-enough');
+  assert.deepEqual(JSON.parse(requests[0].options.body), {password: 'long-password-123'});
+  assert.match(requests[1].url, /account_status=eq\.invited/);
+  assert.deepEqual(JSON.parse(requests[1].options.body), {account_status: 'active'});
+  assert.equal((await completeMemberInvite({accessToken: 'short', password: 'long-password-123'})).status, 'invalid_token');
+  assert.equal((await completeMemberInvite({accessToken: 'invite-access-token-that-is-long-enough', password: 'short'})).status, 'weak_password');
 });

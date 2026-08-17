@@ -224,6 +224,52 @@ test('管理者画面から会員プランと利用状態を安全に変更す�
   }, dependencies);
 });
 
+test('管理者が購入者へプラン付き招待メールを送れる', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  let received = null;
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: []}),
+    inviteMember: async input => { received = input; return {ok: true, status: 'invited'}; },
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    const html = await page.text();
+    assert.match(html, /新しい会員を招待/);
+    assert.match(html, /招待メールを送る/);
+    const token = html.match(/action="\/members\/admin\/invite"[\s\S]*?name="token" value="([^"]+)"/)[1];
+    const response = await fetch(`${base}/members/admin/invite`, {
+      method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({token, displayName: '購入者A', email: 'customer@example.com', planId: 'premium'}),
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get('location'), '/members/admin?invited=1');
+    assert.equal(received.actorUserId, adminId);
+    assert.equal(received.email, 'customer@example.com');
+    assert.equal(received.displayName, '購入者A');
+    assert.equal(received.planId, 'premium');
+    assert.match(received.redirectUrl, /\/members\/setup$/);
+  }, dependencies);
+});
+
+test('招待された本人が公開設定画面から初期パスワードを確定できる', async () => {
+  let completed = null;
+  await withServer(async base => {
+    const page = await fetch(`${base}/members/setup`);
+    assert.equal(page.status, 200);
+    assert.match(await page.text(), /初期パスワード設定/);
+    assert.equal((await fetch(`${base}/member-setup.js`)).status, 200);
+    const mismatch = await fetch(`${base}/members/api/complete-invite`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({accessToken: 'token', password: 'password-one', passwordConfirmation: 'password-two'})});
+    assert.equal(mismatch.status, 400);
+    const response = await fetch(`${base}/members/api/complete-invite`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({accessToken: 'invite-token', password: 'long-password-123', passwordConfirmation: 'long-password-123'})});
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).status, 'completed');
+    assert.deepEqual(completed, {accessToken: 'invite-token', password: 'long-password-123'});
+  }, {completeMemberInvite: async input => { completed = input; return {ok: true, status: 'completed'}; }});
+});
+
 test('無料プランは命式保存APIを利用できない', async () => {
   await withServer(async base => {
     const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=free%40example.com&password=correct'});
