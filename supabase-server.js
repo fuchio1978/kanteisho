@@ -487,6 +487,38 @@ async function recordManualSubscription({actorUserId, memberUserId, email, planI
   }
 }
 
+async function getMemberSubscription({memberUserId, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (!userIdPattern.test(String(memberUserId || ''))) return {ok: false, status: 'invalid_target'};
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const subscriptionUrl = new URL('/rest/v1/stores_subscriptions', config.url);
+    subscriptionUrl.searchParams.set('member_user_id', `eq.${memberUserId}`);
+    subscriptionUrl.searchParams.set('select', 'plan_id,status,current_period_started_at,current_period_ends_at,created_at');
+    subscriptionUrl.searchParams.set('order', 'created_at.desc');
+    subscriptionUrl.searchParams.set('limit', '1');
+    const response = await fetchImpl(subscriptionUrl, {
+      headers: serverHeaders(config),
+      signal: controller.signal,
+    });
+    if (!response.ok) return {ok: false, status: 'subscription_unavailable'};
+    const rows = await responseJson(response);
+    const subscription = Array.isArray(rows) ? rows[0] : null;
+    return subscription
+      ? {ok: true, status: 'found', subscription}
+      : {ok: true, status: 'not_found', subscription: null};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'subscription_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function completeMemberInvite({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const token = String(accessToken || '').trim();
   const rawPassword = String(password || '');
@@ -581,5 +613,6 @@ module.exports = {
   updateMemberAccess,
   inviteMember,
   recordManualSubscription,
+  getMemberSubscription,
   completeMemberInvite,
 };

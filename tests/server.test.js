@@ -62,6 +62,7 @@ test('講座生版を維持したまま会員版を独立した準備中入口�
 });
 
 test('会員版はSupabase認証後だけ個別セッションと契約プランを表示する', async () => {
+  let contractMemberId = '';
   const authenticateMember = async ({email, password}) => {
     if (email !== 'member@example.com' || password !== 'correct-password') {
       return {ok: false, status: 'invalid_credentials'};
@@ -107,7 +108,17 @@ test('会員版はSupabase認証後だけ個別セッションと契約プラン
     assert.match(memberHtml, /テスト会員 さん/);
     assert.match(memberHtml, /プレミアム/);
     assert.match(memberHtml, /月額 3,300円/);
+    assert.match(memberHtml, /href="\/members\/contract"/);
     assert.doesNotMatch(memberHtml, /correct-password|SERVICE_ROLE/);
+
+    const contractPage = await fetch(`${base}/members/contract`, {headers: {Cookie: cookie}});
+    assert.equal(contractPage.status, 200);
+    const contractHtml = await contractPage.text();
+    assert.match(contractHtml, /契約中/);
+    assert.match(contractHtml, /2026年8月1日/);
+    assert.match(contractHtml, /2026年9月1日/);
+    assert.doesNotMatch(contractHtml, /ORDER-|source_payload/);
+    assert.equal(contractMemberId, 'member-user-id');
 
     const session = await fetch(`${base}/members/api/session`, {headers: {Cookie: cookie}});
     const sessionData = await session.json();
@@ -123,7 +134,21 @@ test('会員版はSupabase認証後だけ個別セッションと契約プラン
     const logout = await fetch(`${base}/members/logout`, {method: 'POST', redirect: 'manual', headers: {Cookie: cookie}});
     assert.equal(logout.status, 303);
     assert.match(logout.headers.get('set-cookie'), /Max-Age=0/);
-  }, {authenticateMember});
+  }, {
+    authenticateMember,
+    getMemberSubscription: async ({memberUserId}) => {
+      contractMemberId = memberUserId;
+      return {ok: true, status: 'found', subscription: {plan_id: 'premium', status: 'active', current_period_started_at: '2026-08-01T00:00:00.000Z', current_period_ends_at: '2026-09-01T00:00:00.000Z'}};
+    },
+  });
+});
+
+test('契約内容画面は未ログインを拒否する', async () => {
+  await withServer(async base => {
+    const response = await fetch(`${base}/members/contract`, {redirect: 'manual'});
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get('location'), '/members');
+  });
 });
 
 test('会員本人だけが契約上限内で命式を保存・一覧・呼び戻しできる', async () => {

@@ -3,7 +3,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, effectiveFeatures, canUseFeature, savedSubjectLimit} = require('./member-access');
-const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, completeMemberInvite} = require('./supabase-server');
+const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, getMemberSubscription, completeMemberInvite} = require('./supabase-server');
 const {storesCatalogReadiness} = require('./stores-catalog');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -176,7 +176,7 @@ function memberEntryPage({member = null, message = ''} = {}) {
   const memberPrice = memberPlan ? (memberPlan.monthlyPrice ? `月額 ${memberPlan.monthlyPrice.toLocaleString('ja-JP')}円` : '無料') : '';
   const memberContent = member ? `
     <p class="notice"><strong>${escapeHtml(member.displayName || member.email)} さん</strong><br>現在のプランは「${escapeHtml(memberPlan.label)}（${escapeHtml(memberPrice)}）」です。</p>
-    <div class="member-menu"><span>保存した命式</span><span>鑑定機能</span><span>契約内容</span></div>
+    <div class="member-menu"><a href="/members/app">保存した命式</a><a href="/members/app">鑑定機能</a><a href="/members/contract">契約内容</a></div>
     <a class="open-app" href="/members/app">会員版の鑑定画面を開く</a>
     ${adminLink}
     <p class="preparing">鑑定画面で、入力情報の保存と呼び戻しができます。保存件数は契約プランにより異なります。</p>
@@ -185,7 +185,18 @@ function memberEntryPage({member = null, message = ''} = {}) {
     ${notice}
     <form method="post" action="/members/login"><label>メールアドレス<input name="email" type="email" autocomplete="username" required autofocus></label><label>パスワード<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">会員版へログイン</button></form>
     <details><summary>準備中の料金プラン</summary><ul>${planCards}</ul></details>`;
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif;overflow-x:hidden}.card{width:min(680px,100%);min-width:0;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9;overflow-wrap:anywhere}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.open-app{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.open-app{display:block;text-align:center;text-decoration:none}.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu span{display:grid;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.preparing{margin-top:13px}.student{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}@media(max-width:560px){body{display:flex;align-items:flex-start;justify-content:center;padding:12px}.card{width:100%;padding:22px 18px;border-radius:18px}.eyebrow{font-size:9px}h1{margin:7px 0 8px;font-size:29px}p{font-size:12px;line-height:1.55}.notice,.error{margin:14px 0 12px;padding:12px 14px}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}.member-menu span{place-items:center;padding:10px 4px;font-size:12px;white-space:nowrap}button,.open-app{margin-top:12px;padding:11px 8px;font-size:14px}.preparing{margin-top:8px;font-size:10px;line-height:1.45}.student{margin-top:14px;font-size:13px}ul{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}<a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif;overflow-x:hidden}.card{width:min(680px,100%);min-width:0;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9;overflow-wrap:anywhere}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.open-app{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.open-app{display:block;text-align:center;text-decoration:none}.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu a{display:grid;place-items:center;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px;color:#17384b;text-decoration:none}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.preparing{margin-top:13px}.student{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}@media(max-width:560px){body{display:flex;align-items:flex-start;justify-content:center;padding:12px}.card{width:100%;padding:22px 18px;border-radius:18px}.eyebrow{font-size:9px}h1{margin:7px 0 8px;font-size:29px}p{font-size:12px;line-height:1.55}.notice,.error{margin:14px 0 12px;padding:12px 14px}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}.member-menu a{padding:10px 4px;font-size:12px;white-space:nowrap}button,.open-app{margin-top:12px;padding:11px 8px;font-size:14px}.preparing{margin-top:8px;font-size:10px;line-height:1.45}.student{margin-top:14px;font-size:13px}ul{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}<a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
+}
+
+function memberContractPage(member, result) {
+  const plan = getPlan(member.planId);
+  const price = plan.monthlyPrice ? `月額 ${plan.monthlyPrice.toLocaleString('ja-JP')}円` : '無料';
+  const subscription = result?.ok ? result.subscription : null;
+  const statusLabels = {pending: '確認中', active: '契約中', past_due: 'お支払い確認中', canceled: '解約済み', expired: '期限切れ', refunded: '返金済み'};
+  const dateLabel = value => value ? new Date(value).toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo', year: 'numeric', month: 'long', day: 'numeric'}) : '記録なし';
+  const details = subscription ? `<dl><div><dt>契約状態</dt><dd>${escapeHtml(statusLabels[subscription.status] || subscription.status)}</dd></div><div><dt>契約開始日</dt><dd>${escapeHtml(dateLabel(subscription.current_period_started_at))}</dd></div><div><dt>次回更新日</dt><dd>${escapeHtml(dateLabel(subscription.current_period_ends_at))}</dd></div></dl>` : `<p class="empty">${plan.monthlyPrice ? '契約台帳への記録はありません。管理者へお問い合わせください。' : '無料プランのため、契約期間の記録はありません。'}</p>`;
+  const unavailable = result && !result.ok ? '<p class="error">契約情報を一時的に取得できませんでした。時間を置いて再度お試しください。</p>' : '';
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>契約内容｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:min(620px,100%);padding:42px 38px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 8px;color:#1766b1;font-size:32px;font-weight:500}.lead,.empty,.error{color:#6e8795;line-height:1.8}.plan{margin:24px 0;padding:18px;border-radius:12px;background:#f2f8fb;color:#52798f}.plan strong{color:#1766b1;font-size:18px}dl{margin:0;border:1px solid #dce8ed;border-radius:14px;overflow:hidden}dl div{display:grid;grid-template-columns:140px 1fr;padding:15px 18px;border-bottom:1px solid #e4edf1}dl div:last-child{border:0}dt{color:#738b98}dd{margin:0;color:#294f63}.empty,.error{padding:16px;border-radius:12px;background:#f7fafb}.error{background:#fff0f0;color:#b53b3b}a{display:block;margin-top:22px;padding:13px;border:1px solid #b9d2df;border-radius:10px;color:#1766b1;text-align:center;text-decoration:none}@media(max-width:560px){body{display:flex;align-items:flex-start;padding:12px}.card{padding:24px 18px;border-radius:18px}h1{font-size:28px}.lead{font-size:13px}dl div{grid-template-columns:1fr;gap:5px;padding:13px 14px}}</style></head><body><main class="card"><div class="eyebrow">MEMBER CONTRACT</div><h1>契約内容</h1><p class="lead">ご本人の現在の料金プランと契約期間を表示しています。</p><p class="plan"><strong>${escapeHtml(plan.label)}</strong><br>${escapeHtml(price)}</p>${unavailable || details}<a href="/members">会員版へ戻る</a></main></body></html>`;
 }
 
 function memberSetupPage() {
@@ -256,7 +267,7 @@ function json(res, status, payload) {
   return send(res, status, JSON.stringify(payload), {'Content-Type': 'application/json; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
 }
 
-async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, completeMemberInvite}) {
+async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, getMemberSubscription, completeMemberInvite}) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
@@ -285,6 +296,12 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
   if (req.method === 'GET' && url.pathname === '/members/app') {
     if (!memberSession(req)) return send(res, 302, '', {Location: '/members'});
     return servePublic(res, '/');
+  }
+  if (req.method === 'GET' && url.pathname === '/members/contract') {
+    const member = memberSession(req);
+    if (!member) return send(res, 302, '', {Location: '/members'});
+    const result = await dependencies.getMemberSubscription({memberUserId: member.uid});
+    return send(res, 200, memberContractPage(member, result), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
   }
   if (req.method === 'GET' && url.pathname === '/members/admin') {
     const member = memberSession(req);
@@ -480,6 +497,7 @@ function createServer(dependencies = {}) {
     updateMemberAccess: dependencies.updateMemberAccess || updateMemberAccess,
     inviteMember: dependencies.inviteMember || inviteMember,
     recordManualSubscription: dependencies.recordManualSubscription || recordManualSubscription,
+    getMemberSubscription: dependencies.getMemberSubscription || getMemberSubscription,
     completeMemberInvite: dependencies.completeMemberInvite || completeMemberInvite,
   };
   return http.createServer((req, res) => handle(req, res, resolvedDependencies).catch(error => {

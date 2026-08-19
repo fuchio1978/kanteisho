@@ -15,6 +15,7 @@ const {
   updateMemberAccess,
   inviteMember,
   recordManualSubscription,
+  getMemberSubscription,
   completeMemberInvite,
 } = require('../supabase-server');
 
@@ -66,6 +67,36 @@ test('接続確認はservice roleキーをヘッダーだけに使い成功を�
   assert.match(request.url, /\/rest\/v1\/member_profiles/);
   assert.equal(request.options.headers.apikey, validEnv.SUPABASE_SERVICE_ROLE_KEY);
   assert.equal(request.options.headers.Authorization, `Bearer ${validEnv.SUPABASE_SERVICE_ROLE_KEY}`);
+});
+
+test('会員本人向け契約照会は安全な契約項目だけを最新1件取得する', async () => {
+  const memberUserId = '11111111-1111-4111-8111-111111111111';
+  let request;
+  const result = await getMemberSubscription({
+    memberUserId,
+    env: validEnv,
+    fetchImpl: async (url, options) => {
+      request = {url: String(url), options};
+      return {ok: true, status: 200, json: async () => [{plan_id: 'premium', status: 'active', current_period_started_at: '2026-08-01T00:00:00.000Z', current_period_ends_at: '2026-09-01T00:00:00.000Z', created_at: '2026-08-01T00:00:00.000Z'}]};
+    },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.status, 'found');
+  const endpoint = new URL(request.url);
+  assert.equal(endpoint.searchParams.get('member_user_id'), `eq.${memberUserId}`);
+  assert.equal(endpoint.searchParams.get('limit'), '1');
+  assert.match(endpoint.searchParams.get('select'), /plan_id,status,current_period_started_at,current_period_ends_at/);
+  assert.doesNotMatch(endpoint.searchParams.get('select'), /order|payload|email/);
+  assert.equal(request.options.headers.Authorization, `Bearer ${validEnv.SUPABASE_SERVICE_ROLE_KEY}`);
+});
+
+test('契約記録がない会員は正常な未記録状態として返す', async () => {
+  const result = await getMemberSubscription({
+    memberUserId: '22222222-2222-4222-8222-222222222222',
+    env: validEnv,
+    fetchImpl: async () => ({ok: true, status: 200, json: async () => []}),
+  });
+  assert.deepEqual(result, {ok: true, status: 'not_found', subscription: null});
 });
 
 test('テーブル未作成と秘密鍵拒否を区別する', async () => {
