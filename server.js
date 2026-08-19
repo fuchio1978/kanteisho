@@ -3,7 +3,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, effectiveFeatures, canUseFeature, savedSubjectLimit} = require('./member-access');
-const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, completeMemberInvite} = require('./supabase-server');
+const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, completeMemberInvite} = require('./supabase-server');
 const {storesCatalogReadiness} = require('./stores-catalog');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -212,7 +212,7 @@ function adminUsagePage(members = [], {member, message = '', error = false, stor
   }).join('');
   const storeRows = storeReadiness.products.map(product => `<tr><td>${escapeHtml(product.label)}</td><td>月額 ${product.monthlyPrice.toLocaleString('ja-JP')}円</td><td><code>${escapeHtml(product.planId)}</code></td><td>${product.configured ? '<span class="ready">設定済み</span>' : '<span class="pending">未設定</span>'}</td></tr>`).join('');
   const storeSummary = storeReadiness.ready ? '4商品すべての対応設定が完了しています。' : `${storeReadiness.configured}/${storeReadiness.total}商品を設定済みです。商品IDの登録後も、購入情報の自動反映は次の段階で有効化します。`;
-  const inviteForm = `<section><h2>新しい会員を招待</h2><p class="section-note">購入時と同じメールアドレスを入力してください。お客さまへ初期パスワード設定メールを送信します。</p><form class="invite-form" method="post" action="/members/admin/invite"><input type="hidden" name="token" value="${adminActionToken(member)}"><input name="displayName" maxlength="120" placeholder="お客さまのお名前" required><input name="email" type="email" maxlength="254" placeholder="購入時のメールアドレス" required><select name="planId" aria-label="料金プラン">${planOptions}</select><button type="submit">招待メールを送る</button></form></section>`;
+  const inviteForm = `<section><h2>新しい会員を招待</h2><p class="section-note">購入時と同じメールアドレスを入力してください。STORES購入の場合は、注文番号と契約期間も入力すると契約台帳へ同時に記録します。無料テスト招待では空欄のままで構いません。</p><form class="invite-form" method="post" action="/members/admin/invite"><input type="hidden" name="token" value="${adminActionToken(member)}"><input name="displayName" maxlength="120" placeholder="お客さまのお名前" required><input name="email" type="email" maxlength="254" placeholder="購入時のメールアドレス" required><select name="planId" aria-label="料金プラン">${planOptions}</select><input name="storesOrderId" maxlength="240" placeholder="STORES注文番号（購入時のみ）"><label>契約開始日<input name="currentPeriodStartedAt" type="date"></label><label>次回更新日<input name="currentPeriodEndsAt" type="date"></label><button type="submit">招待メールを送る</button></form></section>`;
   const notice = message ? `<p class="flash${error ? ' error' : ''}">${escapeHtml(message)}</p>` : '';
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員管理｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;padding:32px;background:#f4f8fa;color:#17384b;font-family:serif}main{width:min(1180px,100%);margin:auto}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1,h2{color:#1766b1;font-weight:500}h2{margin:0;padding:20px 20px 0;font-size:21px}a{color:#1766b1}.flash{padding:12px 16px;border-radius:10px;background:#eaf7ef;color:#287445}.flash.error{background:#fff0f0;color:#b53b3b}section{margin-top:24px;overflow:auto;background:white;border:1px solid #d7e3e9;border-radius:16px}.section-note{margin:8px 20px 16px;color:#738b98;font-size:13px}table{width:100%;border-collapse:collapse;min-width:820px}th,td{text-align:left;padding:14px 16px;border-bottom:1px solid #e2ebef}th{background:#f2f8fb;color:#52798f;font-size:12px}td{font-size:14px}code{font-family:monospace;color:#52798f}.ready{color:#287445}.pending{color:#a77821}.access-form,.invite-form{display:flex;gap:8px;align-items:center}.access-form select,.access-form button,.invite-form input,.invite-form select,.invite-form button{min-height:38px;border:1px solid #bfd1db;border-radius:8px;background:#fff;color:#294f63;padding:7px 10px}.access-form button,.invite-form button{border-color:#1766b1;background:#1766b1;color:#fff;cursor:pointer}.invite-form{padding:0 20px 20px;flex-wrap:wrap}.invite-form input{min-width:210px;flex:1}.admin-label{color:#738b98}@media(max-width:600px){body{padding:18px}.access-form,.invite-form{align-items:stretch;flex-direction:column}.invite-form input{width:100%;min-width:0}}</style></head><body><main><div class="eyebrow">MEMBER ADMIN</div><h1>会員管理</h1><p><a href="/members">← 会員版へ戻る</a></p>${notice}${inviteForm}<section><h2>会員利用状況</h2><table><thead><tr><th>会員</th><th>料金プラン・利用状態</th><th>保存数</th><th>最終ログイン</th></tr></thead><tbody>${rows || '<tr><td colspan="4">会員はまだいません。</td></tr>'}</tbody></table></section><section><h2>STORES商品対応</h2><p class="section-note">${escapeHtml(storeSummary)}</p><table><thead><tr><th>商品</th><th>料金</th><th>サイト内プラン</th><th>商品ID</th></tr></thead><tbody>${storeRows}</tbody></table></section></main></body></html>`;
 }
@@ -256,7 +256,7 @@ function json(res, status, payload) {
   return send(res, status, JSON.stringify(payload), {'Content-Type': 'application/json; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
 }
 
-async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, completeMemberInvite}) {
+async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, completeMemberInvite}) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
@@ -293,7 +293,7 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
     const result = await dependencies.listMemberUsage();
     if (!result.ok) return send(res, 503, '会員情報を取得できませんでした。', {'Content-Type': 'text/plain; charset=utf-8'});
     const saved = url.searchParams.get('saved') === '1', invited = url.searchParams.get('invited') === '1', failed = url.searchParams.has('error');
-    const errorMessages = {already_registered: 'このメールアドレスはすでに登録されています。', rate_limited: '短時間に送信できる招待数を超えました。時間を置いてお試しください。', invalid_invitation: 'お名前・メールアドレス・プランをご確認ください。', profile_unavailable: '招待メールは作成されましたが、会員情報を設定できませんでした。Supabaseをご確認ください。'};
+    const errorMessages = {already_registered: 'このメールアドレスはすでに登録されています。', rate_limited: '短時間に送信できる招待数を超えました。時間を置いてお試しください。', invalid_invitation: 'お名前・メールアドレス・プランをご確認ください。', invalid_subscription: '注文番号と契約期間をご確認ください。契約情報を入力する場合は3項目すべて必要です。', duplicate_order: 'このSTORES注文番号はすでに登録されています。', subscription_unavailable: '招待メールは送信されましたが、契約台帳へ記録できませんでした。Supabaseをご確認ください。', profile_unavailable: '招待メールは作成されましたが、会員情報を設定できませんでした。Supabaseをご確認ください。'};
     const errorCode = url.searchParams.get('error') || '';
     const message = invited ? '招待メールを送信しました。お客さまがパスワードを設定すると利用中になります。' : saved ? '会員のプランと利用状態を更新しました。次回ログインから反映されます。' : failed ? (errorMessages[errorCode] || '招待または変更を完了できませんでした。入力内容をご確認ください。') : '';
     return send(res, 200, adminUsagePage(result.members, {member, message, error: failed}), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
@@ -305,8 +305,17 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
     try {
       const form = new URLSearchParams(await readBody(req));
       if (!validAdminActionToken(member, form.get('token'))) return send(res, 403, 'Forbidden', {'Content-Type': 'text/plain; charset=utf-8'});
-      const result = await dependencies.inviteMember({actorUserId: member.uid, email: form.get('email'), displayName: form.get('displayName'), planId: form.get('planId'), redirectUrl: memberSetupRedirectUrl()});
-      return send(res, 303, '', {Location: result.ok ? '/members/admin?invited=1' : `/members/admin?error=${encodeURIComponent(result.status)}`});
+      const input = {actorUserId: member.uid, email: form.get('email'), displayName: form.get('displayName'), planId: form.get('planId'), redirectUrl: memberSetupRedirectUrl()};
+      const contractValues = [form.get('storesOrderId'), form.get('currentPeriodStartedAt'), form.get('currentPeriodEndsAt')].map(value => String(value || '').trim());
+      const hasContract = contractValues.some(Boolean);
+      if (hasContract && contractValues.some(value => !value)) return send(res, 303, '', {Location: '/members/admin?error=invalid_subscription'});
+      const result = await dependencies.inviteMember(input);
+      if (!result.ok) return send(res, 303, '', {Location: `/members/admin?error=${encodeURIComponent(result.status)}`});
+      if (hasContract) {
+        const contract = await dependencies.recordManualSubscription({actorUserId: member.uid, memberUserId: result.profile?.id, email: input.email, planId: input.planId, storesOrderId: contractValues[0], currentPeriodStartedAt: contractValues[1], currentPeriodEndsAt: contractValues[2]});
+        if (!contract.ok) return send(res, 303, '', {Location: `/members/admin?error=${encodeURIComponent(contract.status)}`});
+      }
+      return send(res, 303, '', {Location: '/members/admin?invited=1'});
     } catch {
       return send(res, 303, '', {Location: '/members/admin?error=invalid_invitation'});
     }
@@ -470,6 +479,7 @@ function createServer(dependencies = {}) {
     listMemberUsage: dependencies.listMemberUsage || listMemberUsage,
     updateMemberAccess: dependencies.updateMemberAccess || updateMemberAccess,
     inviteMember: dependencies.inviteMember || inviteMember,
+    recordManualSubscription: dependencies.recordManualSubscription || recordManualSubscription,
     completeMemberInvite: dependencies.completeMemberInvite || completeMemberInvite,
   };
   return http.createServer((req, res) => handle(req, res, resolvedDependencies).catch(error => {

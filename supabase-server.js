@@ -432,6 +432,61 @@ async function inviteMember({actorUserId, email, displayName, planId, redirectUr
   }
 }
 
+async function recordManualSubscription({actorUserId, memberUserId, email, planId, storesOrderId, currentPeriodStartedAt, currentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const paidPlans = new Set(['starter', 'premium', 'student', 'grandstudent']);
+  const normalizedEmail = validMemberEmail(email);
+  const orderId = String(storesOrderId || '').trim().slice(0, 240);
+  const startedAt = new Date(String(currentPeriodStartedAt || ''));
+  const endsAt = new Date(String(currentPeriodEndsAt || ''));
+  if (!userIdPattern.test(String(actorUserId || '')) || !userIdPattern.test(String(memberUserId || '')) || !normalizedEmail || !paidPlans.has(planId) || !orderId || !Number.isFinite(startedAt.getTime()) || !Number.isFinite(endsAt.getTime()) || startedAt > endsAt) {
+    return {ok: false, status: 'invalid_subscription'};
+  }
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const subscriptionUrl = new URL('/rest/v1/stores_subscriptions', config.url);
+    const response = await fetchImpl(subscriptionUrl, {
+      method: 'POST',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
+      body: JSON.stringify({
+        member_user_id: memberUserId,
+        plan_id: planId,
+        status: 'active',
+        stores_item_id: `manual:${planId}`,
+        stores_order_id: orderId,
+        purchaser_email: normalizedEmail,
+        current_period_started_at: startedAt.toISOString(),
+        current_period_ends_at: endsAt.toISOString(),
+        last_synced_at: new Date().toISOString(),
+        source_payload: {source: 'manual_admin'},
+      }),
+      signal: controller.signal,
+    });
+    if (response.status === 409) return {ok: false, status: 'duplicate_order'};
+    const rows = response.ok ? await responseJson(response) : null;
+    const subscription = Array.isArray(rows) ? rows[0] : null;
+    if (!subscription) return {ok: false, status: 'subscription_unavailable'};
+
+    const auditUrl = new URL('/rest/v1/admin_audit_logs', config.url);
+    await fetchImpl(auditUrl, {
+      method: 'POST',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
+      body: JSON.stringify({actor_user_id: actorUserId, target_user_id: memberUserId, action: 'manual_subscription_recorded', details: {plan_id: planId, stores_order_id: orderId}}),
+      signal: controller.signal,
+    });
+    return {ok: true, status: 'recorded', subscription};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'subscription_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function completeMemberInvite({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const token = String(accessToken || '').trim();
   const rawPassword = String(password || '');
@@ -525,5 +580,6 @@ module.exports = {
   listMemberUsage,
   updateMemberAccess,
   inviteMember,
+  recordManualSubscription,
   completeMemberInvite,
 };
