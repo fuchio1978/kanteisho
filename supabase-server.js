@@ -519,6 +519,90 @@ async function getMemberSubscription({memberUserId, env = process.env, fetchImpl
   }
 }
 
+async function listManualSubscriptions({env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const subscriptionUrl = new URL('/rest/v1/stores_subscriptions', config.url);
+    subscriptionUrl.searchParams.set('select', 'id,member_user_id,plan_id,status,stores_order_id,purchaser_email,current_period_started_at,current_period_ends_at,created_at,updated_at');
+    subscriptionUrl.searchParams.set('order', 'created_at.desc');
+    const response = await fetchImpl(subscriptionUrl, {headers: serverHeaders(config), signal: controller.signal});
+    if (!response.ok) return {ok: false, status: 'subscription_unavailable'};
+    const subscriptions = await responseJson(response);
+    return {ok: true, status: 'ok', subscriptions: Array.isArray(subscriptions) ? subscriptions : []};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'subscription_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function updateManualSubscription({actorUserId, subscriptionId, planId, status, currentPeriodStartedAt, currentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const paidPlans = new Set(['starter', 'premium', 'student', 'grandstudent']);
+  const allowedStatuses = new Set(['pending', 'active', 'past_due', 'canceled', 'expired', 'refunded']);
+  const startedAt = new Date(String(currentPeriodStartedAt || ''));
+  const endsAt = new Date(String(currentPeriodEndsAt || ''));
+  if (!userIdPattern.test(String(actorUserId || '')) || !userIdPattern.test(String(subscriptionId || '')) || !paidPlans.has(planId) || !allowedStatuses.has(status) || !Number.isFinite(startedAt.getTime()) || !Number.isFinite(endsAt.getTime()) || startedAt > endsAt) {
+    return {ok: false, status: 'invalid_subscription'};
+  }
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const subscriptionUrl = new URL('/rest/v1/stores_subscriptions', config.url);
+    subscriptionUrl.searchParams.set('id', `eq.${subscriptionId}`);
+    subscriptionUrl.searchParams.set('select', 'id,member_user_id,plan_id,status,current_period_started_at,current_period_ends_at');
+    const subscriptionResponse = await fetchImpl(subscriptionUrl, {
+      method: 'PATCH',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
+      body: JSON.stringify({
+        plan_id: planId,
+        status,
+        current_period_started_at: startedAt.toISOString(),
+        current_period_ends_at: endsAt.toISOString(),
+        canceled_at: status === 'canceled' ? new Date().toISOString() : null,
+        last_synced_at: new Date().toISOString(),
+      }),
+      signal: controller.signal,
+    });
+    const rows = subscriptionResponse.ok ? await responseJson(subscriptionResponse) : null;
+    const subscription = Array.isArray(rows) ? rows[0] : null;
+    if (!subscription) return {ok: false, status: 'not_found'};
+
+    const periodEnded = endsAt.getTime() <= Date.now();
+    const accessPlanId = status === 'expired' || status === 'refunded' || (status === 'canceled' && periodEnded) ? 'free' : planId;
+    const profileUrl = new URL('/rest/v1/member_profiles', config.url);
+    profileUrl.searchParams.set('id', `eq.${subscription.member_user_id}`);
+    profileUrl.searchParams.set('role', 'eq.member');
+    const profileResponse = await fetchImpl(profileUrl, {
+      method: 'PATCH',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
+      body: JSON.stringify({plan_id: accessPlanId, account_status: 'active'}),
+      signal: controller.signal,
+    });
+    if (!profileResponse.ok) return {ok: false, status: 'profile_unavailable'};
+
+    const auditUrl = new URL('/rest/v1/admin_audit_logs', config.url);
+    await fetchImpl(auditUrl, {
+      method: 'POST',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
+      body: JSON.stringify({actor_user_id: actorUserId, target_user_id: subscription.member_user_id, action: 'manual_subscription_updated', details: {subscription_id: subscriptionId, plan_id: planId, status, access_plan_id: accessPlanId}}),
+      signal: controller.signal,
+    });
+    return {ok: true, status: 'updated', subscription, accessPlanId};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'subscription_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function completeMemberInvite({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const token = String(accessToken || '').trim();
   const rawPassword = String(password || '');
@@ -614,5 +698,7 @@ module.exports = {
   inviteMember,
   recordManualSubscription,
   getMemberSubscription,
+  listManualSubscriptions,
+  updateManualSubscription,
   completeMemberInvite,
 };

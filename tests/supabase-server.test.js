@@ -16,6 +16,8 @@ const {
   inviteMember,
   recordManualSubscription,
   getMemberSubscription,
+  listManualSubscriptions,
+  updateManualSubscription,
   completeMemberInvite,
 } = require('../supabase-server');
 
@@ -97,6 +99,42 @@ test('契約記録がない会員は正常な未記録状態として返す', as
     fetchImpl: async () => ({ok: true, status: 200, json: async () => []}),
   });
   assert.deepEqual(result, {ok: true, status: 'not_found', subscription: null});
+});
+
+test('管理者向け契約一覧は更新に必要な項目を返す', async () => {
+  let requestUrl = '';
+  const result = await listManualSubscriptions({
+    env: validEnv,
+    fetchImpl: async url => {
+      requestUrl = String(url);
+      return {ok: true, status: 200, json: async () => [{id: '33333333-3333-4333-8333-333333333333', member_user_id: '22222222-2222-4222-8222-222222222222', plan_id: 'premium', status: 'active'}]};
+    },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.subscriptions.length, 1);
+  assert.match(requestUrl, /stores_subscriptions/);
+  assert.match(new URL(requestUrl).searchParams.get('select'), /stores_order_id,purchaser_email/);
+});
+
+test('契約期限切れへの更新は会員を削除せずフリープランへ戻す', async () => {
+  const actorUserId = '11111111-1111-4111-8111-111111111111';
+  const memberUserId = '22222222-2222-4222-8222-222222222222';
+  const subscriptionId = '33333333-3333-4333-8333-333333333333';
+  const requests = [];
+  const responses = [
+    {ok: true, status: 200, json: async () => [{id: subscriptionId, member_user_id: memberUserId, plan_id: 'premium', status: 'expired'}]},
+    {ok: true, status: 204, json: async () => null},
+    {ok: true, status: 201, json: async () => null},
+  ];
+  const result = await updateManualSubscription({
+    actorUserId, subscriptionId, planId: 'premium', status: 'expired', currentPeriodStartedAt: '2026-07-19', currentPeriodEndsAt: '2026-08-19', env: validEnv,
+    fetchImpl: async (url, options) => { requests.push({url: String(url), options}); return responses.shift(); },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.accessPlanId, 'free');
+  assert.deepEqual(JSON.parse(requests[1].options.body), {plan_id: 'free', account_status: 'active'});
+  assert.equal(JSON.parse(requests[2].options.body).action, 'manual_subscription_updated');
+  assert.equal(JSON.parse(requests[2].options.body).details.access_plan_id, 'free');
 });
 
 test('テーブル未作成と秘密鍵拒否を区別する', async () => {

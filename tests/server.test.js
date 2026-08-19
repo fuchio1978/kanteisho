@@ -8,7 +8,7 @@ process.env.SESSION_HOURS = '1';
 const {createServer} = require('../server');
 
 async function withServer(run, dependencies = {}) {
-  const server = createServer(dependencies);
+  const server = createServer({listManualSubscriptions: async () => ({ok: true, status: 'ok', subscriptions: []}), ...dependencies});
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const {port} = server.address();
   try {
@@ -246,6 +246,36 @@ test('管理者画面から会員プランと利用状態を安全に変更す�
     assert.equal(response.status, 303);
     assert.equal(response.headers.get('location'), '/members/admin?saved=1');
     assert.deepEqual(received, {actorUserId: adminId, targetUserId: targetId, planId: 'premium', accountStatus: 'suspended'});
+  }, dependencies);
+});
+
+test('管理者画面から契約期間と状態を更新できる', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  const memberId = '22222222-2222-4222-8222-222222222222';
+  const subscriptionId = '33333333-3333-4333-8333-333333333333';
+  let received = null;
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: [{id: memberId, display_name: '購入者A', role: 'member', plan_id: 'premium', account_status: 'active', saved_subject_count: 1, last_login_at: null}]}),
+    listManualSubscriptions: async () => ({ok: true, subscriptions: [{id: subscriptionId, member_user_id: memberId, plan_id: 'premium', status: 'active', stores_order_id: 'ORDER-200', purchaser_email: 'customer@example.com', current_period_started_at: '2026-08-19T00:00:00.000Z', current_period_ends_at: '2026-09-19T00:00:00.000Z'}]}),
+    updateManualSubscription: async input => { received = input; return {ok: true, status: 'updated'}; },
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    const html = await page.text();
+    assert.match(html, /契約管理/);
+    assert.match(html, /購入者A/);
+    assert.match(html, /ORDER-200/);
+    const token = html.match(/action="\/members\/admin\/subscription"[\s\S]*?name="token" value="([^"]+)"/)[1];
+    const response = await fetch(`${base}/members/admin/subscription`, {
+      method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({token, subscriptionId, planId: 'premium', status: 'canceled', currentPeriodStartedAt: '2026-08-19', currentPeriodEndsAt: '2026-09-19'}),
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get('location'), '/members/admin?contractSaved=1');
+    assert.deepEqual(received, {actorUserId: adminId, subscriptionId, planId: 'premium', status: 'canceled', currentPeriodStartedAt: '2026-08-19', currentPeriodEndsAt: '2026-09-19'});
   }, dependencies);
 });
 
