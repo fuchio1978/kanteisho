@@ -3,7 +3,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, effectiveFeatures, canUseFeature, savedSubjectLimit} = require('./member-access');
-const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, getMemberSubscription, listManualSubscriptions, updateManualSubscription, completeMemberInvite} = require('./supabase-server');
+const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, getMemberSubscription, listManualSubscriptions, updateManualSubscription, completeMemberInvite, requestMemberPasswordReset, resetMemberPassword} = require('./supabase-server');
 const {storesCatalogReadiness} = require('./stores-catalog');
 
 const PORT = Number(process.env.PORT || 3000);
@@ -20,6 +20,7 @@ const PUBLIC_FILES = new Map([
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/member-setup.js', ['member-setup.js', 'text/javascript; charset=utf-8']],
+  ['/member-password-reset.js', ['member-password-reset.js', 'text/javascript; charset=utf-8']],
 ]);
 const attempts = new Map();
 
@@ -184,8 +185,9 @@ function memberEntryPage({member = null, message = ''} = {}) {
     <p class="notice">販売開始前のテスト運用中です。発行された個別アカウントでログインできます。</p>
     ${notice}
     <form method="post" action="/members/login"><label>メールアドレス<input name="email" type="email" autocomplete="username" required autofocus></label><label>パスワード<input name="password" type="password" autocomplete="current-password" required></label><button type="submit">会員版へログイン</button></form>
+    <a class="password-help" href="/members/password/forgot">パスワードを忘れた方</a>
     <details><summary>準備中の料金プラン</summary><ul>${planCards}</ul></details>`;
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif;overflow-x:hidden}.card{width:min(680px,100%);min-width:0;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9;overflow-wrap:anywhere}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.open-app{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.open-app{display:block;text-align:center;text-decoration:none}.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu a{display:grid;place-items:center;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px;color:#17384b;text-decoration:none}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.preparing{margin-top:13px}.student{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}@media(max-width:560px){body{display:flex;align-items:flex-start;justify-content:center;padding:12px}.card{width:100%;padding:22px 18px;border-radius:18px}.eyebrow{font-size:9px}h1{margin:7px 0 8px;font-size:29px}p{font-size:12px;line-height:1.55}.notice,.error{margin:14px 0 12px;padding:12px 14px}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}.member-menu a{padding:10px 4px;font-size:12px;white-space:nowrap}button,.open-app{margin-top:12px;padding:11px 8px;font-size:14px}.preparing{margin-top:8px;font-size:10px;line-height:1.45}.student{margin-top:14px;font-size:13px}ul{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}<a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif;overflow-x:hidden}.card{width:min(680px,100%);min-width:0;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9;overflow-wrap:anywhere}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.open-app{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.open-app{display:block;text-align:center;text-decoration:none}.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu a{display:grid;place-items:center;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px;color:#17384b;text-decoration:none}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.preparing{margin-top:13px}.student,.password-help{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}.password-help{margin-top:14px;font-size:13px}@media(max-width:560px){body{display:flex;align-items:flex-start;justify-content:center;padding:12px}.card{width:100%;padding:22px 18px;border-radius:18px}.eyebrow{font-size:9px}h1{margin:7px 0 8px;font-size:29px}p{font-size:12px;line-height:1.55}.notice,.error{margin:14px 0 12px;padding:12px 14px}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}.member-menu a{padding:10px 4px;font-size:12px;white-space:nowrap}button,.open-app{margin-top:12px;padding:11px 8px;font-size:14px}.preparing{margin-top:8px;font-size:10px;line-height:1.45}.student{margin-top:14px;font-size:13px}ul{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}<a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
 }
 
 function memberContractPage(member, result) {
@@ -201,6 +203,17 @@ function memberContractPage(member, result) {
 
 function memberSetupPage() {
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>初期パスワード設定｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:520px;max-width:100%;padding:44px 38px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:31px;font-weight:500}p{color:#6e8795;font-size:14px;line-height:1.8}.status{padding:12px 14px;border-radius:10px;background:#f2f8fb}.status.error{background:#fff0f0;color:#b53b3b}.status.success{background:#eaf7ef;color:#287445}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.login-link{display:block;width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;text-align:center;text-decoration:none;font-size:15px;cursor:pointer}button:disabled{opacity:.55}.login-link[hidden]{display:none}</style></head><body><main class="card"><div class="eyebrow">MEMBER INVITATION</div><h1>初期パスワード設定</h1><p>ご本人だけが分かるパスワードを設定してください。10文字以上で設定できます。</p><p class="status" id="setupStatus">招待情報を確認しています。</p><form id="memberSetupForm" hidden><label>新しいパスワード<input id="newMemberPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label><label>新しいパスワード（確認）<input id="newMemberPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label><button type="submit">パスワードを設定する</button></form><a class="login-link" id="memberLoginLink" href="/members" hidden>会員版へログイン</a></main><script src="/member-setup.js" defer></script></body></html>`;
+}
+
+function memberForgotPasswordPage({sent = false} = {}) {
+  const content = sent
+    ? '<p class="status success">入力されたメールアドレスが登録済みの場合、再設定メールを送信しました。メール内のリンクをご確認ください。</p><a class="button-link secondary" href="/members">ログイン画面へ戻る</a>'
+    : '<p>会員登録に使用したメールアドレスを入力してください。</p><form method="post" action="/members/password/forgot"><label>メールアドレス<input name="email" type="email" autocomplete="email" maxlength="254" required autofocus></label><button type="submit">再設定メールを送る</button></form>';
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>パスワード再設定｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:min(520px,100%);padding:42px 36px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:31px;font-weight:500}p{color:#6e8795;font-size:14px;line-height:1.8}.status{padding:14px;border-radius:10px;background:#f2f8fb}.status.success{background:#eaf7ef;color:#287445}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.button-link{display:block;width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;text-align:center;text-decoration:none;font-size:15px;cursor:pointer}.secondary{background:#fff;color:#1766b1;border:1px solid #b9d2df}@media(max-width:560px){body{display:flex;align-items:flex-start;padding:12px}.card{padding:24px 18px;border-radius:18px}h1{font-size:28px}}</style></head><body><main class="card"><div class="eyebrow">PASSWORD SUPPORT</div><h1>パスワード再設定</h1>${content}</main></body></html>`;
+}
+
+function memberResetPasswordPage() {
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>新しいパスワード設定｜四柱推命 鑑定書</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif}.card{width:min(520px,100%);padding:42px 36px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:31px;font-weight:500}p{color:#6e8795;font-size:14px;line-height:1.8}.status{padding:12px 14px;border-radius:10px;background:#f2f8fb}.status.error{background:#fff0f0;color:#b53b3b}.status.success{background:#eaf7ef;color:#287445}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.login-link{display:block;width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;text-align:center;text-decoration:none;font-size:15px;cursor:pointer}button:disabled{opacity:.55}.login-link[hidden]{display:none}@media(max-width:560px){body{display:flex;align-items:flex-start;padding:12px}.card{padding:24px 18px;border-radius:18px}h1{font-size:28px}}</style></head><body><main class="card"><div class="eyebrow">PASSWORD RESET</div><h1>新しいパスワード設定</h1><p class="status" id="resetStatus">再設定情報を確認しています。</p><form id="memberResetForm" hidden><label>新しいパスワード<input id="resetMemberPassword" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label><label>新しいパスワード（確認）<input id="resetMemberPasswordConfirm" type="password" autocomplete="new-password" minlength="10" maxlength="128" required></label><button type="submit">パスワードを変更する</button></form><a class="login-link" id="resetLoginLink" href="/members" hidden>会員版へログイン</a></main><script src="/member-password-reset.js" defer></script></body></html>`;
 }
 
 function adminActionToken(member) {
@@ -244,6 +257,16 @@ function memberSetupRedirectUrl() {
   }
 }
 
+function memberPasswordResetRedirectUrl() {
+  const fallback = process.env.NODE_ENV === 'production' || process.env.RENDER ? 'https://kanteisho.onrender.com' : `http://localhost:${PORT}`;
+  try {
+    const base = new URL(String(process.env.PUBLIC_APP_URL || process.env.RENDER_EXTERNAL_URL || fallback));
+    return new URL('/members/password/reset', base).toString();
+  } catch {
+    return new URL('/members/password/reset', fallback).toString();
+  }
+}
+
 function readBody(req, maxLength = 4096) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -273,7 +296,7 @@ function json(res, status, payload) {
   return send(res, status, JSON.stringify(payload), {'Content-Type': 'application/json; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
 }
 
-async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, getMemberSubscription, listManualSubscriptions, updateManualSubscription, completeMemberInvite}) {
+async function handle(req, res, dependencies = {authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, inviteMember, recordManualSubscription, getMemberSubscription, listManualSubscriptions, updateManualSubscription, completeMemberInvite, requestMemberPasswordReset, resetMemberPassword}) {
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
@@ -288,6 +311,34 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
     return send(res, 200, memberSetupPage(), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
   }
   if (req.method === 'GET' && url.pathname === '/member-setup.js') return servePublic(res, url.pathname);
+  if (req.method === 'GET' && url.pathname === '/members/password/forgot') {
+    return send(res, 200, memberForgotPasswordPage({sent: url.searchParams.get('sent') === '1'}), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
+  }
+  if (req.method === 'POST' && url.pathname === '/members/password/forgot') {
+    if (!blocked(req, 'password-reset')) {
+      try {
+        const form = new URLSearchParams(await readBody(req));
+        await dependencies.requestMemberPasswordReset({email: form.get('email'), redirectUrl: memberPasswordResetRedirectUrl()});
+        recordFailure(req, 'password-reset');
+      } catch {}
+    }
+    return send(res, 303, '', {Location: '/members/password/forgot?sent=1'});
+  }
+  if (req.method === 'GET' && url.pathname === '/members/password/reset') {
+    return send(res, 200, memberResetPasswordPage(), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
+  }
+  if (req.method === 'GET' && url.pathname === '/member-password-reset.js') return servePublic(res, url.pathname);
+  if (req.method === 'POST' && url.pathname === '/members/api/reset-password') {
+    try {
+      const input = JSON.parse(await readBody(req, 16384));
+      if (input.password !== input.passwordConfirmation) return json(res, 400, {ok: false, status: 'password_mismatch'});
+      const result = await dependencies.resetMemberPassword({accessToken: input.accessToken, password: input.password});
+      const status = result.ok ? 200 : result.status === 'invalid_token' ? 401 : result.status === 'weak_password' ? 400 : 503;
+      return json(res, status, result);
+    } catch {
+      return json(res, 400, {ok: false, status: 'invalid_request'});
+    }
+  }
   if (req.method === 'POST' && url.pathname === '/members/api/complete-invite') {
     try {
       const input = JSON.parse(await readBody(req, 16384));
@@ -520,6 +571,8 @@ function createServer(dependencies = {}) {
     listManualSubscriptions: dependencies.listManualSubscriptions || listManualSubscriptions,
     updateManualSubscription: dependencies.updateManualSubscription || updateManualSubscription,
     completeMemberInvite: dependencies.completeMemberInvite || completeMemberInvite,
+    requestMemberPasswordReset: dependencies.requestMemberPasswordReset || requestMemberPasswordReset,
+    resetMemberPassword: dependencies.resetMemberPassword || resetMemberPassword,
   };
   return http.createServer((req, res) => handle(req, res, resolvedDependencies).catch(error => {
     console.error(error);

@@ -687,6 +687,70 @@ async function completeMemberInvite({accessToken, password, env = process.env, f
   }
 }
 
+async function requestMemberPasswordReset({email, redirectUrl, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const normalizedEmail = validMemberEmail(email);
+  if (!normalizedEmail) return {ok: false, status: 'invalid_email'};
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+  let normalizedRedirect;
+  try {
+    const target = new URL(String(redirectUrl || ''));
+    if (target.protocol !== 'https:' && !(target.protocol === 'http:' && isLocalHost(target.hostname))) return {ok: false, status: 'invalid_redirect'};
+    normalizedRedirect = target.toString();
+  } catch {
+    return {ok: false, status: 'invalid_redirect'};
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const recoverUrl = new URL('/auth/v1/recover', config.url);
+    recoverUrl.searchParams.set('redirect_to', normalizedRedirect);
+    const response = await fetchImpl(recoverUrl, {
+      method: 'POST',
+      headers: serverHeaders(config, {'Content-Type': 'application/json'}),
+      body: JSON.stringify({email: normalizedEmail}),
+      signal: controller.signal,
+    });
+    if (response.status === 429) return {ok: false, status: 'rate_limited'};
+    return response.ok ? {ok: true, status: 'sent'} : {ok: false, status: 'reset_unavailable'};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'reset_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function resetMemberPassword({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const token = String(accessToken || '').trim();
+  const rawPassword = String(password || '');
+  if (token.length < 20 || token.length > 8192) return {ok: false, status: 'invalid_token'};
+  if (rawPassword.length < 10 || rawPassword.length > 128) return {ok: false, status: 'weak_password'};
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const userUrl = new URL('/auth/v1/user', config.url);
+    const response = await fetchImpl(userUrl, {
+      method: 'PUT',
+      headers: serverHeaders(config, {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'}),
+      body: JSON.stringify({password: rawPassword}),
+      signal: controller.signal,
+    });
+    if (response.status === 401 || response.status === 403) return {ok: false, status: 'invalid_token'};
+    if (response.status === 422) return {ok: false, status: 'weak_password'};
+    return response.ok ? {ok: true, status: 'completed'} : {ok: false, status: 'reset_unavailable'};
+  } catch (error) {
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'reset_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function checkSupabaseConnection({env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 5000} = {}) {
   const config = loadSupabaseServerConfig(env);
   if (!config.configured) return {ok: false, status: config.status, issues: config.issues};
@@ -736,4 +800,6 @@ module.exports = {
   listManualSubscriptions,
   updateManualSubscription,
   completeMemberInvite,
+  requestMemberPasswordReset,
+  resetMemberPassword,
 };

@@ -19,6 +19,8 @@ const {
   listManualSubscriptions,
   updateManualSubscription,
   completeMemberInvite,
+  requestMemberPasswordReset,
+  resetMemberPassword,
 } = require('../supabase-server');
 
 const validEnv = {
@@ -365,4 +367,32 @@ test('招待リンクの本人だけが初期パスワードを設定して利�
   assert.deepEqual(JSON.parse(requests[1].options.body), {account_status: 'active'});
   assert.equal((await completeMemberInvite({accessToken: 'short', password: 'long-password-123'})).status, 'invalid_token');
   assert.equal((await completeMemberInvite({accessToken: 'invite-access-token-that-is-long-enough', password: 'short'})).status, 'weak_password');
+});
+
+test('会員本人へパスワード再設定メールを安全な転送先付きで送る', async () => {
+  let request;
+  const result = await requestMemberPasswordReset({
+    email: ' Member@Example.com ', redirectUrl: 'https://kanteisho.onrender.com/members/password/reset', env: validEnv,
+    fetchImpl: async (url, options) => { request = {url: String(url), options}; return {ok: true, status: 200}; },
+  });
+  assert.deepEqual(result, {ok: true, status: 'sent'});
+  assert.match(request.url, /\/auth\/v1\/recover/);
+  assert.equal(new URL(request.url).searchParams.get('redirect_to'), 'https://kanteisho.onrender.com/members/password/reset');
+  assert.deepEqual(JSON.parse(request.options.body), {email: 'member@example.com'});
+  assert.equal((await requestMemberPasswordReset({email: 'invalid', redirectUrl: 'https://kanteisho.onrender.com/members/password/reset'})).status, 'invalid_email');
+  assert.equal((await requestMemberPasswordReset({email: 'a@example.com', redirectUrl: 'javascript:alert(1)', env: validEnv})).status, 'invalid_redirect');
+});
+
+test('再設定メールの本人だけが新しいパスワードへ変更できる', async () => {
+  let request;
+  const result = await resetMemberPassword({
+    accessToken: 'recovery-access-token-that-is-long-enough', password: 'new-password-123', env: validEnv,
+    fetchImpl: async (url, options) => { request = {url: String(url), options}; return {ok: true, status: 200}; },
+  });
+  assert.deepEqual(result, {ok: true, status: 'completed'});
+  assert.match(request.url, /\/auth\/v1\/user$/);
+  assert.equal(request.options.headers.Authorization, 'Bearer recovery-access-token-that-is-long-enough');
+  assert.deepEqual(JSON.parse(request.options.body), {password: 'new-password-123'});
+  assert.equal((await resetMemberPassword({accessToken: 'short', password: 'new-password-123'})).status, 'invalid_token');
+  assert.equal((await resetMemberPassword({accessToken: 'recovery-access-token-that-is-long-enough', password: 'short'})).status, 'weak_password');
 });

@@ -353,6 +353,33 @@ test('招待された本人が公開設定画面から初期パスワードを�
   }, {completeMemberInvite: async input => { completed = input; return {ok: true, status: 'completed'}; }});
 });
 
+test('ログイン画面から本人へ再設定メールを送り新しいパスワードを確定できる', async () => {
+  let requested = null, reset = null;
+  await withServer(async base => {
+    const loginPage = await (await fetch(`${base}/members`)).text();
+    assert.match(loginPage, /パスワードを忘れた方/);
+    const forgotPage = await fetch(`${base}/members/password/forgot`);
+    assert.equal(forgotPage.status, 200);
+    assert.match(await forgotPage.text(), /再設定メールを送る/);
+    const request = await fetch(`${base}/members/password/forgot`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=member%40example.com'});
+    assert.equal(request.status, 303);
+    assert.equal(request.headers.get('location'), '/members/password/forgot?sent=1');
+    assert.equal(requested.email, 'member@example.com');
+    assert.match(requested.redirectUrl, /\/members\/password\/reset$/);
+    const resetPage = await fetch(`${base}/members/password/reset`);
+    assert.equal(resetPage.status, 200);
+    assert.match(await resetPage.text(), /新しいパスワード設定/);
+    assert.equal((await fetch(`${base}/member-password-reset.js`)).status, 200);
+    const response = await fetch(`${base}/members/api/reset-password`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({accessToken: 'recovery-token', password: 'new-password-123', passwordConfirmation: 'new-password-123'})});
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).status, 'completed');
+    assert.deepEqual(reset, {accessToken: 'recovery-token', password: 'new-password-123'});
+  }, {
+    requestMemberPasswordReset: async input => { requested = input; return {ok: true, status: 'sent'}; },
+    resetMemberPassword: async input => { reset = input; return {ok: true, status: 'completed'}; },
+  });
+});
+
 test('無料プランは命式保存APIを利用できない', async () => {
   await withServer(async base => {
     const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=free%40example.com&password=correct'});
