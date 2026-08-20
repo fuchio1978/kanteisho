@@ -152,6 +152,7 @@ test('Supabase Authで本人確認後に有効な会員プロフィールだけ�
       id: 'user-1', display_name: 'テスト会員', role: 'member', plan_id: 'standard',
       account_status: 'active', plan_expires_at: null,
     }])},
+    {ok: true, status: 200, json: async () => []},
     {ok: true, status: 204, json: async () => null},
   ];
   const result = await authenticateMember({
@@ -171,7 +172,30 @@ test('Supabase Authで本人確認後に有効な会員プロフィールだけ�
   assert.match(requests[0].url, /\/auth\/v1\/token\?grant_type=password/);
   assert.deepEqual(JSON.parse(requests[0].options.body), {email: 'member@example.com', password: 'correct-password'});
   assert.match(requests[1].url, /\/rest\/v1\/member_profiles/);
-  assert.equal(requests[2].options.method, 'PATCH');
+  assert.match(requests[2].url, /\/rest\/v1\/stores_subscriptions/);
+  assert.equal(requests[3].options.method, 'PATCH');
+});
+
+test('支払済み期間を過ぎた契約はログイン時にフリープランへ自動反映する', async () => {
+  const requests = [];
+  const responses = [
+    {ok: true, status: 200, json: async () => ({user: {id: 'user-3', email: 'expired@example.com'}})},
+    {ok: true, status: 200, json: async () => ([{
+      id: 'user-3', display_name: '期限確認会員', role: 'member', plan_id: 'premium',
+      account_status: 'active', plan_expires_at: null,
+    }])},
+    {ok: true, status: 200, json: async () => ([{
+      plan_id: 'premium', status: 'active', current_period_ends_at: '2020-01-01T00:00:00.000Z',
+    }])},
+    {ok: true, status: 204, json: async () => null},
+  ];
+  const result = await authenticateMember({
+    email: 'expired@example.com', password: 'correct-password', env: validEnv,
+    fetchImpl: async (url, options) => { requests.push({url: String(url), options}); return responses.shift(); },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.member.planId, 'free');
+  assert.equal(JSON.parse(requests[3].options.body).plan_id, 'free');
 });
 
 test('パスワード不一致と停止会員を個別ログインから拒否する', async () => {

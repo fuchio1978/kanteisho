@@ -57,4 +57,7 @@ test('解約後も支払済み期間中は維持し、終了後にフリーへ�
   assert.deepEqual(storesAccessDecision({status: 'refunded', planId: 'starter'}, {now}), {
     action: 'deactivate', planId: 'free', accountStatus: 'active',
   });
+  assert.deepEqual(storesAccessDecision({status: 'active', planId: 'starter', currentPeriodEndsAt: '2026-08-01T00:00:00Z'}, {now}), {
+    action: 'deactivate', planId: 'free', accountStatus: 'active',
+  });
 });

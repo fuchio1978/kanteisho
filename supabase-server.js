@@ -1,5 +1,7 @@
 'use strict';
 
+const {storesAccessDecision} = require('./stores-subscription');
+
 function isLocalHost(hostname) {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 }
@@ -131,12 +133,45 @@ async function authenticateMember({email, password, env = process.env, fetchImpl
       return {ok: false, status: 'account_inactive'};
     }
 
+    let effectivePlanId = profile.plan_id;
+    if (profile.role !== 'admin') {
+      const subscriptionEndpoint = new URL('/rest/v1/stores_subscriptions', config.url);
+      subscriptionEndpoint.searchParams.set('member_user_id', `eq.${user.id}`);
+      subscriptionEndpoint.searchParams.set('select', 'plan_id,status,current_period_ends_at,created_at');
+      subscriptionEndpoint.searchParams.set('order', 'created_at.desc');
+      subscriptionEndpoint.searchParams.set('limit', '1');
+      try {
+        const subscriptionResponse = await fetchImpl(subscriptionEndpoint, {
+          headers: serverHeaders(config),
+          signal: controller.signal,
+        });
+        if (subscriptionResponse.ok) {
+          const subscriptions = await responseJson(subscriptionResponse);
+          const subscription = Array.isArray(subscriptions) ? subscriptions[0] : null;
+          if (subscription) {
+            const decision = storesAccessDecision({
+              planId: subscription.plan_id,
+              status: subscription.status,
+              currentPeriodEndsAt: subscription.current_period_ends_at,
+            });
+            if (decision.action === 'activate' || decision.action === 'hold_until_period_end' || decision.action === 'deactivate') {
+              effectivePlanId = decision.planId;
+            }
+          }
+        }
+      } catch {
+        // 契約台帳の一時的な取得失敗だけで、既存会員のログインは止めない。
+      }
+    }
+
     const touchEndpoint = new URL('/rest/v1/member_profiles', config.url);
     touchEndpoint.searchParams.set('id', `eq.${user.id}`);
+    const profileUpdate = {last_login_at: new Date().toISOString()};
+    if (effectivePlanId !== profile.plan_id) profileUpdate.plan_id = effectivePlanId;
     Promise.resolve(fetchImpl(touchEndpoint, {
       method: 'PATCH',
       headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
-      body: JSON.stringify({last_login_at: new Date().toISOString()}),
+      body: JSON.stringify(profileUpdate),
     })).catch(() => {});
 
     return {
@@ -147,7 +182,7 @@ async function authenticateMember({email, password, env = process.env, fetchImpl
         email: String(user.email || normalizedEmail),
         displayName: String(profile.display_name || ''),
         role: profile.role,
-        planId: profile.plan_id,
+        planId: effectivePlanId,
       },
     };
   } catch (error) {

@@ -72,6 +72,15 @@ function storesAccessDecision(subscription, {now = new Date()} = {}) {
     return {action: 'reject', reason: 'invalid_subscription'};
   }
 
+  const periodEnd = subscription.currentPeriodEndsAt ? new Date(subscription.currentPeriodEndsAt) : null;
+  const paidPeriodEnded = periodEnd
+    && Number.isFinite(periodEnd.getTime())
+    && periodEnd.getTime() <= now.getTime();
+
+  if (subscription.status === 'active' && paidPeriodEnded) {
+    return {action: 'deactivate', planId: 'free', accountStatus: 'active'};
+  }
+
   if (subscription.status === 'active') {
     return {action: 'activate', planId: subscription.planId, accountStatus: 'active'};
   }
@@ -80,7 +89,6 @@ function storesAccessDecision(subscription, {now = new Date()} = {}) {
     return {action: 'hold', reason: subscription.status};
   }
 
-  const periodEnd = subscription.currentPeriodEndsAt ? new Date(subscription.currentPeriodEndsAt) : null;
   const stillInPaidPeriod = subscription.status === 'canceled'
     && periodEnd
     && Number.isFinite(periodEnd.getTime())
