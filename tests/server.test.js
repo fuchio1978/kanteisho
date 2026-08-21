@@ -249,6 +249,40 @@ test('管理者画面から会員プランと利用状態を安全に変更す�
   }, dependencies);
 });
 
+test('管理者画面から会員本人へパスワード再設定メールを送れる', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  let requested = null;
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: []}),
+    requestMemberPasswordReset: async input => { requested = input; return {ok: true, status: 'sent'}; },
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    const html = await page.text();
+    assert.match(html, /ログインサポート/);
+    assert.match(html, /パスワード再設定メールを送る/);
+    const token = html.match(/action="\/members\/admin\/password-reset"[\s\S]*?name="token" value="([^"]+)"/)[1];
+    const response = await fetch(`${base}/members/admin/password-reset`, {
+      method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({token, email: ' Member@Example.com '}),
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get('location'), '/members/admin?resetSent=1');
+    assert.equal(requested.email, 'Member@Example.com');
+    assert.match(requested.redirectUrl, /\/members\/password\/reset$/);
+  }, dependencies);
+
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=member%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const response = await fetch(`${base}/members/admin/password-reset`, {method: 'POST', redirect: 'manual', headers: {Cookie: cookie}});
+    assert.equal(response.status, 403);
+  }, {authenticateMember: async () => ({ok: true, member: {id: '22222222-2222-4222-8222-222222222222', email: 'member@example.com', displayName: '会員', role: 'member', planId: 'starter'}})});
+});
+
 test('管理者画面から契約期間と状態を更新できる', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const memberId = '22222222-2222-4222-8222-222222222222';
