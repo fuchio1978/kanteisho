@@ -56,6 +56,17 @@ test('相性鑑定に表示する人の順番を任意に前後できる', () =>
   assert.deepEqual([...context.api.reorderedIds(['a','b','c'],'a',-1)],['a','b','c']);
 });
 
+test('相性鑑定はPDFモードの下に置き鑑定年を人物選択と結果の間に表示する', () => {
+  const html=fs.readFileSync(require('node:path').join(__dirname,'..','index.html'),'utf8');
+  const css=fs.readFileSync(require('node:path').join(__dirname,'..','styles.css'),'utf8');
+  const pdf=html.indexOf('class="pdf-mode-section"'),compatibility=html.indexOf('id="compatibilitySection"');
+  const picker=html.indexOf('id="compatibilityPicker"'),year=html.indexOf('id="compatibilityYearInput"'),sheet=html.indexOf('id="compatibilitySheet"');
+  assert.ok(pdf<compatibility);
+  assert.ok(picker<year&&year<sheet);
+  assert.match(css,/\.compatibility-picker input\{width:22px;height:22px;flex:0 0 22px/);
+  assert.match(css,/\.compatibility-picker label>span\{display:grid;min-width:0;flex:1 1 auto\}/);
+});
+
 test('明治・大正・昭和・平成・令和の元号年を西暦へ換算する', () => {
   assert.equal(JSON.stringify(context.api.westernDateFromCalendar('meiji', 1, 1, 25)), '{"y":1868,"m":1,"d":25}');
   assert.equal(JSON.stringify(context.api.westernDateFromCalendar('taisho', 1, 7, 30)), '{"y":1912,"m":7,"d":30}');

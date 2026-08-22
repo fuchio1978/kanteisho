@@ -189,18 +189,19 @@
 /* 保存済み人物を並べる相性鑑定モード */
 .compatibility-section{margin-top:62px;border-top:1px solid #dbe5ea;padding-top:46px;position:relative;z-index:1}
 .compatibility-section[hidden]{display:none}
-.compatibility-heading{display:flex;justify-content:space-between;align-items:end;gap:28px}
+.compatibility-heading{display:block}
 .compatibility-heading>div>span{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}
 .compatibility-heading h2{font-family:"Klee One",serif;font-size:38px;font-weight:600;color:var(--blue);margin:4px 0 0}
 .compatibility-heading p{font-size:12px;color:#8a9ca6;margin:2px 0 0}
-.compatibility-year-control{width:150px;display:grid;gap:6px;color:#607d8d;font:600 12px "Klee One",serif}
+.compatibility-year-row{display:flex;justify-content:flex-end;margin:18px 0 4px}
+.compatibility-year-control{width:190px;display:grid;gap:6px;color:#607d8d;font:600 12px "Klee One",serif}
 .compatibility-year-control select{box-sizing:border-box;width:100%;padding:10px 34px 10px 12px;background:#fff;border:1px solid #c7d7df;border-radius:10px;font-size:14px;color:#17384b}
 .compatibility-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:24px}
 .compatibility-picker>p{grid-column:1/-1;color:#78909c;text-align:center}
 .compatibility-person{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;border:1px solid #d4e4eb;border-radius:12px;background:#f8fbfd;color:#52798f;overflow:hidden}.compatibility-person.is-selected{border-color:#63a8d4;background:#eef8fd;box-shadow:0 0 0 1px #63a8d4 inset}
 .compatibility-picker label{min-width:0;display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer}
-.compatibility-picker input{accent-color:#1766b1}
-.compatibility-picker span{display:grid;min-width:0}.compatibility-picker strong{color:#1766b1;font-weight:500;line-height:1.35;white-space:normal;overflow:visible;word-break:keep-all;overflow-wrap:anywhere}.compatibility-picker small{font-size:10px;white-space:nowrap}
+.compatibility-picker input{width:22px;height:22px;flex:0 0 22px;padding:0;accent-color:#1766b1}
+.compatibility-picker label>span{display:grid;min-width:0;flex:1 1 auto}.compatibility-picker strong{color:#1766b1;font-weight:500;line-height:1.35;white-space:normal;overflow:visible;word-break:keep-all;overflow-wrap:anywhere}.compatibility-picker small{font-size:10px;white-space:nowrap}
 .compatibility-order{display:flex;align-items:center;gap:3px;padding-right:8px}.compatibility-order em{min-width:19px;height:19px;border-radius:50%;background:#1766b1;color:#fff;font:600 10px/19px sans-serif;text-align:center;font-style:normal}.compatibility-order button{width:27px;height:27px;padding:0;border:1px solid #a9c9dc;border-radius:7px;background:#fff;color:#1766b1;cursor:pointer}.compatibility-order button:disabled{opacity:.3;cursor:default}
 .compatibility-message{min-height:1.5em;margin:12px 0;color:#6d8794;font-size:12px;text-align:center}
 .compatibility-sheet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
@@ -211,7 +212,7 @@
 .compatibility-card .compatibility-pillars .kanji-box{width:76px}.compatibility-card .compatibility-pillars .kanji{height:86px;font-size:48px}.compatibility-card .compatibility-pillars .hidden-stems{display:none}
 .compatibility-elements{width:min(100%,270px);margin:0 auto}.compatibility-elements .five-elements-score-toggle,.compatibility-elements .five-elements-details{display:none!important}
 .compatibility-print-button{display:block;margin:25px auto 0}.compatibility-print-button:disabled{opacity:.45;cursor:not-allowed}
-@media(max-width:760px){.compatibility-heading{display:block}.compatibility-year-control{width:100%;margin-top:16px}.compatibility-picker{grid-template-columns:1fr 1fr}.compatibility-sheet{grid-template-columns:1fr}.compatibility-card{overflow:hidden}}
+@media(max-width:760px){.compatibility-year-row{display:block;margin-top:18px}.compatibility-year-control{width:100%}.compatibility-picker{grid-template-columns:1fr 1fr}.compatibility-picker label{gap:7px;padding:10px 9px}.compatibility-sheet{grid-template-columns:1fr}.compatibility-card{overflow:hidden}}
 
 /* A4横1枚の鑑定書PDFプレビュー */
 .pdf-mode-section{margin-top:62px;border-top:1px solid #dbe5ea;padding-top:46px;position:relative;z-index:1}
