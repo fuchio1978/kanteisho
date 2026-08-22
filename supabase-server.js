@@ -327,14 +327,15 @@ async function listMemberUsage({env = process.env, fetchImpl = globalThis.fetch,
       fetchImpl(profilesUrl, {headers: serverHeaders(config), signal: controller.signal}),
       fetchImpl(subjectsUrl, {headers: serverHeaders(config), signal: controller.signal}),
     ]);
-    if (!profilesResponse.ok || !subjectsResponse.ok) return {ok: false, status: 'database_unavailable'};
+    if (!profilesResponse.ok) return {ok: false, status: 'profiles_unavailable', httpStatus: profilesResponse.status};
     const profiles = await responseJson(profilesResponse);
-    const subjects = await responseJson(subjectsResponse);
+    const subjects = subjectsResponse.ok ? await responseJson(subjectsResponse) : [];
     const counts = new Map();
     for (const subject of Array.isArray(subjects) ? subjects : []) counts.set(subject.owner_user_id, (counts.get(subject.owner_user_id) || 0) + 1);
     return {
       ok: true,
       status: 'ok',
+      warning: subjectsResponse.ok ? null : 'saved_subjects_unavailable',
       members: (Array.isArray(profiles) ? profiles : []).map(profile => ({...profile, saved_subject_count: counts.get(profile.id) || 0})),
     };
   } catch (error) {

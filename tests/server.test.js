@@ -222,6 +222,24 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
   }, {authenticateMember: async () => ({ok: true, member: {id: 'member-user', email: 'member@example.com', displayName: '会員', role: 'member', planId: 'starter'}}), listMemberUsage});
 });
 
+test('契約台帳を取得できなくても管理者は会員情報を確認できる', async () => {
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: [{id: 'member-1', display_name: '利用者A', role: 'member', plan_id: 'free', account_status: 'active', saved_subject_count: 0, last_login_at: null}]}),
+    listManualSubscriptions: async () => ({ok: false, status: 'subscription_unavailable'}),
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.match(html, /利用者A/);
+    assert.match(html, /契約台帳を一時的に取得できませんでした/);
+    assert.match(html, /新しい会員を招待/);
+  }, dependencies);
+});
+
 test('管理者画面から会員プランと利用状態を安全に変更する', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const targetId = '22222222-2222-4222-8222-222222222222';

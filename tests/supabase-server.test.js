@@ -271,6 +271,18 @@ test('管理者向け利用状況は会員ごとの保存件数を集計する',
   assert.equal(result.members[0].saved_subject_count, 2);
 });
 
+test('保存件数の取得だけが失敗しても管理者向け会員一覧は返す', async () => {
+  const responses = [
+    {ok: true, status: 200, json: async () => [{id: 'user-1', display_name: '会員A', plan_id: 'free'}]},
+    {ok: false, status: 404, json: async () => ({message: 'not found'})},
+  ];
+  const result = await listMemberUsage({env: validEnv, fetchImpl: async () => responses.shift()});
+  assert.equal(result.ok, true);
+  assert.equal(result.warning, 'saved_subjects_unavailable');
+  assert.equal(result.members[0].display_name, '会員A');
+  assert.equal(result.members[0].saved_subject_count, 0);
+});
+
 test('管理者によるプラン変更は会員プロフィールと監査記録へ保存する', async () => {
   const actorUserId = '11111111-1111-4111-8111-111111111111';
   const targetUserId = '22222222-2222-4222-8222-222222222222';
