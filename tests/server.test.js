@@ -382,6 +382,41 @@ test('管理者画面から決済確認済みの契約を月末補正付きで1�
   }, dependencies);
 });
 
+test('管理者だけが契約台帳をExcel対応CSVで保存できる', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  const memberId = '22222222-2222-4222-8222-222222222222';
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: [{id: memberId, display_name: '=危険な式', role: 'member', plan_id: 'starter', account_status: 'active', saved_subject_count: 0, last_login_at: null}]}),
+    listManualSubscriptions: async () => ({ok: true, subscriptions: [{id: '33333333-3333-4333-8333-333333333333', member_user_id: memberId, plan_id: 'starter', status: 'active', stores_order_id: '+ORDER-CSV', purchaser_email: 'buyer@example.com', current_period_started_at: '2026-08-23T00:00:00.000Z', current_period_ends_at: '2026-09-23T00:00:00.000Z'}]}),
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const adminPage = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    assert.match(await adminPage.text(), /契約台帳をCSVで保存/);
+    const response = await fetch(`${base}/members/admin/contracts.csv`, {headers: {Cookie: cookie}});
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('content-type'), /text\/csv/);
+    assert.match(response.headers.get('content-disposition'), /^attachment; filename="kanteisho-contracts-\d{4}-\d{2}-\d{2}\.csv"$/);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    assert.deepEqual([...bytes.slice(0, 3)], [0xef, 0xbb, 0xbf]);
+    const csv = new TextDecoder('utf-8').decode(bytes);
+    assert.match(csv, /"お名前","購入メールアドレス","STORES注文番号"/);
+    assert.match(csv, /"'=危険な式"/);
+    assert.match(csv, /"'\+ORDER-CSV"/);
+    assert.match(csv, /"スターター"/);
+    assert.match(csv, /"契約中","2026-08-23","2026-09-23"/);
+  }, dependencies);
+
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=member%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const response = await fetch(`${base}/members/admin/contracts.csv`, {headers: {Cookie: cookie}});
+    assert.equal(response.status, 403);
+  }, {authenticateMember: async () => ({ok: true, member: {id: memberId, email: 'member@example.com', displayName: '会員', role: 'member', planId: 'starter'}})});
+});
+
 test('管理者画面は支払確認中と更新日が近い契約を上部へ表示する', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const memberId = '22222222-2222-4222-8222-222222222222';
