@@ -13,6 +13,7 @@ const SESSION_HOURS = Number(process.env.SESSION_HOURS || 12);
 const MEMBER_SESSION_HOURS = Number(process.env.MEMBER_SESSION_HOURS || 24);
 const ROOT = __dirname;
 const MEMBER_ENTRY_PATHS = new Set(['/members', '/members/']);
+const SALES_LP_PATHS = new Set(['/meisiki', '/meisiki/', '/meisiki.html']);
 const PUBLIC_FILES = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
@@ -21,6 +22,10 @@ const PUBLIC_FILES = new Map([
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/member-setup.js', ['member-setup.js', 'text/javascript; charset=utf-8']],
   ['/member-password-reset.js', ['member-password-reset.js', 'text/javascript; charset=utf-8']],
+  ['/meisiki', ['meisiki.html', 'text/html; charset=utf-8']],
+  ['/meisiki/', ['meisiki.html', 'text/html; charset=utf-8']],
+  ['/meisiki.html', ['meisiki.html', 'text/html; charset=utf-8']],
+  ['/meisiki.css', ['meisiki.css', 'text/css; charset=utf-8']],
 ]);
 const attempts = new Map();
 
@@ -392,6 +397,9 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
   const url = new URL(req.url, 'http://localhost');
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
+  }
+  if (req.method === 'GET' && (SALES_LP_PATHS.has(url.pathname) || url.pathname === '/meisiki.css')) {
+    return servePublic(res, url.pathname);
   }
   if (req.method === 'GET' && MEMBER_ENTRY_PATHS.has(url.pathname)) {
     return send(res, 200, memberEntryPage({member: memberSession(req)}), {

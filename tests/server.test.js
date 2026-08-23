@@ -34,6 +34,29 @@ test('Render実証サーバーはヘルスチェックを公開し鑑定画面�
   });
 });
 
+test('販売LPは認証なしでmeisikiから表示できる', async () => {
+  await withServer(async base => {
+    for (const pathname of ['/meisiki', '/meisiki/', '/meisiki.html']) {
+      const response = await fetch(`${base}${pathname}`, {redirect: 'manual'});
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get('content-type'), /text\/html/);
+      const html = await response.text();
+      assert.match(html, /命式を出す時間を減らして/);
+      assert.match(html, /相性鑑定/);
+      assert.match(html, /プレミアムプラン/);
+    }
+
+    const stylesheet = await fetch(`${base}/meisiki.css`, {redirect: 'manual'});
+    assert.equal(stylesheet.status, 200);
+    assert.match(stylesheet.headers.get('content-type'), /text\/css/);
+    assert.match(await stylesheet.text(), /--green:/);
+
+    const protectedPage = await fetch(`${base}/`, {redirect: 'manual'});
+    assert.equal(protectedPage.status, 302);
+    assert.equal(protectedPage.headers.get('location'), '/login');
+  });
+});
+
 test('講座生版を維持したまま会員版を独立した準備中入口として分離する', async () => {
   await withServer(async base => {
     const studentEntry = await fetch(`${base}/students`, {redirect: 'manual'});
