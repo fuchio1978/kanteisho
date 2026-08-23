@@ -421,7 +421,7 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
       warnings.push('操作履歴を一時的に取得できませんでした。その他の管理機能は利用できます。');
     }
     const saved = url.searchParams.get('saved') === '1', contractSaved = url.searchParams.get('contractSaved') === '1', contractRenewed = url.searchParams.get('contractRenewed') === '1', contractCreated = url.searchParams.get('contractCreated') === '1', invited = url.searchParams.get('invited') === '1', resetSent = url.searchParams.get('resetSent') === '1', failed = url.searchParams.has('error');
-    const errorMessages = {already_registered: 'このメールアドレスはすでに登録されています。', rate_limited: '短時間に送信できるメール数を超えました。時間を置いてお試しください。', invalid_invitation: 'お名前・メールアドレス・プランをご確認ください。', invalid_email: '登録メールアドレスをご確認ください。', invalid_subscription: '注文番号と契約期間をご確認ください。契約情報を入力する場合は3項目すべて必要です。', duplicate_order: 'このSTORES注文番号はすでに登録されています。', subscription_unavailable: '契約台帳へ記録できませんでした。Supabaseをご確認ください。', profile_unavailable: '会員の利用プランを更新できませんでした。Supabaseをご確認ください。', reset_unavailable: 'パスワード再設定メールを送信できませんでした。時間を置いてお試しください。'};
+    const errorMessages = {already_registered: 'このメールアドレスはすでに登録されています。', rate_limited: '短時間に送信できるメール数を超えました。時間を置いてお試しください。', invalid_invitation: 'お名前・メールアドレス・プランをご確認ください。', invalid_email: '登録メールアドレスをご確認ください。', invalid_subscription: '注文番号と契約期間をご確認ください。契約情報を入力する場合は3項目すべて必要です。', stale_subscription: 'この契約はすでに更新されています。画面を再読み込みして最新の更新日をご確認ください。', duplicate_order: 'このSTORES注文番号はすでに登録されています。', subscription_unavailable: '契約台帳へ記録できませんでした。Supabaseをご確認ください。', profile_unavailable: '会員の利用プランを更新できませんでした。Supabaseをご確認ください。', reset_unavailable: 'パスワード再設定メールを送信できませんでした。時間を置いてお試しください。'};
     const errorCode = url.searchParams.get('error') || '';
     const message = invited ? '招待メールを送信しました。お客さまがパスワードを設定すると利用中になります。' : resetSent ? 'パスワード再設定メールを送信しました。会員本人に最新メールをご確認いただいてください。' : contractCreated ? '購入情報を契約台帳へ登録し、会員の利用プランを更新しました。' : contractRenewed ? '契約を1か月更新し、利用プランを継続しました。' : contractSaved ? '契約内容と会員の利用プランを更新しました。' : saved ? '会員のプランと利用状態を更新しました。次回ログインから反映されます。' : failed ? (errorMessages[errorCode] || '招待または変更を完了できませんでした。入力内容をご確認ください。') : '';
     return send(res, 200, adminUsagePage(result.members, {member, subscriptions: contractResult.ok ? contractResult.subscriptions : [], auditLogs: auditResult.ok ? auditResult.logs : [], message, error: failed, warnings}), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
@@ -529,6 +529,7 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
         status: 'active',
         currentPeriodStartedAt: currentPeriodEndsAt,
         currentPeriodEndsAt: nextPeriodEndsAt,
+        expectedCurrentPeriodEndsAt: currentPeriodEndsAt,
       });
       return send(res, 303, '', {Location: result.ok ? '/members/admin?contractRenewed=1' : `/members/admin?error=${encodeURIComponent(result.status)}`});
     } catch {

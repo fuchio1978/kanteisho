@@ -378,7 +378,7 @@ test('管理者画面から決済確認済みの契約を月末補正付きで1�
     });
     assert.equal(response.status, 303);
     assert.equal(response.headers.get('location'), '/members/admin?contractRenewed=1');
-    assert.deepEqual(received, {actorUserId: adminId, subscriptionId, planId: 'premium', status: 'active', currentPeriodStartedAt: '2027-01-31', currentPeriodEndsAt: '2027-02-28'});
+    assert.deepEqual(received, {actorUserId: adminId, subscriptionId, planId: 'premium', status: 'active', currentPeriodStartedAt: '2027-01-31', currentPeriodEndsAt: '2027-02-28', expectedCurrentPeriodEndsAt: '2027-01-31'});
   }, dependencies);
 });
 

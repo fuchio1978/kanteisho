@@ -159,6 +159,31 @@ test('契約期限切れへの更新は会員を削除せずフリープラン�
   assert.equal(JSON.parse(requests[2].options.body).details.access_plan_id, 'free');
 });
 
+test('1か月更新は現在の更新日が一致する契約だけを変更して二重更新を防ぐ', async () => {
+  const actorUserId = '11111111-1111-4111-8111-111111111111';
+  const subscriptionId = '33333333-3333-4333-8333-333333333333';
+  let requestUrl = '';
+  const result = await updateManualSubscription({
+    actorUserId,
+    subscriptionId,
+    planId: 'premium',
+    status: 'active',
+    currentPeriodStartedAt: '2027-01-31',
+    currentPeriodEndsAt: '2027-02-28',
+    expectedCurrentPeriodEndsAt: '2027-01-31',
+    env: validEnv,
+    fetchImpl: async url => {
+      requestUrl = String(url);
+      return {ok: true, status: 200, json: async () => []};
+    },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 'stale_subscription');
+  const endpoint = new URL(requestUrl);
+  assert.equal(endpoint.searchParams.get('id'), `eq.${subscriptionId}`);
+  assert.equal(endpoint.searchParams.get('current_period_ends_at'), 'eq.2027-01-31T00:00:00.000Z');
+});
+
 test('テーブル未作成と秘密鍵拒否を区別する', async () => {
   const schemaPending = await checkSupabaseConnection({env: validEnv, fetchImpl: async () => ({ok: false, status: 404})});
   assert.equal(schemaPending.status, 'schema_pending');

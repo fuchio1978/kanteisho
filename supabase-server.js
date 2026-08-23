@@ -599,15 +599,17 @@ async function listAdminAuditLogs({env = process.env, fetchImpl = globalThis.fet
   }
 }
 
-async function updateManualSubscription({actorUserId, subscriptionId, planId, status, currentPeriodStartedAt, currentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+async function updateManualSubscription({actorUserId, subscriptionId, planId, status, currentPeriodStartedAt, currentPeriodEndsAt, expectedCurrentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const paidPlans = new Set(['starter', 'premium', 'student', 'grandstudent']);
   const allowedStatuses = new Set(['pending', 'active', 'past_due', 'canceled', 'expired', 'refunded']);
   const startedAt = new Date(String(currentPeriodStartedAt || ''));
   const endsAt = new Date(String(currentPeriodEndsAt || ''));
+  const expectedEndsAt = expectedCurrentPeriodEndsAt ? new Date(String(expectedCurrentPeriodEndsAt)) : null;
   if (!userIdPattern.test(String(actorUserId || '')) || !userIdPattern.test(String(subscriptionId || '')) || !paidPlans.has(planId) || !allowedStatuses.has(status) || !Number.isFinite(startedAt.getTime()) || !Number.isFinite(endsAt.getTime()) || startedAt > endsAt) {
     return {ok: false, status: 'invalid_subscription'};
   }
+  if (expectedEndsAt && !Number.isFinite(expectedEndsAt.getTime())) return {ok: false, status: 'invalid_subscription'};
   const config = loadSupabaseServerConfig(env);
   if (!config.configured) return {ok: false, status: config.status};
   if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
@@ -616,6 +618,7 @@ async function updateManualSubscription({actorUserId, subscriptionId, planId, st
   try {
     const subscriptionUrl = new URL('/rest/v1/stores_subscriptions', config.url);
     subscriptionUrl.searchParams.set('id', `eq.${subscriptionId}`);
+    if (expectedEndsAt) subscriptionUrl.searchParams.set('current_period_ends_at', `eq.${expectedEndsAt.toISOString()}`);
     subscriptionUrl.searchParams.set('select', 'id,member_user_id,plan_id,status,current_period_started_at,current_period_ends_at');
     const subscriptionResponse = await fetchImpl(subscriptionUrl, {
       method: 'PATCH',
@@ -632,7 +635,7 @@ async function updateManualSubscription({actorUserId, subscriptionId, planId, st
     });
     const rows = subscriptionResponse.ok ? await responseJson(subscriptionResponse) : null;
     const subscription = Array.isArray(rows) ? rows[0] : null;
-    if (!subscription) return {ok: false, status: 'not_found'};
+    if (!subscription) return {ok: false, status: expectedEndsAt ? 'stale_subscription' : 'not_found'};
 
     const periodEnded = endsAt.getTime() <= Date.now();
     const accessPlanId = status === 'expired' || status === 'refunded' || (status === 'canceled' && periodEnded) ? 'free' : planId;
