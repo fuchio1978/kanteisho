@@ -417,6 +417,40 @@ test('管理者だけが契約台帳をExcel対応CSVで保存できる', async 
   }, {authenticateMember: async () => ({ok: true, member: {id: memberId, email: 'member@example.com', displayName: '会員', role: 'member', planId: 'starter'}})});
 });
 
+test('管理者は契約一覧だけを氏名メール注文番号とプラン状態で絞り込める', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  const memberA = '22222222-2222-4222-8222-222222222222';
+  const memberB = '33333333-3333-4333-8333-333333333333';
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: [
+      {id: memberA, display_name: '購入者アルファ', role: 'member', plan_id: 'starter', account_status: 'active', saved_subject_count: 0, last_login_at: null},
+      {id: memberB, display_name: '購入者ベータ', role: 'member', plan_id: 'premium', account_status: 'active', saved_subject_count: 0, last_login_at: null},
+    ]}),
+    listManualSubscriptions: async () => ({ok: true, subscriptions: [
+      {id: '44444444-4444-4444-8444-444444444444', member_user_id: memberA, plan_id: 'starter', status: 'active', stores_order_id: 'ORDER-ALPHA', purchaser_email: 'alpha@example.com', current_period_started_at: '2026-08-01', current_period_ends_at: '2026-09-01'},
+      {id: '55555555-5555-4555-8555-555555555555', member_user_id: memberB, plan_id: 'premium', status: 'past_due', stores_order_id: 'ORDER-BETA', purchaser_email: 'beta@example.com', current_period_started_at: '2026-08-02', current_period_ends_at: '2026-09-02'},
+    ]}),
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin?q=beta%40example.com&plan=premium&status=past_due`, {headers: {Cookie: cookie}});
+    const html = await page.text();
+    assert.match(html, /契約を検索・絞り込み/);
+    assert.match(html, /value="beta@example.com"/);
+    assert.match(html, /value="premium" selected/);
+    assert.match(html, /value="past_due" selected/);
+    assert.match(html, /1\/2件を表示/);
+    const contractSection = html.slice(html.indexOf('<h2>契約管理</h2>'), html.indexOf('<h2>会員利用状況</h2>'));
+    assert.match(contractSection, /ORDER-BETA/);
+    assert.doesNotMatch(contractSection, /ORDER-ALPHA/);
+
+    const emptyPage = await fetch(`${base}/members/admin?q=該当なし`, {headers: {Cookie: cookie}});
+    assert.match(await emptyPage.text(), /条件に一致する契約はありません。/);
+  }, dependencies);
+});
+
 test('管理者画面は支払確認中と更新日が近い契約を上部へ表示する', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const memberId = '22222222-2222-4222-8222-222222222222';
