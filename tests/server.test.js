@@ -451,6 +451,41 @@ test('管理者は契約一覧だけを氏名メール注文番号とプラン�
   }, dependencies);
 });
 
+test('管理者は会員一覧を氏名プラン利用状態で絞り込み全体件数も確認できる', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  const memberA = '22222222-2222-4222-8222-222222222222';
+  const memberB = '33333333-3333-4333-8333-333333333333';
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: [
+      {id: adminId, display_name: '管理者', role: 'admin', plan_id: 'admin', account_status: 'active', saved_subject_count: 0, last_login_at: null},
+      {id: memberA, display_name: '招待待ち花子', role: 'member', plan_id: 'premium', account_status: 'invited', saved_subject_count: 0, last_login_at: null},
+      {id: memberB, display_name: '利用中太郎', role: 'member', plan_id: 'starter', account_status: 'active', saved_subject_count: 2, last_login_at: null},
+    ]}),
+    listManualSubscriptions: async () => ({ok: true, subscriptions: [
+      {id: '44444444-4444-4444-8444-444444444444', member_user_id: memberB, plan_id: 'starter', status: 'active', stores_order_id: 'ORDER-ACTIVE', purchaser_email: 'active@example.com', current_period_started_at: '2026-08-01', current_period_ends_at: '2099-09-01'},
+    ]}),
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin?memberQ=招待&memberPlan=premium&memberStatus=invited`, {headers: {Cookie: cookie}});
+    const html = await page.text();
+    assert.match(html, /登録会員/);
+    assert.match(html, /利用中/);
+    assert.match(html, /招待中/);
+    assert.match(html, /要確認契約/);
+    assert.match(html, /契約中/);
+    assert.match(html, /value="招待"/);
+    assert.match(html, /value="premium" selected/);
+    assert.match(html, /value="invited" selected/);
+    assert.match(html, /1\/3名を表示/);
+    const memberSection = html.slice(html.indexOf('<h2>会員利用状況</h2>'), html.indexOf('<h2>管理者の操作履歴</h2>'));
+    assert.match(memberSection, /招待待ち花子/);
+    assert.doesNotMatch(memberSection, /利用中太郎/);
+  }, dependencies);
+});
+
 test('管理者画面は支払確認中と更新日が近い契約を上部へ表示する', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const memberId = '22222222-2222-4222-8222-222222222222';
