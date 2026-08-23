@@ -8,7 +8,7 @@ process.env.SESSION_HOURS = '1';
 const {createServer} = require('../server');
 
 async function withServer(run, dependencies = {}) {
-  const server = createServer({listManualSubscriptions: async () => ({ok: true, status: 'ok', subscriptions: []}), ...dependencies});
+  const server = createServer({listManualSubscriptions: async () => ({ok: true, status: 'ok', subscriptions: []}), listAdminAuditLogs: async () => ({ok: true, status: 'ok', logs: []}), ...dependencies});
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const {port} = server.address();
   try {
@@ -220,6 +220,28 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     const cookie = login.headers.get('set-cookie').split(';')[0];
     assert.equal((await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}})).status, 403);
   }, {authenticateMember: async () => ({ok: true, member: {id: 'member-user', email: 'member@example.com', displayName: '会員', role: 'member', planId: 'starter'}}), listMemberUsage});
+});
+
+test('管理者は招待や契約変更の操作履歴を新しい順で確認できる', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  const memberId = '22222222-2222-4222-8222-222222222222';
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: [{id: memberId, display_name: '購入者A', role: 'member', plan_id: 'premium', account_status: 'active', saved_subject_count: 1, last_login_at: null}]}),
+    listAdminAuditLogs: async () => ({ok: true, logs: [{id: 1, actor_user_id: adminId, target_user_id: memberId, action: 'manual_subscription_recorded', details: {plan_id: 'premium', stores_order_id: 'ORDER-AUDIT-1'}, created_at: '2026-08-23T01:02:03.000Z'}]}),
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.match(html, /管理者の操作履歴/);
+    assert.match(html, /購入・契約を登録/);
+    assert.match(html, /購入者A/);
+    assert.match(html, /ORDER-AUDIT-1/);
+    assert.match(html, /プレミアム/);
+  }, dependencies);
 });
 
 test('契約台帳を取得できなくても管理者は会員情報を確認できる', async () => {

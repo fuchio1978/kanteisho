@@ -17,6 +17,7 @@ const {
   recordManualSubscription,
   getMemberSubscription,
   listManualSubscriptions,
+  listAdminAuditLogs,
   updateManualSubscription,
   completeMemberInvite,
   requestMemberPasswordReset,
@@ -116,6 +117,25 @@ test('管理者向け契約一覧は更新に必要な項目を返す', async ()
   assert.equal(result.subscriptions.length, 1);
   assert.match(requestUrl, /stores_subscriptions/);
   assert.match(new URL(requestUrl).searchParams.get('select'), /stores_order_id,purchaser_email/);
+});
+
+test('管理者向け操作履歴は新しい順で直近件数だけ取得する', async () => {
+  let requestUrl = '';
+  const result = await listAdminAuditLogs({
+    env: validEnv,
+    limit: 25,
+    fetchImpl: async url => {
+      requestUrl = String(url);
+      return {ok: true, status: 200, json: async () => [{id: 1, action: 'member_invited', details: {plan_id: 'premium'}, created_at: '2026-08-23T00:00:00.000Z'}]};
+    },
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.logs.length, 1);
+  const endpoint = new URL(requestUrl);
+  assert.match(endpoint.pathname, /admin_audit_logs/);
+  assert.equal(endpoint.searchParams.get('order'), 'created_at.desc');
+  assert.equal(endpoint.searchParams.get('limit'), '25');
+  assert.match(endpoint.searchParams.get('select'), /actor_user_id,target_user_id,action,details,created_at/);
 });
 
 test('契約期限切れへの更新は会員を削除せずフリープランへ戻す', async () => {
