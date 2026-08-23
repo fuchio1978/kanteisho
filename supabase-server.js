@@ -403,6 +403,89 @@ function validMemberEmail(value) {
   return at > 0 && email.slice(at + 1).includes('.') ? email : null;
 }
 
+async function registerFreeMember({email, password, displayName, redirectUrl, termsVersion, privacyVersion, requestFingerprint = '', userAgent = '', env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+  const normalizedEmail = validMemberEmail(email);
+  const rawPassword = String(password || '');
+  const normalizedName = String(displayName || '').trim().slice(0, 120);
+  const normalizedTermsVersion = String(termsVersion || '').trim().slice(0, 40);
+  const normalizedPrivacyVersion = String(privacyVersion || '').trim().slice(0, 40);
+  let normalizedRedirect = null;
+  try {
+    const parsed = new URL(String(redirectUrl || ''));
+    if (parsed.protocol === 'https:' || (parsed.protocol === 'http:' && isLocalHost(parsed.hostname))) normalizedRedirect = parsed.toString();
+  } catch {}
+  if (!normalizedEmail || rawPassword.length < 10 || rawPassword.length > 128 || !normalizedName || !normalizedTermsVersion || !normalizedPrivacyVersion || !normalizedRedirect) {
+    return {ok: false, status: 'invalid_registration'};
+  }
+  const config = loadSupabaseServerConfig(env);
+  if (!config.configured) return {ok: false, status: config.status};
+  if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let createdUserId = '';
+  try {
+    const signupUrl = new URL('/auth/v1/signup', config.url);
+    signupUrl.searchParams.set('redirect_to', normalizedRedirect);
+    const signupResponse = await fetchImpl(signupUrl, {
+      method: 'POST',
+      headers: {apikey: config.serviceRoleKey, Accept: 'application/json', 'Content-Type': 'application/json'},
+      body: JSON.stringify({email: normalizedEmail, password: rawPassword, data: {display_name: normalizedName, registration_source: 'public_free_signup'}}),
+      signal: controller.signal,
+    });
+    if (!signupResponse.ok) {
+      if (signupResponse.status === 400 || signupResponse.status === 422) return {ok: false, status: 'already_registered'};
+      if (signupResponse.status === 429) return {ok: false, status: 'rate_limited'};
+      return {ok: false, status: 'signup_unavailable'};
+    }
+    const signupPayload = await responseJson(signupResponse);
+    const user = signupPayload?.user || signupPayload;
+    if (!user?.id || (Array.isArray(user.identities) && user.identities.length === 0)) return {ok: false, status: 'already_registered'};
+    createdUserId = user.id;
+
+    const profileUrl = new URL('/rest/v1/member_profiles', config.url);
+    profileUrl.searchParams.set('id', `eq.${createdUserId}`);
+    profileUrl.searchParams.set('role', 'eq.member');
+    profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
+    const profileResponse = await fetchImpl(profileUrl, {
+      method: 'PATCH',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
+      body: JSON.stringify({display_name: normalizedName, plan_id: 'free', account_status: 'active', max_saved_subjects: 0}),
+      signal: controller.signal,
+    });
+    const profiles = profileResponse.ok ? await responseJson(profileResponse) : null;
+    const profile = Array.isArray(profiles) ? profiles[0] : null;
+    if (!profile) throw Object.assign(new Error('profile unavailable'), {registrationStatus: 'profile_unavailable'});
+
+    const consentUrl = new URL('/rest/v1/member_consents', config.url);
+    const consentResponse = await fetchImpl(consentUrl, {
+      method: 'POST',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
+      body: JSON.stringify({
+        user_id: createdUserId,
+        terms_version: normalizedTermsVersion,
+        privacy_version: normalizedPrivacyVersion,
+        source: 'public_free_signup',
+        request_fingerprint: String(requestFingerprint || '').trim().slice(0, 128),
+        user_agent: String(userAgent || '').trim().slice(0, 512),
+      }),
+      signal: controller.signal,
+    });
+    if (!consentResponse.ok) throw Object.assign(new Error('consent unavailable'), {registrationStatus: 'consent_unavailable'});
+    return {ok: true, status: 'confirmation_sent', profile};
+  } catch (error) {
+    if (createdUserId) {
+      try {
+        const rollbackUrl = new URL(`/auth/v1/admin/users/${createdUserId}`, config.url);
+        await fetchImpl(rollbackUrl, {method: 'DELETE', headers: serverHeaders(config), signal: AbortSignal.timeout(Math.min(timeoutMs, 3000))});
+      } catch {}
+    }
+    return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : error?.registrationStatus || 'signup_unavailable'};
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function inviteMember({actorUserId, email, displayName, planId, redirectUrl, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const allowedPlans = new Set(['free', 'starter', 'premium', 'student', 'grandstudent']);
@@ -821,6 +904,7 @@ module.exports = {
   deleteSavedSubject,
   listMemberUsage,
   updateMemberAccess,
+  registerFreeMember,
   inviteMember,
   recordManualSubscription,
   getMemberSubscription,

@@ -94,3 +94,14 @@ test('新規会員はパスワード設定完了まで招待中として作成�
   assert.match(migration, /insert into public\.member_profiles \(id, display_name, account_status\)/);
   assert.match(migration, /'invited'/);
 });
+
+test('無料自己登録は規約とプライバシーポリシーの同意版を履歴保存する', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202608230001_public_free_signup_consents.sql'), 'utf8');
+  assert.match(migration, /create table if not exists public\.member_consents/);
+  assert.match(migration, /terms_version text not null/);
+  assert.match(migration, /privacy_version text not null/);
+  assert.match(migration, /accepted_at timestamptz not null default now\(\)/);
+  assert.match(migration, /alter table public\.member_consents enable row level security/);
+  assert.match(migration, /revoke all on public\.member_consents from anon, authenticated/);
+  assert.doesNotMatch(migration, /ip_address/i);
+});

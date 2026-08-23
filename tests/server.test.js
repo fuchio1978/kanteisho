@@ -84,6 +84,36 @@ test('講座生版を維持したまま会員版を独立した準備中入口�
   });
 });
 
+test('一般利用者は規約同意とメール確認を経て無料会員登録できる', async () => {
+  let registration = null;
+  await withServer(async base => {
+    const page = await fetch(`${base}/members/register`);
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.match(html, /無料会員登録/);
+    assert.match(html, /利用規約/);
+    assert.match(html, /プライバシーポリシー/);
+    assert.equal((await fetch(`${base}/terms`)).status, 200);
+    assert.equal((await fetch(`${base}/privacy`)).status, 200);
+
+    const mismatch = await fetch(`${base}/members/register`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({displayName: '無料会員', email: 'free@example.com', password: 'password-1234', passwordConfirmation: 'different-1234', consent: 'accepted'})});
+    assert.equal(mismatch.headers.get('location'), '/members/register?error=mismatch');
+
+    const response = await fetch(`${base}/members/register`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Test Browser'}, body: new URLSearchParams({displayName: '無料会員', email: 'free@example.com', password: 'password-1234', passwordConfirmation: 'password-1234', consent: 'accepted'})});
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get('location'), '/members/register?sent=1');
+    assert.equal(registration.displayName, '無料会員');
+    assert.equal(registration.email, 'free@example.com');
+    assert.equal(registration.termsVersion, '2026-08-23');
+    assert.equal(registration.privacyVersion, '2026-08-23');
+    assert.equal(registration.userAgent, 'Test Browser');
+    assert.match(registration.requestFingerprint, /^[A-Za-z0-9_-]+$/);
+
+    const confirmed = await fetch(`${base}/members/confirmed`);
+    assert.match(await confirmed.text(), /メール確認が完了しました/);
+  }, {registerFreeMember: async input => { registration = input; return {ok: true, status: 'confirmation_sent'}; }});
+});
+
 test('会員版はSupabase認証後だけ個別セッションと契約プランを表示する', async () => {
   let contractMemberId = '';
   const authenticateMember = async ({email, password}) => {

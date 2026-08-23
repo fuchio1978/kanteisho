@@ -13,6 +13,7 @@ const {
   deleteSavedSubject,
   listMemberUsage,
   updateMemberAccess,
+  registerFreeMember,
   inviteMember,
   recordManualSubscription,
   getMemberSubscription,
@@ -378,6 +379,37 @@ test('管理者の招待はSupabase Authへメールを送り会員を招待中�
   assert.deepEqual(JSON.parse(requests[0].options.body), {email: 'customer@example.com', data: {display_name: '購入者A'}});
   assert.deepEqual(JSON.parse(requests[1].options.body), {display_name: '購入者A', plan_id: 'premium', account_status: 'invited'});
   assert.equal(JSON.parse(requests[2].options.body).action, 'member_invited');
+});
+
+test('一般の無料登録はメール確認を送りフリープランと規約同意を記録する', async () => {
+  const userId = '22222222-2222-4222-8222-222222222222';
+  const requests = [];
+  const responses = [
+    {ok: true, status: 200, json: async () => ({user: {id: userId, email: 'free@example.com', identities: [{id: 'identity-1'}]}})},
+    {ok: true, status: 200, json: async () => [{id: userId, display_name: '無料会員A', plan_id: 'free', account_status: 'active'}]},
+    {ok: true, status: 201, json: async () => null},
+  ];
+  const result = await registerFreeMember({
+    email: ' Free@Example.com ', password: 'secure-password-123', displayName: ' 無料会員A ',
+    redirectUrl: 'https://kanteisho.onrender.com/members/confirmed', termsVersion: '2026-08-23', privacyVersion: '2026-08-23',
+    requestFingerprint: 'hashed-address', userAgent: 'Test Browser', env: validEnv,
+    fetchImpl: async (url, options) => { requests.push({url: String(url), options}); return responses.shift(); },
+  });
+  assert.equal(result.status, 'confirmation_sent');
+  assert.match(requests[0].url, /\/auth\/v1\/signup\?redirect_to=/);
+  assert.equal(requests[0].options.headers.Authorization, undefined);
+  assert.deepEqual(JSON.parse(requests[0].options.body), {email: 'free@example.com', password: 'secure-password-123', data: {display_name: '無料会員A', registration_source: 'public_free_signup'}});
+  assert.deepEqual(JSON.parse(requests[1].options.body), {display_name: '無料会員A', plan_id: 'free', account_status: 'active', max_saved_subjects: 0});
+  assert.deepEqual(JSON.parse(requests[2].options.body), {user_id: userId, terms_version: '2026-08-23', privacy_version: '2026-08-23', source: 'public_free_signup', request_fingerprint: 'hashed-address', user_agent: 'Test Browser'});
+});
+
+test('無料登録は弱いパスワードや登録済みメールを安全に拒否する', async () => {
+  assert.equal((await registerFreeMember({email: 'free@example.com', password: 'short', displayName: 'A', redirectUrl: 'https://kanteisho.onrender.com/members/confirmed', termsVersion: 'v1', privacyVersion: 'v1'})).status, 'invalid_registration');
+  const result = await registerFreeMember({
+    email: 'free@example.com', password: 'secure-password-123', displayName: 'A', redirectUrl: 'https://kanteisho.onrender.com/members/confirmed', termsVersion: 'v1', privacyVersion: 'v1', env: validEnv,
+    fetchImpl: async () => ({ok: false, status: 422, json: async () => ({message: 'already registered'})}),
+  });
+  assert.equal(result.status, 'already_registered');
 });
 
 test('管理者はSTORES購入情報を招待会員の契約台帳へ手動記録できる', async () => {
