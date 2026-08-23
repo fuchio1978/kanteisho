@@ -353,6 +353,35 @@ test('管理者画面から契約期間と状態を更新できる', async () =>
   }, dependencies);
 });
 
+test('管理者画面から決済確認済みの契約を月末補正付きで1か月更新できる', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  const memberId = '22222222-2222-4222-8222-222222222222';
+  const subscriptionId = '33333333-3333-4333-8333-333333333333';
+  let received = null;
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: [{id: memberId, display_name: '月次更新A', role: 'member', plan_id: 'premium', account_status: 'active', saved_subject_count: 1, last_login_at: null}]}),
+    listManualSubscriptions: async () => ({ok: true, subscriptions: [{id: subscriptionId, member_user_id: memberId, plan_id: 'premium', status: 'past_due', stores_order_id: 'ORDER-RENEW', purchaser_email: 'renew@example.com', current_period_started_at: '2026-12-31T00:00:00.000Z', current_period_ends_at: '2027-01-31T00:00:00.000Z'}]}),
+    updateManualSubscription: async input => { received = input; return {ok: true, status: 'updated'}; },
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    const html = await page.text();
+    assert.match(html, /1か月更新/);
+    assert.match(html, /決済確認後に使用/);
+    const token = html.match(/action="\/members\/admin\/subscription\/renew"[\s\S]*?name="token" value="([^"]+)"/)[1];
+    const response = await fetch(`${base}/members/admin/subscription/renew`, {
+      method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({token, subscriptionId, planId: 'premium', currentPeriodEndsAt: '2027-01-31'}),
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get('location'), '/members/admin?contractRenewed=1');
+    assert.deepEqual(received, {actorUserId: adminId, subscriptionId, planId: 'premium', status: 'active', currentPeriodStartedAt: '2027-01-31', currentPeriodEndsAt: '2027-02-28'});
+  }, dependencies);
+});
+
 test('管理者画面は支払確認中と更新日が近い契約を上部へ表示する', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const memberId = '22222222-2222-4222-8222-222222222222';
