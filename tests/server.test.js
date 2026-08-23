@@ -353,6 +353,31 @@ test('管理者画面から契約期間と状態を更新できる', async () =>
   }, dependencies);
 });
 
+test('管理者画面は支払確認中と更新日が近い契約を上部へ表示する', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  const memberId = '22222222-2222-4222-8222-222222222222';
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: [{id: memberId, display_name: '更新確認A', role: 'member', plan_id: 'starter', account_status: 'active', saved_subject_count: 0, last_login_at: null}]}),
+    listManualSubscriptions: async () => ({ok: true, subscriptions: [
+      {id: '33333333-3333-4333-8333-333333333333', member_user_id: memberId, plan_id: 'starter', status: 'active', stores_order_id: 'ORDER-SOON', purchaser_email: 'soon@example.com', current_period_started_at: new Date().toISOString(), current_period_ends_at: tomorrow},
+      {id: '44444444-4444-4444-8444-444444444444', member_user_id: memberId, plan_id: 'premium', status: 'past_due', stores_order_id: 'ORDER-DUE', purchaser_email: 'due@example.com', current_period_started_at: new Date().toISOString(), current_period_ends_at: tomorrow},
+    ]}),
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.match(html, /対応が必要な契約/);
+    assert.match(html, /更新日まで1日です/);
+    assert.match(html, /お支払い状況を確認してください/);
+    assert.match(html, /更新確認A/);
+  }, dependencies);
+});
+
 test('管理者が購入者へプラン付き招待メールを送れる', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   let received = null;
