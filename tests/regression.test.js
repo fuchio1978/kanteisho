@@ -5,6 +5,17 @@ const vm = require('node:vm');
 
 const dataSource = fs.readFileSync(require('node:path').join(__dirname, '..', 'use-god-data.js'), 'utf8');
 const source = fs.readFileSync(require('node:path').join(__dirname, '..', 'app.js'), 'utf8');
+
+test('会員版はフリーとスターターだけに料金プラン案内を表示する', () => {
+  const html = fs.readFileSync(require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
+  const css = fs.readFileSync(require('node:path').join(__dirname, '..', 'styles.css'), 'utf8');
+  assert.match(html, /id="memberPlanGuide" hidden/);
+  assert.match(html, /href="\/meisiki#plans"/);
+  assert.match(source, /planId==='free'/);
+  assert.match(source, /planId==='starter'/);
+  assert.match(source, /guide\.hidden=true/);
+  assert.match(css, /\.member-plan-guide\[hidden\]\{display:none\}/);
+});
 const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
