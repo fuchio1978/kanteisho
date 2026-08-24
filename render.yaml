@@ -25,10 +25,10 @@ services:
       - key: PUBLIC_APP_URL
         value: https://kanteisho.onrender.com
       - key: STORES_STARTER_ITEM_ID
-        sync: false
+        value: 6a7db1d62ca89ea7083f4a47
       - key: STORES_PREMIUM_ITEM_ID
-        sync: false
+        value: 6a7db23545021ca086e1450b
       - key: STORES_STUDENT_ITEM_ID
-        sync: false
+        value: 6a7db2db82a509a1ac820316
       - key: STORES_REFERRAL_ITEM_ID
-        sync: false
+        value: 6a7db31e45021cb239e144b2

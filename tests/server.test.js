@@ -265,7 +265,8 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     assert.match(html, /3件/);
     assert.match(html, /STORES商品対応/);
     assert.match(html, /ご紹介用/);
-    assert.match(html, /0\/4商品を設定済み/);
+    assert.match(html, /4商品すべての対応設定が完了/);
+    assert.match(html, /6a7db1d62ca89ea7083f4a47/);
   }, {authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}), listMemberUsage});
 
   await withServer(async base => {
