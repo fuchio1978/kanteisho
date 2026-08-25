@@ -5,7 +5,7 @@ process.env.KANTEISHO_ACCESS_PASSWORD = 'test-access-password';
 process.env.SESSION_SECRET = 'test-session-secret-that-is-long-enough';
 process.env.SESSION_HOURS = '1';
 
-const {createServer} = require('../server');
+const {createServer, renderSalesLandingPage} = require('../server');
 
 async function withServer(run, dependencies = {}) {
   const server = createServer({listManualSubscriptions: async () => ({ok: true, status: 'ok', subscriptions: []}), listAdminAuditLogs: async () => ({ok: true, status: 'ok', logs: []}), ...dependencies});
@@ -44,6 +44,9 @@ test('販売LPは認証なしでmeisikiから表示できる', async () => {
       assert.match(html, /命式を出す時間を減らして/);
       assert.match(html, /相性鑑定/);
       assert.match(html, /プレミアムプラン/);
+      assert.match(html, /data-stores-plan="starter"/);
+      assert.match(html, /販売準備中/);
+      assert.doesNotMatch(html, /href="https:\/\/fuchilabo\.stores\.jp\/items\//);
     }
 
     const stylesheet = await fetch(`${base}/meisiki.css`, {redirect: 'manual'});
@@ -55,6 +58,17 @@ test('販売LPは認証なしでmeisikiから表示できる', async () => {
     assert.equal(protectedPage.status, 302);
     assert.equal(protectedPage.headers.get('location'), '/login');
   });
+});
+
+test('販売導線をONにしたプランだけSTORESの商品URLへ切り替える', () => {
+  const source = '<a class="button" data-stores-plan="starter" href="#plans" aria-disabled="true">販売準備中</a><a class="button" data-stores-plan="premium" href="#plans" aria-disabled="true">販売準備中</a>';
+  const html = renderSalesLandingPage(source, {products: [
+    {planId: 'starter', salesEnabled: true, purchaseUrl: 'https://fuchilabo.stores.jp/items/starter'},
+    {planId: 'premium', salesEnabled: false, purchaseUrl: ''},
+  ]});
+  assert.match(html, /href="https:\/\/fuchilabo\.stores\.jp\/items\/starter" target="_blank" rel="noopener">STORESで申し込む/);
+  assert.match(html, /data-stores-plan="premium" href="#plans" aria-disabled="true">販売準備中/);
+  assert.doesNotMatch(html, /data-stores-plan="starter"[^>]*aria-disabled/);
 });
 
 test('講座生版を維持したまま会員版を独立した準備中入口として分離する', async () => {
@@ -265,7 +279,8 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     assert.match(html, /3件/);
     assert.match(html, /STORES商品対応/);
     assert.match(html, /ご紹介用/);
-    assert.match(html, /4商品すべての対応設定が完了/);
+    assert.match(html, /4商品すべての商品IDを設定済み/);
+    assert.match(html, /販売導線は0\/4商品でON/);
     assert.match(html, /6a7db1d62ca89ea7083f4a47/);
   }, {authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}), listMemberUsage});
 

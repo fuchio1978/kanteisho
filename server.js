@@ -321,8 +321,8 @@ function adminUsagePage(members = [], {member, subscriptions = [], auditLogs = [
     const controls = canEdit ? `<form class="access-form" method="post" action="/members/admin/access"><input type="hidden" name="token" value="${adminActionToken(member)}"><input type="hidden" name="targetUserId" value="${escapeHtml(profile.id)}"><select name="planId" aria-label="料金プラン">${planOptions.replace(`value="${profile.plan_id}"`, `value="${profile.plan_id}" selected`)}</select><select name="accountStatus" aria-label="利用状態">${statusOptions.replace(`value="${profile.account_status}"`, `value="${profile.account_status}" selected`)}</select><button type="submit">変更を保存</button></form>` : '<span class="admin-label">管理者</span>';
     return `<tr><td>${escapeHtml(profile.display_name || '名称未設定')}</td><td>${controls}</td><td>${Number(profile.saved_subject_count) || 0}件</td><td>${profile.last_login_at ? escapeHtml(new Date(profile.last_login_at).toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})) : '未ログイン'}</td></tr>`;
   }).join('');
-  const storeRows = storeReadiness.products.map(product => `<tr><td>${escapeHtml(product.label)}</td><td>月額 ${product.monthlyPrice.toLocaleString('ja-JP')}円</td><td><code>${escapeHtml(product.planId)}</code></td><td>${product.configured ? `<span class="ready">設定済み</span><br><code>${escapeHtml(product.itemId)}</code><br><a href="${escapeHtml(product.dashboardUrl)}" target="_blank" rel="noopener">STORES設定を確認</a>` : '<span class="pending">未設定</span>'}</td></tr>`).join('');
-  const storeSummary = storeReadiness.ready ? '4商品すべての対応設定が完了しています。' : `${storeReadiness.configured}/${storeReadiness.total}商品を設定済みです。商品IDの登録後も、購入情報の自動反映は次の段階で有効化します。`;
+  const storeRows = storeReadiness.products.map(product => `<tr><td>${escapeHtml(product.label)}</td><td>月額 ${product.monthlyPrice.toLocaleString('ja-JP')}円</td><td><code>${escapeHtml(product.planId)}</code></td><td>${product.configured ? `<span class="ready">商品ID設定済み</span><br><code>${escapeHtml(product.itemId)}</code><br>${product.salesEnabled ? '<span class="ready">販売導線ON</span>' : '<span class="pending">販売導線OFF</span>'}<br><a href="${escapeHtml(product.dashboardUrl)}" target="_blank" rel="noopener">STORES設定を確認</a>` : '<span class="pending">未設定</span>'}</td></tr>`).join('');
+  const storeSummary = storeReadiness.ready ? `4商品すべての商品IDを設定済みです。販売導線は${storeReadiness.salesEnabled}/${storeReadiness.total}商品でONです。` : `${storeReadiness.configured}/${storeReadiness.total}商品を設定済みです。商品IDの登録後も、購入情報の自動反映は次の段階で有効化します。`;
   const memberNames = new Map(members.map(profile => [profile.id, profile.display_name || '名称未設定']));
   const paidPlanOptions = PUBLIC_PLAN_IDS.filter(planId => planId !== 'free').map(planId => `<option value="${planId}">${escapeHtml(getPlan(planId).label)}</option>`).join('');
   const existingMemberOptions = members.filter(profile => profile.role !== 'admin' && profile.id !== member.uid).map(profile => `<option value="${escapeHtml(profile.id)}">${escapeHtml(profile.display_name || '名称未設定')}</option>`).join('');
@@ -431,8 +431,23 @@ function servePublic(res, pathname) {
   const [filename, contentType] = PUBLIC_FILES.get(pathname);
   fs.readFile(path.join(ROOT, filename), (error, data) => {
     if (error) return send(res, 500, 'Internal Server Error', {'Content-Type': 'text/plain; charset=utf-8'});
-    send(res, 200, data, {'Content-Type': contentType});
+    const body = filename === 'meisiki.html' ? renderSalesLandingPage(data.toString('utf8')) : data;
+    send(res, 200, body, {'Content-Type': contentType});
   });
+}
+
+function renderSalesLandingPage(source, storeReadiness = storesCatalogReadiness()) {
+  return storeReadiness.products.reduce((html, product) => {
+    if (!['starter', 'premium'].includes(product.planId)) return html;
+    const pattern = new RegExp(`<a([^>]*\\bdata-stores-plan="${product.planId}"[^>]*)>[^<]*<\\/a>`, 'g');
+    return html.replace(pattern, (_match, attributes) => {
+      const safeAttributes = attributes.replace(/\s+href="[^"]*"/g, '').replace(/\s+aria-disabled="[^"]*"/g, '').replace(/\s+target="[^"]*"/g, '').replace(/\s+rel="[^"]*"/g, '');
+      if (product.salesEnabled && product.purchaseUrl) {
+        return `<a${safeAttributes} href="${escapeHtml(product.purchaseUrl)}" target="_blank" rel="noopener">STORESで申し込む</a>`;
+      }
+      return `<a${safeAttributes} href="#plans" aria-disabled="true">販売準備中</a>`;
+    });
+  }, String(source || ''));
 }
 
 function memberAccount(member) {
@@ -857,4 +872,4 @@ if (require.main === module) {
   createServer().listen(PORT, '0.0.0.0', () => console.log(`Kanteisho server listening on ${PORT}`));
 }
 
-module.exports = {createServer};
+module.exports = {createServer, renderSalesLandingPage};
