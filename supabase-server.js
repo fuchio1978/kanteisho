@@ -797,9 +797,8 @@ async function completeMemberInvite({accessToken, password, env = process.env, f
       body: JSON.stringify({account_status: 'active'}),
       signal: controller.signal,
     });
-    const profiles = profileResponse.ok ? await responseJson(profileResponse) : null;
-    const profile = Array.isArray(profiles) ? profiles[0] : null;
-    if (!profile) return {ok: false, status: 'profile_unavailable'};
+    if (!profileResponse.ok) return {ok: false, status: 'profile_unavailable'};
+    // パスワード変更後に応答だけ失われた場合など、すでにactiveでも再実行を成功扱いにする。
     return {ok: true, status: 'completed', email: String(user.email || '')};
   } catch (error) {
     return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'auth_unavailable'};
@@ -864,7 +863,22 @@ async function resetMemberPassword({accessToken, password, env = process.env, fe
     });
     if (response.status === 401 || response.status === 403) return {ok: false, status: 'invalid_token'};
     if (response.status === 422) return {ok: false, status: 'weak_password'};
-    return response.ok ? {ok: true, status: 'completed'} : {ok: false, status: 'reset_unavailable'};
+    if (!response.ok) return {ok: false, status: 'reset_unavailable'};
+    const user = await responseJson(response);
+    if (!user?.id) return {ok: false, status: 'reset_unavailable'};
+
+    // 招待処理が途中で止まったアカウントは、本人確認済みの再設定メールから復旧できるようにする。
+    // active・suspended・expiredの場合は更新対象外となり、既存状態を維持する。
+    const profileUrl = new URL('/rest/v1/member_profiles', config.url);
+    profileUrl.searchParams.set('id', `eq.${user.id}`);
+    profileUrl.searchParams.set('account_status', 'eq.invited');
+    const profileResponse = await fetchImpl(profileUrl, {
+      method: 'PATCH',
+      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
+      body: JSON.stringify({account_status: 'active'}),
+      signal: controller.signal,
+    });
+    return profileResponse.ok ? {ok: true, status: 'completed'} : {ok: false, status: 'profile_unavailable'};
   } catch (error) {
     return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'reset_unavailable'};
   } finally {

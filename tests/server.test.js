@@ -703,7 +703,9 @@ test('招待された本人が公開設定画面から初期パスワードを�
     const page = await fetch(`${base}/members/setup`);
     assert.equal(page.status, 200);
     assert.match(await page.text(), /初期パスワード設定/);
-    assert.equal((await fetch(`${base}/member-setup.js`)).status, 200);
+    const setupScript = await fetch(`${base}/member-setup.js`);
+    assert.equal(setupScript.status, 200);
+    assert.match(await setupScript.text(), /sessionStorage\.setItem/);
     const mismatch = await fetch(`${base}/members/api/complete-invite`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({accessToken: 'token', password: 'password-one', passwordConfirmation: 'password-two'})});
     assert.equal(mismatch.status, 400);
     const response = await fetch(`${base}/members/api/complete-invite`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({accessToken: 'invite-token', password: 'long-password-123', passwordConfirmation: 'long-password-123'})});
@@ -729,7 +731,9 @@ test('ログイン画面から本人へ再設定メールを送り新しいパ�
     const resetPage = await fetch(`${base}/members/password/reset`);
     assert.equal(resetPage.status, 200);
     assert.match(await resetPage.text(), /新しいパスワード設定/);
-    assert.equal((await fetch(`${base}/member-password-reset.js`)).status, 200);
+    const resetScript = await fetch(`${base}/member-password-reset.js`);
+    assert.equal(resetScript.status, 200);
+    assert.match(await resetScript.text(), /sessionStorage\.setItem/);
     const response = await fetch(`${base}/members/api/reset-password`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({accessToken: 'recovery-token', password: 'new-password-123', passwordConfirmation: 'new-password-123'})});
     assert.equal(response.status, 200);
     assert.equal((await response.json()).status, 'completed');

@@ -495,15 +495,23 @@ test('会員本人へパスワード再設定メールを安全な転送先付�
 });
 
 test('再設定メールの本人だけが新しいパスワードへ変更できる', async () => {
-  let request;
+  const userId = '22222222-2222-4222-8222-222222222222';
+  const requests = [];
+  const responses = [
+    {ok: true, status: 200, json: async () => ({id: userId, email: 'member@example.com'})},
+    {ok: true, status: 204, json: async () => null},
+  ];
   const result = await resetMemberPassword({
     accessToken: 'recovery-access-token-that-is-long-enough', password: 'new-password-123', env: validEnv,
-    fetchImpl: async (url, options) => { request = {url: String(url), options}; return {ok: true, status: 200}; },
+    fetchImpl: async (url, options) => { requests.push({url: String(url), options}); return responses.shift(); },
   });
   assert.deepEqual(result, {ok: true, status: 'completed'});
-  assert.match(request.url, /\/auth\/v1\/user$/);
-  assert.equal(request.options.headers.Authorization, 'Bearer recovery-access-token-that-is-long-enough');
-  assert.deepEqual(JSON.parse(request.options.body), {password: 'new-password-123'});
+  assert.match(requests[0].url, /\/auth\/v1\/user$/);
+  assert.equal(requests[0].options.headers.Authorization, 'Bearer recovery-access-token-that-is-long-enough');
+  assert.deepEqual(JSON.parse(requests[0].options.body), {password: 'new-password-123'});
+  assert.match(requests[1].url, new RegExp(`id=eq\\.${userId}`));
+  assert.match(requests[1].url, /account_status=eq\.invited/);
+  assert.deepEqual(JSON.parse(requests[1].options.body), {account_status: 'active'});
   assert.equal((await resetMemberPassword({accessToken: 'short', password: 'new-password-123'})).status, 'invalid_token');
   assert.equal((await resetMemberPassword({accessToken: 'recovery-access-token-that-is-long-enough', password: 'short'})).status, 'weak_password');
 });

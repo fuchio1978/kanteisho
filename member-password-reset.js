@@ -6,8 +6,15 @@
   const password = document.querySelector('#resetMemberPassword');
   const confirmation = document.querySelector('#resetMemberPasswordConfirm');
   const loginLink = document.querySelector('#resetLoginLink');
+  const tokenStorageKey = 'kanteisho-member-password-reset';
   const params = new URLSearchParams(location.hash.slice(1));
-  const accessToken = params.get('access_token') || '';
+  let accessToken = '';
+  if (params.get('access_token') && params.get('type') === 'recovery') {
+    accessToken = params.get('access_token');
+    try { sessionStorage.setItem(tokenStorageKey, accessToken); } catch {}
+  } else {
+    try { accessToken = sessionStorage.getItem(tokenStorageKey) || ''; } catch {}
+  }
   history.replaceState(null, '', location.pathname + location.search);
 
   function show(message, type = '') {
@@ -15,7 +22,7 @@
     status.className = `status${type ? ` ${type}` : ''}`;
   }
 
-  if (!accessToken || params.get('type') !== 'recovery') {
+  if (!accessToken) {
     show('再設定リンクを確認できませんでした。期限切れの場合は、もう一度再設定メールをお申し込みください。', 'error');
     return;
   }
@@ -37,9 +44,10 @@
       });
       const result = await response.json();
       if (!response.ok || !result.ok) {
-        const messages = {invalid_token: '再設定リンクの有効期限が切れています。もう一度お申し込みください。', weak_password: 'より安全なパスワードを設定してください。', password_mismatch: '確認用パスワードが一致しません。'};
-        throw new Error(messages[result.status] || 'パスワードを変更できませんでした。時間を置いてお試しください。');
+        const messages = {invalid_token: '再設定リンクの有効期限が切れています。もう一度お申し込みください。', weak_password: 'より安全なパスワードを設定してください。', password_mismatch: '確認用パスワードが一致しません。', profile_unavailable: 'アカウントの有効化を完了できませんでした。この画面を閉じずに、時間を置いてもう一度お試しください。', timeout: '処理が時間切れになりました。この画面を閉じずに、もう一度お試しください。'};
+        throw new Error(messages[result.status] || 'パスワードを変更できませんでした。この画面を閉じずに、もう一度お試しください。');
       }
+      try { sessionStorage.removeItem(tokenStorageKey); } catch {}
       form.hidden = true;
       loginLink.hidden = false;
       show('パスワードを変更しました。新しいパスワードでログインできます。', 'success');
