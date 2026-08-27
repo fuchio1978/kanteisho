@@ -639,6 +639,34 @@ test('現在の管理者が共同管理者へ初期パスワード設定メー�
   }, dependencies);
 });
 
+test('登録済みの共同管理者には復旧用パスワード再設定メールを自動送信する', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  let recoveryInput = null;
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: []}),
+    inviteAdmin: async () => ({ok: false, status: 'already_registered'}),
+    requestMemberPasswordReset: async input => { recoveryInput = input; return {ok: true, status: 'sent'}; },
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const html = await (await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}})).text();
+    assert.match(html, /登録済みアドレスには、自動的に復旧用/);
+    const token = html.match(/action="\/members\/admin\/invite-admin"[\s\S]*?name="token" value="([^"]+)"/)[1];
+    const response = await fetch(`${base}/members/admin/invite-admin`, {
+      method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({token, displayName: '共同管理者', email: 'zasso2nd@gmail.com'}),
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get('location'), '/members/admin?adminRecoverySent=1');
+    assert.equal(recoveryInput.email, 'zasso2nd@gmail.com');
+    assert.match(recoveryInput.redirectUrl, /\/members\/password\/reset$/);
+    const notice = await (await fetch(`${base}/members/admin?adminRecoverySent=1`, {headers: {Cookie: cookie}})).text();
+    assert.match(notice, /復旧用のパスワード再設定メールを送信しました/);
+  }, dependencies);
+});
+
 test('管理者は購入者の招待とSTORES契約台帳への記録を一度に行える', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const invitedId = '22222222-2222-4222-8222-222222222222';
