@@ -610,6 +610,35 @@ test('管理者が購入者へプラン付き招待メールを送れる', async
   }, dependencies);
 });
 
+test('現在の管理者が共同管理者へ初期パスワード設定メールを送れる', async () => {
+  const adminId = '11111111-1111-4111-8111-111111111111';
+  let received = null;
+  const dependencies = {
+    authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
+    listMemberUsage: async () => ({ok: true, members: []}),
+    inviteAdmin: async input => { received = input; return {ok: true, status: 'invited'}; },
+  };
+  await withServer(async base => {
+    const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
+    const html = await page.text();
+    assert.match(html, /共同管理者を招待/);
+    assert.match(html, /管理者招待メールを送る/);
+    const token = html.match(/action="\/members\/admin\/invite-admin"[\s\S]*?name="token" value="([^"]+)"/)[1];
+    const response = await fetch(`${base}/members/admin/invite-admin`, {
+      method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({token, displayName: '共同管理者', email: 'zasso2nd@gmail.com'}),
+    });
+    assert.equal(response.status, 303);
+    assert.equal(response.headers.get('location'), '/members/admin?adminInvited=1');
+    assert.equal(received.actorUserId, adminId);
+    assert.equal(received.displayName, '共同管理者');
+    assert.equal(received.email, 'zasso2nd@gmail.com');
+    assert.match(received.redirectUrl, /\/members\/setup$/);
+  }, dependencies);
+});
+
 test('管理者は購入者の招待とSTORES契約台帳への記録を一度に行える', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const invitedId = '22222222-2222-4222-8222-222222222222';

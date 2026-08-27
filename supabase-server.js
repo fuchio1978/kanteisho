@@ -486,7 +486,7 @@ async function registerFreeMember({email, password, displayName, redirectUrl, te
   }
 }
 
-async function inviteMember({actorUserId, email, displayName, planId, redirectUrl, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+async function inviteAccount({actorUserId, email, displayName, planId, role = 'member', redirectUrl, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const allowedPlans = new Set(['free', 'starter', 'premium', 'student', 'grandstudent']);
   const normalizedEmail = validMemberEmail(email);
@@ -496,7 +496,8 @@ async function inviteMember({actorUserId, email, displayName, planId, redirectUr
     const parsed = new URL(String(redirectUrl || ''));
     if (parsed.protocol === 'https:' || (parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname))) normalizedRedirect = parsed.toString();
   } catch {}
-  if (!userIdPattern.test(String(actorUserId || '')) || !normalizedEmail || !normalizedName || !allowedPlans.has(planId) || !normalizedRedirect) {
+  const validAccess = role === 'admin' ? planId === 'admin' : role === 'member' && allowedPlans.has(planId);
+  if (!userIdPattern.test(String(actorUserId || '')) || !normalizedEmail || !normalizedName || !validAccess || !normalizedRedirect) {
     return {ok: false, status: 'invalid_invitation'};
   }
   const config = loadSupabaseServerConfig(env);
@@ -524,12 +525,15 @@ async function inviteMember({actorUserId, email, displayName, planId, redirectUr
 
     const profileUrl = new URL('/rest/v1/member_profiles', config.url);
     profileUrl.searchParams.set('id', `eq.${invitedUser.id}`);
+    // Auth作成直後のプロフィールはトリガーにより必ずmemberで作成される。
     profileUrl.searchParams.set('role', 'eq.member');
     profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
+    const profileUpdate = {display_name: normalizedName, plan_id: planId, account_status: 'invited'};
+    if (role === 'admin') profileUpdate.role = 'admin';
     const profileResponse = await fetchImpl(profileUrl, {
       method: 'PATCH',
       headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
-      body: JSON.stringify({display_name: normalizedName, plan_id: planId, account_status: 'invited'}),
+      body: JSON.stringify(profileUpdate),
       signal: controller.signal,
     });
     const profiles = profileResponse.ok ? await responseJson(profileResponse) : null;
@@ -540,7 +544,7 @@ async function inviteMember({actorUserId, email, displayName, planId, redirectUr
     await fetchImpl(auditUrl, {
       method: 'POST',
       headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
-      body: JSON.stringify({actor_user_id: actorUserId, target_user_id: invitedUser.id, action: 'member_invited', details: {plan_id: planId, email: normalizedEmail}}),
+      body: JSON.stringify({actor_user_id: actorUserId, target_user_id: invitedUser.id, action: role === 'admin' ? 'admin_invited' : 'member_invited', details: {plan_id: planId, email: normalizedEmail}}),
       signal: controller.signal,
     });
     return {ok: true, status: 'invited', profile};
@@ -549,6 +553,14 @@ async function inviteMember({actorUserId, email, displayName, planId, redirectUr
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function inviteMember(input = {}) {
+  return inviteAccount({...input, role: 'member'});
+}
+
+async function inviteAdmin(input = {}) {
+  return inviteAccount({...input, role: 'admin', planId: 'admin'});
 }
 
 async function recordManualSubscription({actorUserId, memberUserId, email, planId, storesOrderId, currentPeriodStartedAt, currentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
@@ -777,7 +789,6 @@ async function completeMemberInvite({accessToken, password, env = process.env, f
 
     const profileUrl = new URL('/rest/v1/member_profiles', config.url);
     profileUrl.searchParams.set('id', `eq.${user.id}`);
-    profileUrl.searchParams.set('role', 'eq.member');
     profileUrl.searchParams.set('account_status', 'eq.invited');
     profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
     const profileResponse = await fetchImpl(profileUrl, {
@@ -906,6 +917,7 @@ module.exports = {
   updateMemberAccess,
   registerFreeMember,
   inviteMember,
+  inviteAdmin,
   recordManualSubscription,
   getMemberSubscription,
   listManualSubscriptions,

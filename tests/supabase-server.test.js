@@ -15,6 +15,7 @@ const {
   updateMemberAccess,
   registerFreeMember,
   inviteMember,
+  inviteAdmin,
   recordManualSubscription,
   getMemberSubscription,
   listManualSubscriptions,
@@ -381,6 +382,26 @@ test('管理者の招待はSupabase Authへメールを送り会員を招待中�
   assert.equal(JSON.parse(requests[2].options.body).action, 'member_invited');
 });
 
+test('共同管理者の招待は専用の管理者権限を設定して監査記録へ残す', async () => {
+  const actorUserId = '11111111-1111-4111-8111-111111111111';
+  const invitedUserId = '22222222-2222-4222-8222-222222222222';
+  const requests = [];
+  const responses = [
+    {ok: true, status: 200, json: async () => ({id: invitedUserId, email: 'zasso2nd@gmail.com'})},
+    {ok: true, status: 200, json: async () => [{id: invitedUserId, display_name: '共同管理者', role: 'admin', plan_id: 'admin', account_status: 'invited'}]},
+    {ok: true, status: 201, json: async () => null},
+  ];
+  const result = await inviteAdmin({
+    actorUserId, email: ' zasso2nd@gmail.com ', displayName: ' 共同管理者 ',
+    redirectUrl: 'https://kanteisho.onrender.com/members/setup', env: validEnv,
+    fetchImpl: async (url, options) => { requests.push({url: String(url), options}); return responses.shift(); },
+  });
+  assert.equal(result.status, 'invited');
+  assert.deepEqual(JSON.parse(requests[0].options.body), {email: 'zasso2nd@gmail.com', data: {display_name: '共同管理者'}});
+  assert.deepEqual(JSON.parse(requests[1].options.body), {display_name: '共同管理者', plan_id: 'admin', account_status: 'invited', role: 'admin'});
+  assert.equal(JSON.parse(requests[2].options.body).action, 'admin_invited');
+});
+
 test('一般の無料登録はメール確認を送りフリープランと規約同意を記録する', async () => {
   const userId = '22222222-2222-4222-8222-222222222222';
   const requests = [];
@@ -453,6 +474,7 @@ test('招待リンクの本人だけが初期パスワードを設定して利�
   assert.equal(requests[0].options.headers.Authorization, 'Bearer invite-access-token-that-is-long-enough');
   assert.deepEqual(JSON.parse(requests[0].options.body), {password: 'long-password-123'});
   assert.match(requests[1].url, /account_status=eq\.invited/);
+  assert.doesNotMatch(requests[1].url, /role=eq\.member/);
   assert.deepEqual(JSON.parse(requests[1].options.body), {account_status: 'active'});
   assert.equal((await completeMemberInvite({accessToken: 'short', password: 'long-password-123'})).status, 'invalid_token');
   assert.equal((await completeMemberInvite({accessToken: 'invite-access-token-that-is-long-enough', password: 'short'})).status, 'weak_password');
