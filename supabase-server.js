@@ -84,6 +84,16 @@ async function responseJson(response) {
   }
 }
 
+async function timedFetch(fetchImpl, url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetchImpl(url, {...options, signal: controller.signal});
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function authenticateMember({email, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const config = loadSupabaseServerConfig(env);
   if (!config.configured) return {ok: false, status: config.status};
@@ -760,7 +770,7 @@ async function updateManualSubscription({actorUserId, subscriptionId, planId, st
   }
 }
 
-async function completeMemberInvite({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+async function completeMemberInvite({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 12000} = {}) {
   const token = String(accessToken || '').trim();
   const rawPassword = String(password || '');
   if (token.length < 20 || token.length > 8192) return {ok: false, status: 'invalid_token'};
@@ -769,16 +779,13 @@ async function completeMemberInvite({accessToken, password, env = process.env, f
   if (!config.configured) return {ok: false, status: config.status};
   if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const userUrl = new URL('/auth/v1/user', config.url);
-    const userResponse = await fetchImpl(userUrl, {
+    const userResponse = await timedFetch(fetchImpl, userUrl, {
       method: 'PUT',
       headers: serverHeaders(config, {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'}),
       body: JSON.stringify({password: rawPassword}),
-      signal: controller.signal,
-    });
+    }, timeoutMs);
     if (!userResponse.ok) {
       if (userResponse.status === 401 || userResponse.status === 403) return {ok: false, status: 'invalid_token'};
       if (userResponse.status === 422) return {ok: false, status: 'weak_password'};
@@ -791,19 +798,16 @@ async function completeMemberInvite({accessToken, password, env = process.env, f
     profileUrl.searchParams.set('id', `eq.${user.id}`);
     profileUrl.searchParams.set('account_status', 'eq.invited');
     profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
-    const profileResponse = await fetchImpl(profileUrl, {
+    const profileResponse = await timedFetch(fetchImpl, profileUrl, {
       method: 'PATCH',
       headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
       body: JSON.stringify({account_status: 'active'}),
-      signal: controller.signal,
-    });
+    }, timeoutMs);
     if (!profileResponse.ok) return {ok: false, status: 'profile_unavailable'};
     // パスワード変更後に応答だけ失われた場合など、すでにactiveでも再実行を成功扱いにする。
     return {ok: true, status: 'completed', email: String(user.email || '')};
   } catch (error) {
     return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'auth_unavailable'};
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -842,7 +846,7 @@ async function requestMemberPasswordReset({email, redirectUrl, env = process.env
   }
 }
 
-async function resetMemberPassword({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+async function resetMemberPassword({accessToken, password, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 12000} = {}) {
   const token = String(accessToken || '').trim();
   const rawPassword = String(password || '');
   if (token.length < 20 || token.length > 8192) return {ok: false, status: 'invalid_token'};
@@ -851,16 +855,13 @@ async function resetMemberPassword({accessToken, password, env = process.env, fe
   if (!config.configured) return {ok: false, status: config.status};
   if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const userUrl = new URL('/auth/v1/user', config.url);
-    const response = await fetchImpl(userUrl, {
+    const response = await timedFetch(fetchImpl, userUrl, {
       method: 'PUT',
       headers: serverHeaders(config, {Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'}),
       body: JSON.stringify({password: rawPassword}),
-      signal: controller.signal,
-    });
+    }, timeoutMs);
     if (response.status === 401 || response.status === 403) return {ok: false, status: 'invalid_token'};
     if (response.status === 422) return {ok: false, status: 'weak_password'};
     if (!response.ok) return {ok: false, status: 'reset_unavailable'};
@@ -872,17 +873,14 @@ async function resetMemberPassword({accessToken, password, env = process.env, fe
     const profileUrl = new URL('/rest/v1/member_profiles', config.url);
     profileUrl.searchParams.set('id', `eq.${user.id}`);
     profileUrl.searchParams.set('account_status', 'eq.invited');
-    const profileResponse = await fetchImpl(profileUrl, {
+    const profileResponse = await timedFetch(fetchImpl, profileUrl, {
       method: 'PATCH',
       headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
       body: JSON.stringify({account_status: 'active'}),
-      signal: controller.signal,
-    });
+    }, timeoutMs);
     return profileResponse.ok ? {ok: true, status: 'completed'} : {ok: false, status: 'profile_unavailable'};
   } catch (error) {
     return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'reset_unavailable'};
-  } finally {
-    clearTimeout(timer);
   }
 }
 

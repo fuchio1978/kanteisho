@@ -475,6 +475,7 @@ test('招待リンクの本人だけが初期パスワードを設定して利�
   assert.deepEqual(JSON.parse(requests[0].options.body), {password: 'long-password-123'});
   assert.match(requests[1].url, /account_status=eq\.invited/);
   assert.doesNotMatch(requests[1].url, /role=eq\.member/);
+  assert.notEqual(requests[0].options.signal, requests[1].options.signal);
   assert.deepEqual(JSON.parse(requests[1].options.body), {account_status: 'active'});
   assert.equal((await completeMemberInvite({accessToken: 'short', password: 'long-password-123'})).status, 'invalid_token');
   assert.equal((await completeMemberInvite({accessToken: 'invite-access-token-that-is-long-enough', password: 'short'})).status, 'weak_password');
@@ -511,6 +512,7 @@ test('再設定メールの本人だけが新しいパスワードへ変更で�
   assert.deepEqual(JSON.parse(requests[0].options.body), {password: 'new-password-123'});
   assert.match(requests[1].url, new RegExp(`id=eq\\.${userId}`));
   assert.match(requests[1].url, /account_status=eq\.invited/);
+  assert.notEqual(requests[0].options.signal, requests[1].options.signal);
   assert.deepEqual(JSON.parse(requests[1].options.body), {account_status: 'active'});
   assert.equal((await resetMemberPassword({accessToken: 'short', password: 'new-password-123'})).status, 'invalid_token');
   assert.equal((await resetMemberPassword({accessToken: 'recovery-access-token-that-is-long-enough', password: 'short'})).status, 'weak_password');
