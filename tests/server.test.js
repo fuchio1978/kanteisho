@@ -44,6 +44,9 @@ test('販売LPは認証なしでmeisikiから表示できる', async () => {
       assert.match(html, /命式を出す時間を減らして/);
       assert.match(html, /相性鑑定/);
       assert.match(html, /プレミアムプラン/);
+      assert.match(html, /1か月ごとの自動更新/);
+      assert.match(html, /解約・返金条件を確認/);
+      assert.match(html, /原則2営業日以内/);
       assert.match(html, /data-stores-plan="starter"/);
       assert.match(html, /販売準備中/);
       assert.doesNotMatch(html, /href="https:\/\/fuchilabo\.stores\.jp\/items\//);
@@ -109,6 +112,12 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.match(html, /プライバシーポリシー/);
     assert.equal((await fetch(`${base}/terms`)).status, 200);
     assert.equal((await fetch(`${base}/privacy`)).status, 200);
+    const cancellation = await fetch(`${base}/cancellation`);
+    assert.equal(cancellation.status, 200);
+    assert.match(await cancellation.text(), /次回注文が作成される前日まで/);
+    const legal = await fetch(`${base}/legal`);
+    assert.equal(legal.status, 200);
+    assert.match(await legal.text(), /特定商取引法に基づく表記/);
 
     const mismatch = await fetch(`${base}/members/register`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({displayName: '無料会員', email: 'free@example.com', password: 'password-1234', passwordConfirmation: 'different-1234', consent: 'accepted'})});
     assert.equal(mismatch.headers.get('location'), '/members/register?error=mismatch');
@@ -118,8 +127,8 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.equal(response.headers.get('location'), '/members/register?sent=1');
     assert.equal(registration.displayName, '無料会員');
     assert.equal(registration.email, 'free@example.com');
-    assert.equal(registration.termsVersion, '2026-08-23');
-    assert.equal(registration.privacyVersion, '2026-08-23');
+    assert.equal(registration.termsVersion, '2026-08-29');
+    assert.equal(registration.privacyVersion, '2026-08-29');
     assert.equal(registration.userAgent, 'Test Browser');
     assert.match(registration.requestFingerprint, /^[A-Za-z0-9_-]+$/);
 

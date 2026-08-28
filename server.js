@@ -14,8 +14,8 @@ const MEMBER_SESSION_HOURS = Number(process.env.MEMBER_SESSION_HOURS || 24);
 const ROOT = __dirname;
 const MEMBER_ENTRY_PATHS = new Set(['/members', '/members/']);
 const SALES_LP_PATHS = new Set(['/meisiki', '/meisiki/', '/meisiki.html']);
-const TERMS_VERSION = '2026-08-23';
-const PRIVACY_VERSION = '2026-08-23';
+const TERMS_VERSION = '2026-08-29';
+const PRIVACY_VERSION = '2026-08-29';
 const PUBLIC_FILES = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
@@ -247,26 +247,72 @@ function publicAccountPage({sent = false, errorCode = ''} = {}) {
 }
 
 function legalPage(kind) {
-  const privacy = kind === 'privacy';
-  const version = privacy ? PRIVACY_VERSION : TERMS_VERSION;
-  const title = privacy ? 'プライバシーポリシー' : '利用規約';
-  const sections = privacy ? [
-    ['1. 取得する情報', '氏名・表示名、メールアドレス、生年月日等の命式作成に必要な入力、保存した鑑定対象者情報、利用履歴、契約情報、お問い合わせ内容を取得します。パスワードとクレジットカード情報は当サイトでは保管しません。'],
-    ['2. 利用目的', '会員認証、命式作成・保存、契約プランに応じた機能提供、サポート、不正利用防止、品質改善、重要なお知らせのために利用します。'],
-    ['3. 外部サービス', '認証・データ保管にSupabase、サイト配信にRender、商品購入・継続課金にSTORESを利用します。各社に必要な範囲で情報が送信される場合があります。'],
-    ['4. 第三者提供', '法令に基づく場合を除き、本人の同意なく個人情報を第三者へ提供しません。業務委託先への必要な取扱いは第三者提供に含まれません。'],
-    ['5. 安全管理と保存期間', 'アクセス制御、通信の暗号化等の安全管理措置を講じ、利用目的に必要な期間を超えた情報は法令・契約上必要なものを除き適切に削除します。'],
-    ['6. 開示・訂正・削除', 'ご本人からの開示、訂正、利用停止、削除等の請求には、本人確認のうえ法令に従って対応します。'],
-  ] : [
-    ['1. サービス内容', '本サービスは四柱推命の命式作成、五行表示、鑑定補助資料等を提供します。鑑定結果や表示内容は意思決定を補助するもので、将来の結果を保証するものではありません。'],
-    ['2. アカウント', '利用者は正確な情報を登録し、パスワードを自己の責任で管理します。アカウントの譲渡・貸与は禁止します。'],
-    ['3. 無料・有料プラン', '利用できる機能と保存件数はプランにより異なります。有料プランの料金、更新、解約、返金条件は購入時のSTORES商品ページおよび同サービスの規定に従います。'],
-    ['4. 禁止事項', '法令違反、第三者の権利侵害、不正アクセス、サービス運営を妨げる行為、計算ロジックやコンテンツの無断複製・再配布・解析を禁止します。'],
-    ['5. 知的財産権', '本サービスのプログラム、デザイン、文章、計算ルールの表現その他のコンテンツに関する権利は運営者または正当な権利者に帰属します。'],
-    ['6. 免責・提供変更', '保守、障害、外部サービスの停止等により提供を中断する場合があります。法令上認められる範囲で、本サービス利用により生じた間接損害について責任を負いません。'],
-    ['7. 規約変更', '必要に応じて本規約を変更します。重要な変更はサイト上または登録メールアドレスへの通知によりお知らせします。'],
-  ];
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}｜四柱推命 命式作成サイト</title><style>*{box-sizing:border-box}body{margin:0;background:#f7fafb;color:#294f63;font-family:serif;line-height:1.9}main{width:min(820px,calc(100% - 32px));margin:42px auto;padding:42px;background:#fff;border:1px solid #d7e3e9;border-radius:18px}h1,h2{color:#1766b1;font-weight:500}h1{margin-top:0}h2{margin-top:30px;font-size:19px}p{color:#557585}.meta{font-size:12px;color:#8399a5}.back{display:inline-block;margin-top:28px;color:#1766b1}@media(max-width:560px){main{margin:14px auto;padding:24px 20px}h1{font-size:28px}}</style></head><body><main><h1>${title}</h1><p class="meta">制定・最終更新：${version}</p><p>ふちLABO.（以下「運営者」）は、四柱推命 命式作成サイトの提供にあたり、以下を定めます。</p>${sections.map(([heading, body]) => `<section><h2>${heading}</h2><p>${body}</p></section>`).join('')}<section><h2>${privacy ? '7' : '8'}. お問い合わせ</h2><p>本ポリシーおよび本サービスに関するお問い合わせは、<a href="https://www.fuchilabo.com/" rel="noopener">ふちLABO.公式サイト</a>の窓口からご連絡ください。</p></section><a class="back" href="/members/register">← 無料会員登録へ戻る</a></main></body></html>`;
+  const pages = {
+    terms: {
+      title: '利用規約', version: TERMS_VERSION,
+      intro: 'ふちLABO.（以下「運営者」）が提供する四柱推命 命式作成サイト（以下「本サービス」）の利用条件を定めます。',
+      sections: [
+        ['1. サービス内容', '<p>本サービスは、四柱推命の命式作成、五行表示、鑑定補助資料等を提供します。表示内容は鑑定や意思決定を補助するもので、将来の出来事、健康、法律・税務・投資その他の結果を保証するものではありません。</p>'],
+        ['2. 登録・アカウント管理', '<p>利用者は正確な情報を登録し、登録メールアドレスとパスワードを自己の責任で管理します。アカウントの譲渡、貸与、第三者との共用は禁止します。</p>'],
+        ['3. プランと料金', '<p>利用できる機能と保存件数はプランにより異なります。月額料金は、スターター1,650円、プレミアム3,300円、講座生専用1,100円、ご紹介用1,100円で、いずれも税込です。フリープランは無料です。各プランの最新の提供内容は本サービスおよび購入時のSTORES商品ページに表示します。</p>'],
+        ['4. 有料契約の成立と利用開始', '<p>有料契約は、STORESで注文が完了した時点で成立し、初回購入日を契約開始日および毎月の更新基準日とします。運営者は購入内容を確認後、原則2営業日以内に対象プランを有効化します。利用者は会員登録とSTORES購入に同じメールアドレスを使用するものとします。</p>'],
+        ['5. 自動更新', '<p>有料プランは1か月ごとの定期購入であり、解約手続きが完了しない限り自動更新されます。次回注文日は初回購入日を基準とし、月末等はSTORESの仕様により調整される場合があります。最低契約期間および解約金はありません。</p>'],
+        ['6. 解約', '<p>利用者は、次回注文が作成される前日までにSTORESの購入履歴から定期便を解約できます。運営者への代行依頼は次回更新日の3営業日前までにお問い合わせください。解約後も支払い済み期間の終了日までは契約中の機能を利用でき、期間終了後にフリープランへ変更します。すでに作成済みの注文は、定期便の解約だけでは取り消されません。</p>'],
+        ['7. キャンセル・返金', '<p>会員機能の有効化前にキャンセル依頼を受けた場合、重複決済・誤請求があった場合、運営者の事情で本サービスを提供できなかった場合、または法令上返金が必要な場合は、全部または相当額を返金します。会員機能の有効化後のお客さま都合、未利用、解約手続きの遅れ、表示内容への主観的な評価を理由とする返金、および支払い済み期間の日割り返金は行いません。詳細は<a href="/cancellation">解約・返金ポリシー</a>をご確認ください。</p>'],
+        ['8. 解約後のアカウントとデータ', '<p>有料契約の解約だけでは、アカウントおよび保存済みデータは削除されません。フリープランへの変更後は保存機能を利用できず、保存済みデータへアクセスできない場合があります。アカウントや保存データの削除を希望する場合は、お問い合わせ窓口からご請求ください。</p>'],
+        ['9. 禁止事項', '<p>法令違反、第三者の権利侵害、不正アクセス、サービス運営を妨げる行為、アカウントの共用、計算ロジックやコンテンツの無断複製・再配布・解析を禁止します。</p>'],
+        ['10. 知的財産権', '<p>本サービスのプログラム、デザイン、文章、計算ルールの表現その他のコンテンツに関する権利は、運営者または正当な権利者に帰属します。</p>'],
+        ['11. 提供の変更・停止', '<p>保守、障害、外部サービスの停止、法令上または運営上の必要により、本サービスの全部または一部を変更・中断する場合があります。重要な変更は、合理的な方法でお知らせします。</p>'],
+        ['12. 免責・責任の範囲', '<p>運営者は計算と表示の正確性向上に努めますが、完全性や特定目的への適合性を保証しません。運営者の故意または重過失による場合、その他法令上制限できない場合を除き、本サービスに関連する間接損害・特別損害について責任を負いません。</p>'],
+        ['13. 利用停止', '<p>利用者が本規約に違反した場合、運営者は事前通知のうえ利用を制限または停止できます。ただし、緊急性が高い場合は事前通知を省略することがあります。</p>'],
+        ['14. 規約変更', '<p>法令または民法の定型約款に関する規定に従い、本規約を変更することがあります。利用者への影響が大きい変更は、効力発生日と内容をサイト上または登録メールアドレスへの通知によりお知らせします。</p>'],
+        ['15. 準拠法・管轄', '<p>本規約は日本法に準拠します。本サービスに関する紛争は、法令上認められる範囲で運営者の所在地を管轄する裁判所を第一審の専属的合意管轄裁判所とします。</p>'],
+      ],
+    },
+    privacy: {
+      title: 'プライバシーポリシー', version: PRIVACY_VERSION,
+      intro: 'ふちLABO.（以下「運営者」）は、四柱推命 命式作成サイトにおける利用者情報を以下のとおり取り扱います。',
+      sections: [
+        ['1. 取得する情報', '<p>氏名・表示名、メールアドレス、生年月日等の命式作成に必要な入力、保存した鑑定対象者情報、利用履歴、契約情報、お問い合わせ内容を取得します。パスワードとクレジットカード情報は当サイトでは保管しません。</p>'],
+        ['2. 利用目的', '<p>会員認証、命式作成・保存、契約プランに応じた機能提供、購入確認、サポート、不正利用防止、品質改善、重要なお知らせのために利用します。</p>'],
+        ['3. 外部サービス', '<p>認証・データ保管にSupabase、サイト配信にRender、商品購入・継続課金にSTORESを利用します。各社に必要な範囲で情報が送信される場合があります。</p>'],
+        ['4. 第三者提供・委託', '<p>法令に基づく場合を除き、本人の同意なく個人情報を第三者へ提供しません。利用目的の達成に必要な範囲で委託先に取り扱わせる場合は、適切な管理を行います。</p>'],
+        ['5. 安全管理', '<p>アクセス制御、通信の暗号化、管理権限の制限等、利用者情報を保護するために必要かつ適切な安全管理措置を講じます。</p>'],
+        ['6. 保存期間と解約後の取扱い', '<p>有料契約の解約だけではアカウントおよび保存済みデータは削除されません。利用目的に必要な期間、または法令・契約上必要な期間保存し、その後適切に削除します。利用者はアカウントおよび保存データの削除を請求できます。</p>'],
+        ['7. 開示・訂正・削除', '<p>ご本人からの開示、訂正、利用停止、削除等の請求には、本人確認のうえ法令に従って対応します。契約・決済記録等、法令上保存が必要な情報は直ちに削除できない場合があります。</p>'],
+      ],
+    },
+    cancellation: {
+      title: '解約・返金ポリシー', version: TERMS_VERSION,
+      intro: '有料プランの自動更新、解約および返金条件を以下のとおり定めます。',
+      sections: [
+        ['1. 契約期間と自動更新', '<p>有料プランは初回購入日を基準とする1か月ごとの定期購入です。解約手続きが完了しない限り、STORESで次回注文が自動作成されます。最低契約期間および解約金はありません。</p>'],
+        ['2. 解約方法と期限', '<p>次回注文が作成される前日までに、購入したSTORESの会員ページにログインし、「購入履歴」から対象の定期便を解約してください。運営者への代行依頼は、次回更新日の3営業日前までにお問い合わせ窓口へお送りください。</p>'],
+        ['3. 解約後の利用期間', '<p>解約手続き後も、支払い済み期間の終了日までは契約中の有料機能を利用できます。期間終了後はアカウントを残したままフリープランへ変更します。解約だけでは保存済みデータは削除されません。</p>'],
+        ['4. 返金する場合', '<ul><li>会員機能の有効化前にキャンセル依頼を受けた場合</li><li>重複決済または誤請求が確認された場合</li><li>運営者の事情で本サービスを提供できなかった場合</li><li>その他、法令上返金が必要な場合</li></ul><p>返金方法と反映時期は、STORESおよび各決済事業者の処理状況により異なります。</p>'],
+        ['5. 返金しない場合', '<ul><li>会員機能の有効化後のお客さま都合</li><li>サービスを利用しなかった場合</li><li>解約手続きの遅れにより更新注文が確定した場合</li><li>鑑定結果や計算結果への主観的な評価を理由とする場合</li><li>支払い済み期間の途中解約に伴う日割り返金</li></ul>'],
+        ['6. 作成済み注文と通信販売', '<p>定期便を解約しても、すでに作成済みの注文は購入者自身では取り消せません。返金対象に該当すると考えられる場合は、注文番号を添えてお問い合わせください。通信販売には法定のクーリング・オフ制度は適用されませんが、本ポリシーは法令上の権利を制限するものではありません。</p>'],
+      ],
+    },
+    commerce: {
+      title: '特定商取引法に基づく表記', version: TERMS_VERSION,
+      intro: '四柱推命 命式作成サイトの有料プラン販売に関する表示です。',
+      sections: [
+        ['販売業者', '<p>ふちLABO.</p>'],
+        ['運営責任者・所在地・電話番号', '<p>ご請求をいただいた場合、遅滞なく開示します。下記お問い合わせ窓口からご連絡ください。</p>'],
+        ['お問い合わせ', '<p><a href="https://www.fuchilabo.com/contact" rel="noopener">ふちLABO.お問い合わせフォーム</a></p>'],
+        ['販売価格', '<ul><li>スターター：月額1,650円（税込）</li><li>プレミアム：月額3,300円（税込）</li><li>講座生専用：月額1,100円（税込）</li><li>ご紹介用：月額1,100円（税込）</li></ul><p>フリープランは無料です。</p>'],
+        ['販売価格以外の負担', '<p>本サービスを利用するための端末、通信機器およびインターネット接続料金は利用者の負担となります。物品の送料はありません。</p>'],
+        ['支払方法・支払時期', '<p>STORESの購入画面に表示される支払方法を利用できます。初回注文時および以後1か月ごとの更新日に、選択した決済方法で支払いが行われます。具体的な支払時期は各決済事業者の規定によります。</p>'],
+        ['サービスの提供時期', '<p>購入内容の確認後、原則2営業日以内に会員アカウントへ対象プランを反映します。会員登録とSTORES購入には同じメールアドレスをご使用ください。</p>'],
+        ['契約期間・自動更新', '<p>初回購入日を基準とする1か月契約で、解約手続きが完了しない限り自動更新されます。最低契約期間および解約金はありません。</p>'],
+        ['解約・返金', '<p>次回注文が作成される前日までにSTORESの購入履歴から解約できます。代行依頼は次回更新日の3営業日前までにご連絡ください。解約後も支払い済み期間の終了日まで利用でき、日割り返金は行いません。その他の条件は<a href="/cancellation">解約・返金ポリシー</a>をご確認ください。</p>'],
+        ['動作環境', '<p>最新の主要ブラウザとインターネット接続環境が必要です。細かな命式確認やPDF作成には、パソコンまたはタブレットを推奨します。</p>'],
+      ],
+    },
+  };
+  const page = pages[kind] || pages.terms;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${page.title}｜四柱推命 命式作成サイト</title><style>*{box-sizing:border-box}body{margin:0;background:#f7fafb;color:#294f63;font-family:serif;line-height:1.9}main{width:min(820px,calc(100% - 32px));margin:42px auto;padding:42px;background:#fff;border:1px solid #d7e3e9;border-radius:18px}h1,h2{color:#1766b1;font-weight:500}h1{margin-top:0}h2{margin-top:30px;font-size:19px}p,li{color:#557585}.meta{font-size:12px;color:#8399a5}ul{padding-left:1.4em}.legal-nav{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0}.legal-nav a,.back{color:#1766b1}.legal-nav a{padding:6px 10px;border:1px solid #d7e3e9;border-radius:8px;font-size:12px;text-decoration:none}.back{display:inline-block;margin-top:28px}@media(max-width:560px){main{margin:14px auto;padding:24px 20px}h1{font-size:28px}.legal-nav{display:grid}}</style></head><body><main><h1>${page.title}</h1><p class="meta">制定・最終更新：${page.version}</p><p>${page.intro}</p><nav class="legal-nav" aria-label="法務情報"><a href="/terms">利用規約</a><a href="/privacy">プライバシーポリシー</a><a href="/cancellation">解約・返金</a><a href="/legal">特定商取引法表記</a></nav>${page.sections.map(([heading, body]) => `<section><h2>${heading}</h2>${body}</section>`).join('')}<section><h2>お問い合わせ窓口</h2><p><a href="https://www.fuchilabo.com/contact" rel="noopener">ふちLABO.お問い合わせフォーム</a>からご連絡ください。</p></section><a class="back" href="/members/register">← 無料会員登録へ戻る</a></main></body></html>`;
 }
 
 function memberContractPage(member, result) {
@@ -503,6 +549,8 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
   }
   if (req.method === 'GET' && url.pathname === '/terms') return send(res, 200, legalPage('terms'), {'Content-Type': 'text/html; charset=utf-8'});
   if (req.method === 'GET' && url.pathname === '/privacy') return send(res, 200, legalPage('privacy'), {'Content-Type': 'text/html; charset=utf-8'});
+  if (req.method === 'GET' && url.pathname === '/cancellation') return send(res, 200, legalPage('cancellation'), {'Content-Type': 'text/html; charset=utf-8'});
+  if (req.method === 'GET' && url.pathname === '/legal') return send(res, 200, legalPage('commerce'), {'Content-Type': 'text/html; charset=utf-8'});
   if (req.method === 'GET' && url.pathname === '/members/setup') {
     return send(res, 200, memberSetupPage(), {'Content-Type': 'text/html; charset=utf-8', 'X-Robots-Tag': 'noindex, nofollow'});
   }

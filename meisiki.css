@@ -144,6 +144,8 @@ h3 { margin: 0; font-size: 23px; line-height: 1.55; }
 .plan-card ul { flex: 1; margin: 22px 0 30px; padding: 20px 0 0; border-top: 1px solid #e2e9e5; list-style: none; }
 .plan-card li { position: relative; padding: 7px 0 7px 20px; color: #4e6057; font-size: 13px; }.plan-card li::before { position: absolute; top: 18px; left: 0; width: 7px; height: 1px; background: #557463; content: ""; }.plan-card li.muted { color: #9ba59f; }
 .limited-plan { margin-top: 34px; padding: 20px; border: 1px solid #d9e2dd; color: #76857d; font-size: 12px; text-align: center; }
+.contract-note { margin-top: 28px; color: #66766e; font-size: 12px; line-height: 1.9; text-align: center; }
+.contract-note a { color: var(--green); text-underline-offset: 4px; }
 
 .comparison h2 { margin-bottom: 42px; }
 .table-wrap { overflow-x: auto; }
