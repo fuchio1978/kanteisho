@@ -20,7 +20,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   dataSource + '\n' + source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,savedSubjectReading,compatibilityYearOptions,reorderedIds,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,westernDateFromInput,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,savedSubjectReading,compatibilityYearOptions,reorderedIds,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -90,6 +90,16 @@ test('元号の境界外の日付を受け付けない', () => {
   assert.throws(() => context.api.westernDateFromCalendar('showa', 64, 1, 8), /存在しない日付/);
   assert.throws(() => context.api.westernDateFromCalendar('heisei', 1, 1, 7), /存在しない日付/);
   assert.equal(JSON.stringify(context.api.eraDateFromWestern('showa', 1978, 7, 24)), '{"year":53,"month":7,"day":24}');
+});
+
+test('生年月日はスマホでも直接入力でき、区切り文字なしにも対応する', () => {
+  const html = fs.readFileSync(require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
+  assert.match(html, /id="birthDate"[^>]*type="text"[^>]*inputmode="numeric"/);
+  assert.match(html, /<select id="calendarSystem"[^>]*><option/);
+  assert.deepEqual({...context.api.westernDateFromInput('1977/02/01')}, {y:1977,m:2,d:1});
+  assert.deepEqual({...context.api.westernDateFromInput('19770201')}, {y:1977,m:2,d:1});
+  assert.deepEqual({...context.api.westernDateFromInput('１９７７－０２－０１')}, {y:1977,m:2,d:1});
+  assert.equal(context.api.westernDateFromInput('1977/02/30'), null);
 });
 
 test('添付PDFの基準ケース', () => {
