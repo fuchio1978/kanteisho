@@ -43,9 +43,16 @@ test('販売LPは認証なしでmeisikiから表示できる', async () => {
       const html = await response.text();
       assert.match(html, /命式を出す時間を減らして/);
       assert.match(html, /相性鑑定/);
+      assert.match(html, /地方時差/);
+      assert.match(html, /均時差/);
+      assert.match(html, /サマータイム/);
+      assert.match(html, /ふちLABO\.代表　てつ先生/);
+      assert.match(html, /企画・鑑定ロジック監修/);
       assert.match(html, /プレミアムプラン/);
       assert.match(html, /1か月ごとの自動更新/);
-      assert.match(html, /解約・返金条件を確認/);
+      assert.match(html, /STORESの購入履歴から解約/);
+      assert.match(html, /途中解約の日割り返金はありません/);
+      assert.match(html, /解約・返金条件の詳細を確認/);
       assert.match(html, /原則2営業日以内/);
       assert.match(html, /data-stores-plan="starter"/);
       assert.match(html, /販売準備中/);
