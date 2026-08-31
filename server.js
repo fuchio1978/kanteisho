@@ -16,6 +16,7 @@ const MEMBER_ENTRY_PATHS = new Set(['/members', '/members/']);
 const SALES_LP_PATHS = new Set(['/meisiki', '/meisiki/', '/meisiki.html']);
 const TERMS_VERSION = '2026-08-29';
 const PRIVACY_VERSION = '2026-08-31';
+const COMMERCE_VERSION = '2026-08-31';
 const OFFICIAL_LINE_URL = 'https://lin.ee/U8JMJPz';
 const PUBLIC_FILES = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
@@ -297,11 +298,13 @@ function legalPage(kind) {
       ],
     },
     commerce: {
-      title: '特定商取引法に基づく表記', version: TERMS_VERSION,
+      title: '特定商取引法に基づく表記', version: COMMERCE_VERSION,
       intro: '四柱推命 命式作成サイトの有料プラン販売に関する表示です。',
       sections: [
-        ['販売業者', '<p>ふちLABO.</p>'],
-        ['運営責任者・所在地・電話番号', '<p>ご請求をいただいた場合、遅滞なく開示します。下記お問い合わせ窓口からご連絡ください。</p>'],
+        ['販売事業者', '<p>ふちLABO.</p>'],
+        ['運営統括責任者', '<p>大渕 哲也</p>'],
+        ['所在地', '<p>〒450-0002<br>愛知県名古屋市中村区名駅3-4-10<br>アルティメイト名駅1st 2階</p>'],
+        ['電話番号', '<p><a href="tel:05030998112">050-3099-8112</a>（平日 10:00〜18:00）</p><p>営業・勧誘のお電話はご遠慮ください。お問い合わせは原則としてお問い合わせフォームまたはメールにてお願いいたします。</p>'],
         ['お問い合わせ', '<p><a href="https://www.fuchilabo.com/contact" rel="noopener">ふちLABO.お問い合わせフォーム</a></p>'],
         ['販売価格', '<ul><li>スターター：月額1,650円（税込）</li><li>プレミアム：月額3,300円（税込）</li><li>講座生専用：月額1,100円（税込）</li><li>ご紹介用：月額1,100円（税込）</li></ul><p>フリープランは無料です。</p>'],
         ['販売価格以外の負担', '<p>本サービスを利用するための端末、通信機器およびインターネット接続料金は利用者の負担となります。物品の送料はありません。</p>'],

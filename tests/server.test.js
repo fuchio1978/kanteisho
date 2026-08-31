@@ -124,7 +124,18 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.match(await cancellation.text(), /次回注文が作成される前日まで/);
     const legal = await fetch(`${base}/legal`);
     assert.equal(legal.status, 200);
-    assert.match(await legal.text(), /特定商取引法に基づく表記/);
+    const legalHtml = await legal.text();
+    assert.match(legalHtml, /特定商取引法に基づく表記/);
+    assert.match(legalHtml, /販売事業者/);
+    assert.match(legalHtml, /ふちLABO\./);
+    assert.match(legalHtml, /運営統括責任者/);
+    assert.match(legalHtml, /大渕 哲也/);
+    assert.match(legalHtml, /〒450-0002/);
+    assert.match(legalHtml, /愛知県名古屋市中村区名駅3-4-10/);
+    assert.match(legalHtml, /アルティメイト名駅1st 2階/);
+    assert.match(legalHtml, /tel:05030998112/);
+    assert.match(legalHtml, /平日 10:00〜18:00/);
+    assert.match(legalHtml, /営業・勧誘のお電話はご遠慮ください/);
 
     const mismatch = await fetch(`${base}/members/register`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({displayName: '無料会員', email: 'free@example.com', password: 'password-1234', passwordConfirmation: 'different-1234', consent: 'accepted'})});
     assert.equal(mismatch.headers.get('location'), '/members/register?error=mismatch');
