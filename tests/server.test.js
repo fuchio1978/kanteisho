@@ -140,7 +140,11 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.match(registration.requestFingerprint, /^[A-Za-z0-9_-]+$/);
 
     const confirmed = await fetch(`${base}/members/confirmed`);
-    assert.match(await confirmed.text(), /メール確認が完了しました/);
+    const confirmedHtml = await confirmed.text();
+    assert.match(confirmedHtml, /メール確認が完了しました/);
+    assert.match(confirmedHtml, /用神が出せるようになるまでの道のりを、10日間でお話ししています/);
+    assert.match(confirmedHtml, /https:\/\/lin\.ee\/U8JMJPz/);
+    assert.match(confirmedHtml, /ふちLABO\.公式LINEを追加する/);
   }, {registerFreeMember: async input => { registration = input; return {ok: true, status: 'confirmation_sent'}; }});
 });
 
