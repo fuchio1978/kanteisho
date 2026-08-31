@@ -315,6 +315,9 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     assert.match(html, /利用者A/);
     assert.match(html, /3件/);
     assert.match(html, /STORES商品対応/);
+    assert.match(html, /初回販売テストの手順/);
+    assert.match(html, /無料登録と同じメールアドレスでSTORESの商品を購入/);
+    assert.match(html, /実際の決済が完了するまでは「購入を反映」を押さない/);
     assert.match(html, /ご紹介用/);
     assert.match(html, /4商品すべての商品IDを設定済み/);
     assert.match(html, /販売導線は0\/4商品でON/);
