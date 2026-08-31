@@ -135,7 +135,7 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.equal(registration.displayName, '無料会員');
     assert.equal(registration.email, 'free@example.com');
     assert.equal(registration.termsVersion, '2026-08-29');
-    assert.equal(registration.privacyVersion, '2026-08-29');
+    assert.equal(registration.privacyVersion, '2026-08-31');
     assert.equal(registration.userAgent, 'Test Browser');
     assert.match(registration.requestFingerprint, /^[A-Za-z0-9_-]+$/);
 
@@ -145,6 +145,12 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.match(confirmedHtml, /用神が出せるようになるまでの道のりを、10日間でお話ししています/);
     assert.match(confirmedHtml, /https:\/\/lin\.ee\/U8JMJPz/);
     assert.match(confirmedHtml, /ふちLABO\.公式LINEを追加する/);
+    assert.match(confirmedHtml, /講座・イベント等のお知らせ/);
+    assert.match(confirmedHtml, /LINE上でいつでもブロック/);
+
+    const privacyHtml = await (await fetch(`${base}/privacy`)).text();
+    assert.match(privacyHtml, /公式LINEへの登録は任意/);
+    assert.match(privacyHtml, /広告・宣伝メールの一斉配信に利用する場合は、別途ご本人の同意/);
   }, {registerFreeMember: async input => { registration = input; return {ok: true, status: 'confirmation_sent'}; }});
 });
 
