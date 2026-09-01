@@ -1374,6 +1374,17 @@ test('冲は後続判定へ進むが抜根した本人を起点とする半会�
   assert.equal(states[2].remainingTransformCapacity, 0);
 });
 
+test('2028年の抜根した年運支申は戌との半方合も子からの半会も受けない', () => {
+  const pillars = { hour: ['乙', '卯'], day: ['戊', '戌'], month: ['壬', '子'], year: ['丁', '亥'] };
+  const result = context.api.resolveSixPillarFiveElements(pillars, ['甲', '寅'], ['戊', '申']);
+  const annualBranch = result.states[5];
+  assert.equal(annualBranch.canceled, true);
+  assert.equal(annualBranch.remainingTransformCapacity, 0);
+  assert.equal(annualBranch.relations.some(relation => ['半方合', '半会'].includes(relation.label)), false);
+  assert.equal(result.states.some(state => state.relations.some(relation => relation.partner === 5 && ['半方合', '半会'].includes(relation.label))), false);
+  assert.equal(result.notes.some(note => note.startsWith('半方合(申') || note.includes('→申)') || note.startsWith('半会(申') || note.includes('→申)')), false);
+});
+
 test('冲で抜根した卯は木化力を失い後続の辰への半方合を起こさない', () => {
   const pillars = { hour: ['庚', '午'], day: ['己', '酉'], month: ['丙', '辰'], year: ['戊', '午'] };
   const result = context.api.resolveSixPillarFiveElements(pillars, ['庚', '申'], ['癸', '卯']);

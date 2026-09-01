@@ -109,7 +109,7 @@ function lockFlexibleAmount(state,amount,priority){
   state.flex.push(...additions);
 }
 function applyTransformationDemands(states,demands,budgets,priority,label){
-  const usable=demands.filter(demand=>demand.amount>0&&(demand.consumeSource===false||budgets[demand.source]>0)&&eligibleFlexibleAmount(states[demand.target],priority)>0);
+  const usable=demands.filter(demand=>demand.amount>0&&!states[demand.source].canceled&&!states[demand.target].canceled&&(demand.consumeSource===false||budgets[demand.source]>0)&&eligibleFlexibleAmount(states[demand.target],priority)>0);
   const availableBudgets=[...budgets];
   for(let target=0;target<states.length;target++){
     const native=nativeTransformElement(states[target].char);
