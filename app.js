@@ -94,14 +94,14 @@ function overlayAtLeast(state,element,amount,label){
 }
 function eligibleFlexibleAmount(state,priority=9){return state.flex.filter(part=>part.priority>=priority).reduce((sum,part)=>sum+part.amount,0)}
 function changeableAmountToward(state,element,priority=9){return state.flex.filter(part=>part.priority>=priority&&part.element!==element).reduce((sum,part)=>sum+part.amount,0)}
-function replaceFlexibleBatch(state,allocations,priority,label){
+function replaceFlexibleBatch(state,allocations,priority,label,record=true){
   let removing=Object.values(allocations).reduce((sum,amount)=>sum+amount,0);const kept=[];
   for(const part of state.flex){
     if(removing<=1e-9||part.priority<priority){kept.push(part);continue}
     const take=Math.min(part.amount,removing);if(part.amount>take)kept.push({...part,amount:part.amount-take});removing-=take;
   }
   for(const [element,amount] of Object.entries(allocations))if(amount>1e-9)kept.push({element,amount,priority});
-  state.flex=kept;state.transformations.push(`${label}:${Object.entries(allocations).map(([element,amount])=>`${element}${Math.round(amount*100)/100}`).join('+')}`);
+  state.flex=kept;if(record)state.transformations.push(`${label}:${Object.entries(allocations).map(([element,amount])=>`${element}${Math.round(amount*100)/100}`).join('+')}`);
 }
 function lockFlexibleAmount(state,amount,priority){
   let remaining=amount;const additions=[];
@@ -145,6 +145,26 @@ function applyFormation(states,entries,priority,label,condition=()=>true,amount=
   }
   return null;
 }
+function applyConcurrentFormations(states,entries,priority,label,condition=()=>true,amount=1){
+  const completes=[];
+  for(const [element,chars] of entries){
+    const claimedWithinFormation=new Set();let indices;
+    while((indices=findFormation(states,chars,claimedWithinFormation))){
+      if(!condition(element,chars,indices))break;
+      const resolvedLabel=typeof label==='function'?label(element):label,complete={element,chars,indices,label:resolvedLabel,priority,changedByIndex:{},actualByIndex:{}};
+      completes.push(complete);for(const index of indices)claimedWithinFormation.add(index);
+    }
+  }
+  const byState=new Map();for(const complete of completes)for(const index of complete.indices){if(!byState.has(index))byState.set(index,[]);byState.get(index).push(complete)}
+  for(const [index,items] of byState){
+    const state=states[index],capacity=eligibleFlexibleAmount(state,priority),requested=items.map(()=>Math.min(amount,capacity)),totalRequested=requested.reduce((sum,value)=>sum+value,0),scale=totalRequested>capacity?capacity/totalRequested:1;
+    const existing={};for(const part of state.flex)if(part.priority>=priority&&part.element)existing[part.element]=(existing[part.element]||0)+part.amount;
+    const allocations={};items.forEach((complete,itemIndex)=>{const actual=requested[itemIndex]*scale,same=Math.min(actual,existing[complete.element]||0),changed=actual-same;existing[complete.element]=Math.max(0,(existing[complete.element]||0)-same);allocations[complete.element]=(allocations[complete.element]||0)+actual;complete.actualByIndex[index]=actual;complete.changedByIndex[index]=changed});
+    const totalActual=Object.values(allocations).reduce((sum,value)=>sum+value,0);if(totalActual>0)replaceFlexibleBatch(state,allocations,priority,'同順位完成形',false);for(const part of state.flex)part.priority=Math.min(part.priority,priority);
+  }
+  for(const complete of completes)for(const index of complete.indices){const state=states[index],changed=complete.changedByIndex[index]||0;if(changed>0)state.transformations.push(`${complete.label}:${complete.element}${changed}`);state.transformations.push(complete.label);addStateStamp(state,complete.label);addStateRelation(state,{type:'formation',label:complete.label,element:complete.element,amount:complete.actualByIndex[index]||0})}
+  return completes;
+}
 function sumStateScores(states,stemScores=EMPTY_SCORES()){
   const total={...stemScores};for(const state of states){const scores=branchStateScores(state);for(const element of FIVE_ELEMENTS)total[element]+=scores[element]}
   return total;
@@ -169,7 +189,7 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
   collectFormations(FORMATIONS.bojin,1,'亡神',()=>true,1);
   collectFormations(FORMATIONS.direction,2,element=>({water:'北方合',wood:'東方合',fire:'南方合',metal:'西方合'})[element],()=>true,Infinity);
   collectFormations(FORMATIONS.meeting,3,element=>`三合${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`,()=>true,1);
-  collectFormations(FORMATIONS.pseudo,4,element=>`疑似${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`,(element,chars,indices)=>pseudoStemElements.includes(element)||indices.some(index=>index<pseudoConditionLimit&&states[index].char===chars[1]&&states[index].role==='major'),1);
+  completes.push(...applyConcurrentFormations(states,FORMATIONS.pseudo,4,element=>`疑似${{wood:'木',fire:'火',earth:'土',metal:'金',water:'水'}[element]}局`,(element,chars,indices)=>pseudoStemElements.includes(element)||indices.some(index=>index<pseudoConditionLimit&&states[index].char===chars[1]&&states[index].role==='major'),1));
   let formationBudgets=null;
   if(completes.length){
     for(const complete of completes)if(complete.label==='三合火局'){

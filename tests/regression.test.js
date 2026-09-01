@@ -1130,6 +1130,17 @@ test('同じ支を共有する亡神・会局・疑似局もそれぞれ同時�
   assert.equal(result.states[4].remainingTransformCapacity, 2);
 });
 
+test('2025年の年運支巳は疑似火局と疑似金局に各0.5を配分し火土同根を加える', () => {
+  const pillars = { hour: ['丙', '辰'], day: ['戊', '戌'], month: ['甲', '申'], year: ['庚', '寅'] };
+  const result = context.api.resolveSixPillarFiveElements(pillars, ['丁', '丑'], ['乙', '巳']);
+  const annualBranch = result.states[5],scores = context.api.branchStateScores(annualBranch);
+  assert.ok(annualBranch.stamps.includes('疑似火局'));
+  assert.ok(annualBranch.stamps.includes('疑似金局'));
+  assert.deepEqual({ ...scores }, { wood: 0, fire: 0.5, earth: 0.5, metal: 0.5, water: 0 });
+  assert.ok(annualBranch.relations.some(relation => relation.label === '疑似火局' && relation.amount === 0.5));
+  assert.ok(annualBranch.relations.some(relation => relation.label === '疑似金局' && relation.amount === 0.5));
+});
+
 test('三合木局の成立後も酉戌の半方合金化と戌卯の支合を表示する', () => {
   const pillars = { hour: ['丁', '卯'], day: ['己', '亥'], month: ['乙', '酉'], year: ['庚', '戌'] };
   const result = context.api.resolveSixPillarFiveElements(pillars, ['己', '卯'], ['丁', '未']);
