@@ -917,7 +917,7 @@ function pdfAnnualMarkup(data){return data.years.map((year,index)=>{const select
 function standardValueMarkup(value,kind='stem'){if(!value)return'<span class="standard-empty">—</span>';const element=ELEMENT_BY_CHAR[value]||'';return`<span class="standard-value element-${element}" data-kind="${kind}">${value}</span>`}
 function standardChartMarkup(chart){
   const row=(label,key,kind='stem')=>`<tr><th scope="row">${label}</th>${chart.pillars.map(pillar=>`<td>${standardValueMarkup(pillar[key],kind)}</td>`).join('')}</tr>`;
-  return`<table class="standard-chart-table"><thead><tr><th></th>${chart.pillars.map(pillar=>`<th scope="col">${pillar.label}</th>`).join('')}</tr></thead><tbody>${row('天干','stem')}${row('地支','branch','branch')}${row('蔵干','hidden')}${row('十二運','fortune','fortune')}${row('天干通変星','stemGod','god')}${row('蔵干通変星','hiddenGod','god')}</tbody></table>`;
+  return`<table class="standard-chart-table"><thead><tr><th></th>${chart.pillars.map(pillar=>`<th scope="col">${pillar.label}</th>`).join('')}</tr></thead><tbody>${row('天干','stem')}${row('地支','branch','branch')}${row('蔵干','hidden')}${row('天干通変星','stemGod','god')}${row('蔵干通変星','hiddenGod','god')}${row('十二運','fortune','fortune')}</tbody></table>`;
 }
 function pdfReportContext(x,p,year){const six=buildSixPillarContext(x,p,year);return{year:six.year,age:six.year-x.y,pre:six.luck.pre,annualValue:six.annualValue,luck:six.luck,natalModel:originalPillarModel(p),natalBalance:natalElementScores(p),sixModel:six.model,sixBalance:six.balance,fortune:pdfFortuneCycleContext(x,p,six.year),standard:standardChartContext(x,p)}}
 function redrawPdfOutlines(){for(const selector of ['#pdfOriginalPillars','#pdfSixPillars'])drawElementGroupOutlines(selector)}

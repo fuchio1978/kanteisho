@@ -148,6 +148,7 @@ test('一般命式表を鑑定書の独立ページとして掲載する', () =>
   assert.match(css, /\.standard-chart-table\{/);
   assert.match(source, /standardChartMarkup\(context\.standard\)/);
   assert.match(source, /row\('十二運','fortune','fortune'\)/);
+  assert.ok(source.indexOf("row('蔵干通変星','hiddenGod','god')") < source.indexOf("row('十二運','fortune','fortune')"));
   assert.doesNotMatch(source, /十三運/);
 });
 
