@@ -1,6 +1,7 @@
 'use strict';
 
 const {planIdForStoresItem} = require('./stores-catalog');
+const {getPlan} = require('./member-access');
 
 const STORES_SUBSCRIPTION_STATUSES = Object.freeze([
   'pending',
@@ -100,8 +101,38 @@ function storesAccessDecision(subscription, {now = new Date()} = {}) {
   return {action: 'deactivate', planId: 'free', accountStatus: 'active'};
 }
 
+function resolveStoresAccess(subscriptions = [], {audienceType = 'general', now = new Date()} = {}) {
+  const activePlanIds = new Set();
+  for (const subscription of Array.isArray(subscriptions) ? subscriptions : []) {
+    const decision = storesAccessDecision(subscription, {now});
+    if (!['activate', 'hold_until_period_end'].includes(decision.action)) continue;
+    const planId = getPlan(decision.planId).id;
+    if (planId !== 'free') activePlanIds.add(planId);
+  }
+
+  const hasStudy = activePlanIds.has('graduate_study')
+    || activePlanIds.has('graduate_bundle')
+    || activePlanIds.has('graduate_study_addon');
+  const hasBase = activePlanIds.has('student_graduate');
+
+  let planId = 'free';
+  if (activePlanIds.has('graduate_bundle') || (hasBase && hasStudy)) planId = 'graduate_bundle';
+  else if (hasBase) planId = 'student_graduate';
+  else if (activePlanIds.has('referral')) planId = 'referral';
+  else if (activePlanIds.has('premium')) planId = 'premium';
+  else if (activePlanIds.has('starter')) planId = 'starter';
+  else if (hasStudy) planId = 'graduate_study';
+
+  return Object.freeze({
+    planId,
+    audienceType,
+    activePlanIds: Object.freeze([...activePlanIds]),
+  });
+}
+
 module.exports = {
   STORES_SUBSCRIPTION_STATUSES,
   normalizeStoresSubscription,
   storesAccessDecision,
+  resolveStoresAccess,
 };

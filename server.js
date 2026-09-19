@@ -2,7 +2,7 @@ const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const {PLANS, PUBLIC_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, effectiveFeatures, canUseFeature, savedSubjectLimit} = require('./member-access');
+const {PLANS, PUBLIC_PLAN_IDS, MANAGED_PLAN_IDS, FEATURE_LABELS, FEATURES, getPlan, effectiveFeatures, canUseFeature, savedSubjectLimit} = require('./member-access');
 const {publicMemberReadiness, authenticateMember, listSavedSubjects, getSavedSubject, countSavedSubjects, createSavedSubject, renameSavedSubject, deleteSavedSubject, listMemberUsage, updateMemberAccess, registerFreeMember, inviteMember, inviteAdmin, recordManualSubscription, getMemberSubscription, listManualSubscriptions, listAdminAuditLogs, updateManualSubscription, completeMemberInvite, requestMemberPasswordReset, resetMemberPassword} = require('./supabase-server');
 const {storesCatalogReadiness} = require('./stores-catalog');
 
@@ -115,6 +115,7 @@ function createMemberSession(member) {
     displayName: member.displayName,
     role: member.role,
     planId: member.planId,
+    audienceType: member.audienceType || 'general',
     nonce: crypto.randomBytes(12).toString('hex'),
   })).toString('base64url');
   return `${payload}.${signMember(payload)}`;
@@ -256,7 +257,7 @@ function legalPage(kind) {
       sections: [
         ['1. サービス内容', '<p>本サービスは、四柱推命の命式作成、五行表示、鑑定補助資料等を提供します。表示内容は鑑定や意思決定を補助するもので、将来の出来事、健康、法律・税務・投資その他の結果を保証するものではありません。</p>'],
         ['2. 登録・アカウント管理', '<p>利用者は正確な情報を登録し、登録メールアドレスとパスワードを自己の責任で管理します。アカウントの譲渡、貸与、第三者との共用は禁止します。</p>'],
-        ['3. プランと料金', '<p>利用できる機能と保存件数はプランにより異なります。月額料金は、スターター1,650円、プレミアム3,300円、講座生専用1,100円、ご紹介用1,100円で、いずれも税込です。フリープランは無料です。各プランの最新の提供内容は本サービスおよび購入時のSTORES商品ページに表示します。</p>'],
+        ['3. プランと料金', '<p>利用できる機能と保存件数はプランにより異なります。月額料金は、スターター3,300円、プレミアム5,500円、ご紹介者2,200円、命式サイト継続（受講生・卒業生）2,200円、卒業生向け勉強会3,300円、サイト＋勉強会4,400円です。受講生は受講期間中、命式サイト継続プランに月1勉強会とアーカイブが含まれます。いずれも税込で、フリープランは無料です。各プランの最新の提供内容は本サービスおよび購入時のSTORES商品ページに表示します。</p>'],
         ['4. 有料契約の成立と利用開始', '<p>有料契約は、STORESで注文が完了した時点で成立し、初回購入日を契約開始日および毎月の更新基準日とします。運営者は購入内容を確認後、原則2営業日以内に対象プランを有効化します。利用者は会員登録とSTORES購入に同じメールアドレスを使用するものとします。</p>'],
         ['5. 自動更新', '<p>有料プランは1か月ごとの定期購入であり、解約手続きが完了しない限り自動更新されます。次回注文日は初回購入日を基準とし、月末等はSTORESの仕様により調整される場合があります。最低契約期間および解約金はありません。</p>'],
         ['6. 解約', '<p>利用者は、次回注文が作成される前日までにSTORESの購入履歴から定期便を解約できます。運営者への代行依頼は次回更新日の3営業日前までにお問い合わせください。解約後も支払い済み期間の終了日までは契約中の機能を利用でき、期間終了後にフリープランへ変更します。すでに作成済みの注文は、定期便の解約だけでは取り消されません。</p>'],
@@ -306,7 +307,7 @@ function legalPage(kind) {
         ['所在地', '<p>〒450-0002<br>愛知県名古屋市中村区名駅3-4-10<br>アルティメイト名駅1st 2階</p>'],
         ['電話番号', '<p><a href="tel:05030998112">050-3099-8112</a>（平日 10:00〜18:00）</p><p>営業・勧誘のお電話はご遠慮ください。お問い合わせは原則としてお問い合わせフォームまたはメールにてお願いいたします。</p>'],
         ['お問い合わせ', '<p><a href="https://www.fuchilabo.com/contact" rel="noopener">ふちLABO.お問い合わせフォーム</a></p>'],
-        ['販売価格', '<ul><li>スターター：月額1,650円（税込）</li><li>プレミアム：月額3,300円（税込）</li><li>講座生専用：月額1,100円（税込）</li><li>ご紹介用：月額1,100円（税込）</li></ul><p>フリープランは無料です。</p>'],
+        ['販売価格', '<ul><li>スターター：月額3,300円（税込）</li><li>プレミアム：月額5,500円（税込）</li><li>ご紹介者：月額2,200円（税込）</li><li>命式サイト継続（受講生・卒業生）：月額2,200円（税込）</li><li>卒業生・勉強会：月額3,300円（税込）</li><li>卒業生・サイト＋勉強会：月額4,400円（税込）</li><li>卒業生・勉強会追加：月額2,200円（税込）</li></ul><p>フリープランは無料です。</p>'],
         ['販売価格以外の負担', '<p>本サービスを利用するための端末、通信機器およびインターネット接続料金は利用者の負担となります。物品の送料はありません。</p>'],
         ['支払方法・支払時期', '<p>STORESの購入画面に表示される支払方法を利用できます。初回注文時および以後1か月ごとの更新日に、選択した決済方法で支払いが行われます。具体的な支払時期は各決済事業者の規定によります。</p>'],
         ['サービスの提供時期', '<p>購入内容の確認後、原則2営業日以内に会員アカウントへ対象プランを反映します。会員登録とSTORES購入には同じメールアドレスをご使用ください。</p>'],
@@ -356,31 +357,33 @@ function validAdminActionToken(member, token) {
 }
 
 function adminUsagePage(members = [], {member, subscriptions = [], auditLogs = [], message = '', error = false, warnings = [], contractFilters = {}, memberFilters = {}, storeReadiness = storesCatalogReadiness()} = {}) {
-  const planOptions = PUBLIC_PLAN_IDS.map(planId => `<option value="${planId}">${escapeHtml(getPlan(planId).label)}</option>`).join('');
+  const planOptions = MANAGED_PLAN_IDS.map(planId => `<option value="${planId}">${escapeHtml(getPlan(planId).label)}</option>`).join('');
   const statusLabels = {invited: '招待中', active: '利用中', suspended: '停止中', expired: '期限切れ'};
   const statusOptions = Object.entries(statusLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
   const memberQuery = String(memberFilters.query || '').trim().slice(0, 100);
-  const memberPlan = PUBLIC_PLAN_IDS.includes(memberFilters.planId) ? memberFilters.planId : '';
+  const memberPlan = MANAGED_PLAN_IDS.includes(memberFilters.planId) ? memberFilters.planId : '';
   const memberStatus = Object.hasOwn(statusLabels, memberFilters.status) ? memberFilters.status : '';
   const visibleMembers = members.filter(profile => {
     if (memberPlan && profile.plan_id !== memberPlan) return false;
     if (memberStatus && profile.account_status !== memberStatus) return false;
     return !memberQuery || String(profile.display_name || '').toLocaleLowerCase('ja-JP').includes(memberQuery.toLocaleLowerCase('ja-JP'));
   });
+  const audienceLabels = {general: '一般', referral: 'ご紹介', student: '受講生', graduate: '卒業生'};
+  const audienceOptions = Object.entries(audienceLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
   const rows = visibleMembers.map(profile => {
     const canEdit = profile.role !== 'admin' && profile.id !== member.uid;
-    const controls = canEdit ? `<form class="access-form" method="post" action="/members/admin/access"><input type="hidden" name="token" value="${adminActionToken(member)}"><input type="hidden" name="targetUserId" value="${escapeHtml(profile.id)}"><select name="planId" aria-label="料金プラン">${planOptions.replace(`value="${profile.plan_id}"`, `value="${profile.plan_id}" selected`)}</select><select name="accountStatus" aria-label="利用状態">${statusOptions.replace(`value="${profile.account_status}"`, `value="${profile.account_status}" selected`)}</select><button type="submit">変更を保存</button></form>` : '<span class="admin-label">管理者</span>';
+    const controls = canEdit ? `<form class="access-form" method="post" action="/members/admin/access"><input type="hidden" name="token" value="${adminActionToken(member)}"><input type="hidden" name="targetUserId" value="${escapeHtml(profile.id)}"><select name="planId" aria-label="料金プラン">${planOptions.replace(`value="${profile.plan_id}"`, `value="${profile.plan_id}" selected`)}</select><select name="audienceType" aria-label="会員区分">${audienceOptions.replace(`value="${profile.audience_type || 'general'}"`, `value="${profile.audience_type || 'general'}" selected`)}</select><select name="accountStatus" aria-label="利用状態">${statusOptions.replace(`value="${profile.account_status}"`, `value="${profile.account_status}" selected`)}</select><button type="submit">変更を保存</button></form>` : '<span class="admin-label">管理者</span>';
     return `<tr><td>${escapeHtml(profile.display_name || '名称未設定')}</td><td>${controls}</td><td>${Number(profile.saved_subject_count) || 0}件</td><td>${profile.last_login_at ? escapeHtml(new Date(profile.last_login_at).toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'})) : '未ログイン'}</td></tr>`;
   }).join('');
   const storeRows = storeReadiness.products.map(product => `<tr><td>${escapeHtml(product.label)}</td><td>月額 ${product.monthlyPrice.toLocaleString('ja-JP')}円</td><td><code>${escapeHtml(product.planId)}</code></td><td>${product.configured ? `<span class="ready">商品ID設定済み</span><br><code>${escapeHtml(product.itemId)}</code><br>${product.salesEnabled ? '<span class="ready">販売導線ON</span>' : '<span class="pending">販売導線OFF</span>'}<br><a href="${escapeHtml(product.dashboardUrl)}" target="_blank" rel="noopener">STORES設定を確認</a>` : '<span class="pending">未設定</span>'}</td></tr>`).join('');
-  const storeSummary = storeReadiness.ready ? `4商品すべての商品IDを設定済みです。販売導線は${storeReadiness.salesEnabled}/${storeReadiness.total}商品でONです。` : `${storeReadiness.configured}/${storeReadiness.total}商品を設定済みです。商品IDの登録後も、購入情報の自動反映は次の段階で有効化します。`;
+  const storeSummary = storeReadiness.ready ? `${storeReadiness.total}商品すべての商品IDを設定済みです。販売導線は${storeReadiness.salesEnabled}/${storeReadiness.total}商品でONです。` : `${storeReadiness.configured}/${storeReadiness.total}商品を設定済みです。商品IDの登録後も、購入情報の自動反映は次の段階で有効化します。`;
   const memberNames = new Map(members.map(profile => [profile.id, profile.display_name || '名称未設定']));
-  const paidPlanOptions = PUBLIC_PLAN_IDS.filter(planId => planId !== 'free').map(planId => `<option value="${planId}">${escapeHtml(getPlan(planId).label)}</option>`).join('');
+  const paidPlanOptions = MANAGED_PLAN_IDS.filter(planId => planId !== 'free').map(planId => `<option value="${planId}">${escapeHtml(getPlan(planId).label)}</option>`).join('');
   const existingMemberOptions = members.filter(profile => profile.role !== 'admin' && profile.id !== member.uid).map(profile => `<option value="${escapeHtml(profile.id)}">${escapeHtml(profile.display_name || '名称未設定')}</option>`).join('');
   const subscriptionStatuses = {pending: '確認中', active: '契約中', past_due: '支払確認中', canceled: '解約済み', expired: '期限切れ', refunded: '返金済み'};
   const subscriptionStatusOptions = Object.entries(subscriptionStatuses).map(([value, label]) => `<option value="${value}">${label}</option>`).join('');
   const filterQuery = String(contractFilters.query || '').trim().slice(0, 100);
-  const filterPlan = PUBLIC_PLAN_IDS.filter(planId => planId !== 'free').includes(contractFilters.planId) ? contractFilters.planId : '';
+  const filterPlan = MANAGED_PLAN_IDS.filter(planId => planId !== 'free').includes(contractFilters.planId) ? contractFilters.planId : '';
   const filterStatus = Object.hasOwn(subscriptionStatuses, contractFilters.status) ? contractFilters.status : '';
   const visibleSubscriptions = subscriptions.filter(subscription => {
     if (filterPlan && subscription.plan_id !== filterPlan) return false;
@@ -427,7 +430,7 @@ function adminUsagePage(members = [], {member, subscriptions = [], auditLogs = [
     const createdAt = log.created_at && Number.isFinite(new Date(log.created_at).getTime()) ? new Date(log.created_at).toLocaleString('ja-JP', {timeZone: 'Asia/Tokyo'}) : '日時不明';
     return `<tr><td>${escapeHtml(createdAt)}</td><td>${escapeHtml(memberNames.get(log.target_user_id) || '会員不明')}</td><td><strong>${escapeHtml(auditActionLabels[log.action] || log.action || '操作')}</strong>${detailParts.length ? `<br><small>${escapeHtml(detailParts.join(' ／ '))}</small>` : ''}</td></tr>`;
   }).join('');
-  const inviteForm = `<section><h2>新しい会員を招待</h2><p class="section-note">購入時と同じメールアドレスを入力してください。STORES購入の場合は、注文番号と契約期間も入力すると契約台帳へ同時に記録します。無料テスト招待では空欄のままで構いません。</p><form class="invite-form" method="post" action="/members/admin/invite"><input type="hidden" name="token" value="${adminActionToken(member)}"><input name="displayName" maxlength="120" placeholder="お客さまのお名前" required><input name="email" type="email" maxlength="254" placeholder="購入時のメールアドレス" required><select name="planId" aria-label="料金プラン">${planOptions}</select><input name="storesOrderId" maxlength="240" placeholder="STORES注文番号（購入時のみ）"><label>契約開始日<input name="currentPeriodStartedAt" type="date"></label><label>次回更新日<input name="currentPeriodEndsAt" type="date"></label><button type="submit">招待メールを送る</button></form></section>`;
+  const inviteForm = `<section><h2>新しい会員を招待</h2><p class="section-note">購入時と同じメールアドレスを入力してください。STORES購入の場合は、注文番号と契約期間も入力すると契約台帳へ同時に記録します。無料テスト招待では空欄のままで構いません。</p><form class="invite-form" method="post" action="/members/admin/invite"><input type="hidden" name="token" value="${adminActionToken(member)}"><input name="displayName" maxlength="120" placeholder="お客さまのお名前" required><input name="email" type="email" maxlength="254" placeholder="購入時のメールアドレス" required><select name="planId" aria-label="料金プラン">${planOptions}</select><select name="audienceType" aria-label="会員区分">${audienceOptions}</select><input name="storesOrderId" maxlength="240" placeholder="STORES注文番号（購入時のみ）"><label>契約開始日<input name="currentPeriodStartedAt" type="date"></label><label>次回更新日<input name="currentPeriodEndsAt" type="date"></label><button type="submit">招待メールを送る</button></form></section>`;
   const adminInviteForm = `<section><h2>共同管理者を招待</h2><p class="section-note">会社を共同運営する方専用です。招待された本人がメール内のリンクからパスワードを設定すると、管理者としてログインできるようになります。以前の招待が途中で止まった登録済みアドレスには、自動的に復旧用のパスワード再設定メールを送ります。</p><form class="invite-form" method="post" action="/members/admin/invite-admin"><input type="hidden" name="token" value="${adminActionToken(member)}"><input name="displayName" maxlength="120" placeholder="共同管理者のお名前" required><input name="email" type="email" maxlength="254" placeholder="共同管理者のメールアドレス" required><button type="submit">管理者招待メールを送る</button></form></section>`;
   const contractCreateForm = `<section><h2>登録済み会員の購入を反映</h2><p class="section-note">フリー会員など、すでにログインできる方が有料プランを購入した場合に使用します。招待メールは再送せず、契約台帳と利用プランを同時に更新します。</p>${existingMemberOptions ? `<form class="invite-form contract-create-form" method="post" action="/members/admin/subscription/new"><input type="hidden" name="token" value="${adminActionToken(member)}"><select name="targetUserId" aria-label="対象会員" required><option value="">対象会員を選択</option>${existingMemberOptions}</select><input name="email" type="email" maxlength="254" placeholder="購入時のメールアドレス" required><select name="planId" aria-label="購入プラン" required>${paidPlanOptions}</select><input name="storesOrderId" maxlength="240" placeholder="STORES注文番号" required><label>契約開始日<input name="currentPeriodStartedAt" type="date" required></label><label>次回更新日<input name="currentPeriodEndsAt" type="date" required></label><button type="submit">購入を反映</button></form>` : '<p class="section-note">対象にできる会員はまだいません。</p>'}</section>`;
   const salesTestGuide = `<section class="sales-guide"><h2>初回販売テストの手順</h2><p class="section-note">STORES自動連携を使わない期間は、次の順番で購入と利用開始を確認します。実際の決済が完了するまでは「購入を反映」を押さないでください。</p><ol><li>購入者が命式サイトで無料会員登録とメール確認を完了する。</li><li>無料登録と同じメールアドレスでSTORESの商品を購入する。</li><li>STORESで注文番号・決済完了・購入プラン・次回更新日を確認する。</li><li>下の「登録済み会員の購入を反映」へ注文情報を入力する。</li><li>購入者が一度ログアウトして再ログインし、契約プランと利用機能を確認する。</li><li>解約テストではSTORESの解約後に契約状態を「解約済み」へ変更し、支払済み期間の終了日までは有料機能が使えることを確認する。</li></ol></section>`;
@@ -504,7 +507,7 @@ function renderSalesLandingPage(source, storeReadiness = storesCatalogReadiness(
 }
 
 function memberAccount(member) {
-  return {planId: member.planId, featureGrants: [], featureRevokes: []};
+  return {planId: member.planId, audienceType: member.audienceType || 'general', featureGrants: [], featureRevokes: []};
 }
 
 function json(res, status, payload) {
@@ -657,7 +660,7 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
     try {
       const form = new URLSearchParams(await readBody(req));
       if (!validAdminActionToken(member, form.get('token'))) return send(res, 403, 'Forbidden', {'Content-Type': 'text/plain; charset=utf-8'});
-      const input = {actorUserId: member.uid, email: form.get('email'), displayName: form.get('displayName'), planId: form.get('planId'), redirectUrl: memberSetupRedirectUrl()};
+      const input = {actorUserId: member.uid, email: form.get('email'), displayName: form.get('displayName'), planId: form.get('planId'), audienceType: form.get('audienceType'), redirectUrl: memberSetupRedirectUrl()};
       const contractValues = [form.get('storesOrderId'), form.get('currentPeriodStartedAt'), form.get('currentPeriodEndsAt')].map(value => String(value || '').trim());
       const hasContract = contractValues.some(Boolean);
       if (hasContract && contractValues.some(value => !value)) return send(res, 303, '', {Location: '/members/admin?error=invalid_subscription'});
@@ -709,8 +712,6 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
       };
       const contract = await dependencies.recordManualSubscription(input);
       if (!contract.ok) return send(res, 303, '', {Location: `/members/admin?error=${encodeURIComponent(contract.status)}`});
-      const access = await dependencies.updateMemberAccess({actorUserId: member.uid, targetUserId: input.memberUserId, planId: input.planId, accountStatus: 'active'});
-      if (!access.ok) return send(res, 303, '', {Location: `/members/admin?error=${encodeURIComponent(access.status || 'profile_unavailable')}`});
       return send(res, 303, '', {Location: '/members/admin?contractCreated=1'});
     } catch {
       return send(res, 303, '', {Location: '/members/admin?error=invalid_subscription'});
@@ -736,7 +737,7 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
     try {
       const form = new URLSearchParams(await readBody(req));
       if (!validAdminActionToken(member, form.get('token'))) return send(res, 403, 'Forbidden', {'Content-Type': 'text/plain; charset=utf-8'});
-      const result = await dependencies.updateMemberAccess({actorUserId: member.uid, targetUserId: form.get('targetUserId'), planId: form.get('planId'), accountStatus: form.get('accountStatus')});
+      const result = await dependencies.updateMemberAccess({actorUserId: member.uid, targetUserId: form.get('targetUserId'), planId: form.get('planId'), audienceType: form.get('audienceType'), accountStatus: form.get('accountStatus')});
       return send(res, 303, '', {Location: result.ok ? '/members/admin?saved=1' : '/members/admin?error=1'});
     } catch {
       return send(res, 303, '', {Location: '/members/admin?error=1'});
@@ -798,6 +799,7 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
         displayName: member.displayName,
         role: member.role,
         planId: currentPlan.id,
+        audienceType: member.audienceType || 'general',
         plan: {
           id: currentPlan.id,
           label: currentPlan.label,

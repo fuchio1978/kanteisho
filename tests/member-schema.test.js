@@ -30,6 +30,21 @@ test('販売プラン移行は旧IDを新IDへ変換しご紹介用プランを�
   );
 });
 
+test('新料金体系は利用者区分を契約と分離し複数契約用プランへ安全に移行する', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202609190001_subscription_entitlements.sql'), 'utf8');
+  assert.match(migration, /audience_type text not null default 'general'/i);
+  for (const value of ['referral', 'student', 'graduate', 'admin']) assert.match(migration, new RegExp(`'${value}'`));
+  for (const planId of ['student_graduate', 'graduate_study', 'graduate_bundle', 'graduate_study_addon']) assert.match(migration, new RegExp(`'${planId}'`));
+  assert.ok(
+    migration.indexOf('drop constraint if exists member_profiles_plan_id_check') < migration.indexOf("set plan_id = 'student_graduate'"),
+    '会員プロフィールの旧制約を解除してから新プランIDへ更新する',
+  );
+  assert.ok(
+    migration.indexOf('drop constraint if exists stores_subscriptions_plan_id_check') < migration.lastIndexOf("set plan_id = 'student_graduate'"),
+    '契約台帳の旧制約を解除してから新プランIDへ更新する',
+  );
+});
+
 test('パスワードを独自保存せずSupabase Authの利用者へ関連付ける', () => {
   assert.match(sql, /references auth\.users\(id\)/);
   assert.doesNotMatch(sql, /password\s+(text|varchar)/i);

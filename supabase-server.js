@@ -1,6 +1,7 @@
 'use strict';
 
-const {storesAccessDecision} = require('./stores-subscription');
+const {resolveStoresAccess} = require('./stores-subscription');
+const {MANAGED_PLAN_IDS} = require('./member-access');
 
 function isLocalHost(hostname) {
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
@@ -127,7 +128,7 @@ async function authenticateMember({email, password, env = process.env, fetchImpl
 
     const profileEndpoint = new URL('/rest/v1/member_profiles', config.url);
     profileEndpoint.searchParams.set('id', `eq.${user.id}`);
-    profileEndpoint.searchParams.set('select', 'id,display_name,role,plan_id,account_status,plan_expires_at');
+    profileEndpoint.searchParams.set('select', 'id,display_name,role,plan_id,audience_type,account_status,plan_expires_at');
     profileEndpoint.searchParams.set('limit', '1');
     const profileResponse = await fetchImpl(profileEndpoint, {
       headers: serverHeaders(config),
@@ -149,7 +150,6 @@ async function authenticateMember({email, password, env = process.env, fetchImpl
       subscriptionEndpoint.searchParams.set('member_user_id', `eq.${user.id}`);
       subscriptionEndpoint.searchParams.set('select', 'plan_id,status,current_period_ends_at,created_at');
       subscriptionEndpoint.searchParams.set('order', 'created_at.desc');
-      subscriptionEndpoint.searchParams.set('limit', '1');
       try {
         const subscriptionResponse = await fetchImpl(subscriptionEndpoint, {
           headers: serverHeaders(config),
@@ -157,16 +157,12 @@ async function authenticateMember({email, password, env = process.env, fetchImpl
         });
         if (subscriptionResponse.ok) {
           const subscriptions = await responseJson(subscriptionResponse);
-          const subscription = Array.isArray(subscriptions) ? subscriptions[0] : null;
-          if (subscription) {
-            const decision = storesAccessDecision({
+          if (Array.isArray(subscriptions) && subscriptions.length) {
+            effectivePlanId = resolveStoresAccess(subscriptions.map(subscription => ({
               planId: subscription.plan_id,
               status: subscription.status,
               currentPeriodEndsAt: subscription.current_period_ends_at,
-            });
-            if (decision.action === 'activate' || decision.action === 'hold_until_period_end' || decision.action === 'deactivate') {
-              effectivePlanId = decision.planId;
-            }
+            })), {audienceType: profile.audience_type}).planId;
           }
         }
       } catch {
@@ -193,6 +189,7 @@ async function authenticateMember({email, password, env = process.env, fetchImpl
         displayName: String(profile.display_name || ''),
         role: profile.role,
         planId: effectivePlanId,
+        audienceType: profile.audience_type || 'general',
       },
     };
   } catch (error) {
@@ -329,7 +326,7 @@ async function listMemberUsage({env = process.env, fetchImpl = globalThis.fetch,
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const profilesUrl = new URL('/rest/v1/member_profiles', config.url);
-    profilesUrl.searchParams.set('select', 'id,display_name,role,plan_id,account_status,last_login_at,created_at');
+    profilesUrl.searchParams.set('select', 'id,display_name,role,plan_id,audience_type,account_status,last_login_at,created_at');
     profilesUrl.searchParams.set('order', 'created_at.desc');
     const subjectsUrl = new URL('/rest/v1/saved_subjects', config.url);
     subjectsUrl.searchParams.set('select', 'owner_user_id');
@@ -355,14 +352,15 @@ async function listMemberUsage({env = process.env, fetchImpl = globalThis.fetch,
   }
 }
 
-async function updateMemberAccess({actorUserId, targetUserId, planId, accountStatus, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+async function updateMemberAccess({actorUserId, targetUserId, planId, audienceType, accountStatus, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const allowedPlans = new Set(['free', 'starter', 'premium', 'student', 'grandstudent']);
+  const allowedPlans = new Set(MANAGED_PLAN_IDS);
+  const allowedAudiences = new Set(['general', 'referral', 'student', 'graduate']);
   const allowedStatuses = new Set(['invited', 'active', 'suspended', 'expired']);
   if (!userIdPattern.test(String(actorUserId || '')) || !userIdPattern.test(String(targetUserId || '')) || actorUserId === targetUserId) {
     return {ok: false, status: 'invalid_target'};
   }
-  if (!allowedPlans.has(planId) || !allowedStatuses.has(accountStatus)) return {ok: false, status: 'invalid_access'};
+  if (!allowedPlans.has(planId) || !allowedAudiences.has(audienceType) || !allowedStatuses.has(accountStatus)) return {ok: false, status: 'invalid_access'};
   const config = loadSupabaseServerConfig(env);
   if (!config.configured) return {ok: false, status: config.status};
   if (typeof fetchImpl !== 'function') return {ok: false, status: 'fetch_unavailable'};
@@ -373,11 +371,11 @@ async function updateMemberAccess({actorUserId, targetUserId, planId, accountSta
     const profileUrl = new URL('/rest/v1/member_profiles', config.url);
     profileUrl.searchParams.set('id', `eq.${targetUserId}`);
     profileUrl.searchParams.set('role', 'eq.member');
-    profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
+    profileUrl.searchParams.set('select', 'id,display_name,plan_id,audience_type,account_status');
     const profileResponse = await fetchImpl(profileUrl, {
       method: 'PATCH',
       headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=representation'}),
-      body: JSON.stringify({plan_id: planId, account_status: accountStatus}),
+      body: JSON.stringify({plan_id: planId, audience_type: audienceType, account_status: accountStatus}),
       signal: controller.signal,
     });
     if (!profileResponse.ok) return {ok: false, status: 'database_unavailable'};
@@ -393,7 +391,7 @@ async function updateMemberAccess({actorUserId, targetUserId, planId, accountSta
         actor_user_id: actorUserId,
         target_user_id: targetUserId,
         action: 'member_access_updated',
-        details: {plan_id: planId, account_status: accountStatus},
+        details: {plan_id: planId, audience_type: audienceType, account_status: accountStatus},
       }),
       signal: controller.signal,
     });
@@ -496,9 +494,10 @@ async function registerFreeMember({email, password, displayName, redirectUrl, te
   }
 }
 
-async function inviteAccount({actorUserId, email, displayName, planId, role = 'member', redirectUrl, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+async function inviteAccount({actorUserId, email, displayName, planId, audienceType = 'general', role = 'member', redirectUrl, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const allowedPlans = new Set(['free', 'starter', 'premium', 'student', 'grandstudent']);
+  const allowedPlans = new Set(MANAGED_PLAN_IDS);
+  const allowedAudiences = new Set(['general', 'referral', 'student', 'graduate']);
   const normalizedEmail = validMemberEmail(email);
   const normalizedName = String(displayName || '').trim().slice(0, 120);
   let normalizedRedirect = null;
@@ -506,7 +505,7 @@ async function inviteAccount({actorUserId, email, displayName, planId, role = 'm
     const parsed = new URL(String(redirectUrl || ''));
     if (parsed.protocol === 'https:' || (parsed.protocol === 'http:' && ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname))) normalizedRedirect = parsed.toString();
   } catch {}
-  const validAccess = role === 'admin' ? planId === 'admin' : role === 'member' && allowedPlans.has(planId);
+  const validAccess = role === 'admin' ? planId === 'admin' : role === 'member' && allowedPlans.has(planId) && allowedAudiences.has(audienceType);
   if (!userIdPattern.test(String(actorUserId || '')) || !normalizedEmail || !normalizedName || !validAccess || !normalizedRedirect) {
     return {ok: false, status: 'invalid_invitation'};
   }
@@ -537,8 +536,8 @@ async function inviteAccount({actorUserId, email, displayName, planId, role = 'm
     profileUrl.searchParams.set('id', `eq.${invitedUser.id}`);
     // Auth作成直後のプロフィールはトリガーにより必ずmemberで作成される。
     profileUrl.searchParams.set('role', 'eq.member');
-    profileUrl.searchParams.set('select', 'id,display_name,plan_id,account_status');
-    const profileUpdate = {display_name: normalizedName, plan_id: planId, account_status: 'invited'};
+    profileUrl.searchParams.set('select', 'id,display_name,plan_id,audience_type,account_status');
+    const profileUpdate = {display_name: normalizedName, plan_id: planId, audience_type: role === 'admin' ? 'admin' : audienceType, account_status: 'invited'};
     if (role === 'admin') profileUpdate.role = 'admin';
     const profileResponse = await fetchImpl(profileUrl, {
       method: 'PATCH',
@@ -575,7 +574,7 @@ async function inviteAdmin(input = {}) {
 
 async function recordManualSubscription({actorUserId, memberUserId, email, planId, storesOrderId, currentPeriodStartedAt, currentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const paidPlans = new Set(['starter', 'premium', 'student', 'grandstudent']);
+  const paidPlans = new Set(MANAGED_PLAN_IDS.filter(planId => planId !== 'free'));
   const normalizedEmail = validMemberEmail(email);
   const orderId = String(storesOrderId || '').trim().slice(0, 240);
   const startedAt = new Date(String(currentPeriodStartedAt || ''));
@@ -613,6 +612,9 @@ async function recordManualSubscription({actorUserId, memberUserId, email, planI
     const subscription = Array.isArray(rows) ? rows[0] : null;
     if (!subscription) return {ok: false, status: 'subscription_unavailable'};
 
+    const access = await refreshMemberAccessFromSubscriptions({memberUserId, config, fetchImpl, signal: controller.signal});
+    if (!access.ok) return {ok: false, status: access.status, subscription};
+
     const auditUrl = new URL('/rest/v1/admin_audit_logs', config.url);
     await fetchImpl(auditUrl, {
       method: 'POST',
@@ -620,12 +622,47 @@ async function recordManualSubscription({actorUserId, memberUserId, email, planI
       body: JSON.stringify({actor_user_id: actorUserId, target_user_id: memberUserId, action: 'manual_subscription_recorded', details: {plan_id: planId, stores_order_id: orderId}}),
       signal: controller.signal,
     });
-    return {ok: true, status: 'recorded', subscription};
+    return {ok: true, status: 'recorded', subscription, accessPlanId: access.planId};
   } catch (error) {
     return {ok: false, status: error?.name === 'AbortError' ? 'timeout' : 'subscription_unavailable'};
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function refreshMemberAccessFromSubscriptions({memberUserId, config, fetchImpl, signal}) {
+  const profileUrl = new URL('/rest/v1/member_profiles', config.url);
+  profileUrl.searchParams.set('id', `eq.${memberUserId}`);
+  profileUrl.searchParams.set('role', 'eq.member');
+  profileUrl.searchParams.set('select', 'id,audience_type');
+  const subscriptionsUrl = new URL('/rest/v1/stores_subscriptions', config.url);
+  subscriptionsUrl.searchParams.set('member_user_id', `eq.${memberUserId}`);
+  subscriptionsUrl.searchParams.set('select', 'plan_id,status,current_period_ends_at');
+  const [profileResponse, subscriptionsResponse] = await Promise.all([
+    fetchImpl(profileUrl, {headers: serverHeaders(config), signal}),
+    fetchImpl(subscriptionsUrl, {headers: serverHeaders(config), signal}),
+  ]);
+  if (!profileResponse.ok || !subscriptionsResponse.ok) return {ok: false, status: 'profile_unavailable'};
+  const profiles = await responseJson(profileResponse);
+  const rows = await responseJson(subscriptionsResponse);
+  const profile = Array.isArray(profiles) ? profiles[0] : null;
+  if (!profile) return {ok: false, status: 'profile_unavailable'};
+  const subscriptions = (Array.isArray(rows) ? rows : []).map(row => ({
+    planId: row.plan_id,
+    status: row.status,
+    currentPeriodEndsAt: row.current_period_ends_at,
+  }));
+  const access = resolveStoresAccess(subscriptions, {audienceType: profile.audience_type || 'general'});
+  const updateUrl = new URL('/rest/v1/member_profiles', config.url);
+  updateUrl.searchParams.set('id', `eq.${memberUserId}`);
+  updateUrl.searchParams.set('role', 'eq.member');
+  const updateResponse = await fetchImpl(updateUrl, {
+    method: 'PATCH',
+    headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
+    body: JSON.stringify({plan_id: access.planId, account_status: 'active'}),
+    signal,
+  });
+  return updateResponse.ok ? {ok: true, status: 'updated', planId: access.planId} : {ok: false, status: 'profile_unavailable'};
 }
 
 async function getMemberSubscription({memberUserId, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
@@ -706,7 +743,7 @@ async function listAdminAuditLogs({env = process.env, fetchImpl = globalThis.fet
 
 async function updateManualSubscription({actorUserId, subscriptionId, planId, status, currentPeriodStartedAt, currentPeriodEndsAt, expectedCurrentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  const paidPlans = new Set(['starter', 'premium', 'student', 'grandstudent']);
+  const paidPlans = new Set(MANAGED_PLAN_IDS.filter(planId => planId !== 'free'));
   const allowedStatuses = new Set(['pending', 'active', 'past_due', 'canceled', 'expired', 'refunded']);
   const startedAt = new Date(String(currentPeriodStartedAt || ''));
   const endsAt = new Date(String(currentPeriodEndsAt || ''));
@@ -742,18 +779,9 @@ async function updateManualSubscription({actorUserId, subscriptionId, planId, st
     const subscription = Array.isArray(rows) ? rows[0] : null;
     if (!subscription) return {ok: false, status: expectedEndsAt ? 'stale_subscription' : 'not_found'};
 
-    const periodEnded = endsAt.getTime() <= Date.now();
-    const accessPlanId = status === 'expired' || status === 'refunded' || (status === 'canceled' && periodEnded) ? 'free' : planId;
-    const profileUrl = new URL('/rest/v1/member_profiles', config.url);
-    profileUrl.searchParams.set('id', `eq.${subscription.member_user_id}`);
-    profileUrl.searchParams.set('role', 'eq.member');
-    const profileResponse = await fetchImpl(profileUrl, {
-      method: 'PATCH',
-      headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
-      body: JSON.stringify({plan_id: accessPlanId, account_status: 'active'}),
-      signal: controller.signal,
-    });
-    if (!profileResponse.ok) return {ok: false, status: 'profile_unavailable'};
+    const access = await refreshMemberAccessFromSubscriptions({memberUserId: subscription.member_user_id, config, fetchImpl, signal: controller.signal});
+    if (!access.ok) return {ok: false, status: access.status};
+    const accessPlanId = access.planId;
 
     const auditUrl = new URL('/rest/v1/admin_audit_logs', config.url);
     await fetchImpl(auditUrl, {

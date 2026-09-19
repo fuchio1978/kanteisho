@@ -49,6 +49,9 @@ test('販売LPは認証なしでmeisikiから表示できる', async () => {
       assert.match(html, /ふちLABO\.代表　てつ先生/);
       assert.match(html, /企画・鑑定ロジック監修/);
       assert.match(html, /プレミアムプラン/);
+      assert.match(html, /<strong>3,300<\/strong>/);
+      assert.match(html, /<strong>5,500<\/strong>/);
+      assert.doesNotMatch(html, /<strong>1,650<\/strong>/);
       assert.match(html, /1か月ごとの自動更新/);
       assert.match(html, /STORESの購入履歴から解約/);
       assert.match(html, /途中解約の日割り返金はありません/);
@@ -211,7 +214,7 @@ test('会員版はSupabase認証後だけ個別セッションと契約プラン
     const memberHtml = await memberPage.text();
     assert.match(memberHtml, /テスト会員 さん/);
     assert.match(memberHtml, /プレミアム/);
-    assert.match(memberHtml, /月額 3,300円/);
+    assert.match(memberHtml, /月額 5,500円/);
     assert.match(memberHtml, /href="\/members\/contract"/);
     assert.doesNotMatch(memberHtml, /correct-password|SERVICE_ROLE/);
 
@@ -230,7 +233,7 @@ test('会員版はSupabase認証後だけ個別セッションと契約プラン
     assert.equal(sessionData.member.id, 'member-user-id');
     assert.equal(sessionData.member.planId, 'premium');
     assert.equal(sessionData.member.plan.label, 'プレミアム');
-    assert.equal(sessionData.member.plan.monthlyPrice, 3300);
+    assert.equal(sessionData.member.plan.monthlyPrice, 5500);
     assert.equal(sessionData.member.plan.maxSavedSubjects, 100);
     assert.ok(sessionData.member.features.includes('six_pillars'));
     assert.ok(sessionData.member.features.includes('saved_subjects'));
@@ -318,10 +321,10 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     assert.match(html, /初回販売テストの手順/);
     assert.match(html, /無料登録と同じメールアドレスでSTORESの商品を購入/);
     assert.match(html, /実際の決済が完了するまでは「購入を反映」を押さない/);
-    assert.match(html, /ご紹介用/);
-    assert.match(html, /4商品すべての商品IDを設定済み/);
-    assert.match(html, /販売導線は0\/4商品でON/);
-    assert.match(html, /6a7db1d62ca89ea7083f4a47/);
+    assert.match(html, /ご紹介者/);
+    assert.match(html, /0\/7商品を設定済み/);
+    assert.match(html, /受講生・卒業生/);
+    assert.match(html, /卒業生・サイト＋勉強会/);
   }, {authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}), listMemberUsage});
 
   await withServer(async base => {
@@ -390,11 +393,11 @@ test('管理者画面から会員プランと利用状態を安全に変更す�
     const token = html.match(/name="token" value="([^"]+)"/)[1];
     const response = await fetch(`${base}/members/admin/access`, {
       method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({token, targetUserId: targetId, planId: 'premium', accountStatus: 'suspended'}),
+      body: new URLSearchParams({token, targetUserId: targetId, planId: 'premium', audienceType: 'graduate', accountStatus: 'suspended'}),
     });
     assert.equal(response.status, 303);
     assert.equal(response.headers.get('location'), '/members/admin?saved=1');
-    assert.deepEqual(received, {actorUserId: adminId, targetUserId: targetId, planId: 'premium', accountStatus: 'suspended'});
+    assert.deepEqual(received, {actorUserId: adminId, targetUserId: targetId, planId: 'premium', audienceType: 'graduate', accountStatus: 'suspended'});
   }, dependencies);
 });
 
@@ -735,15 +738,14 @@ test('管理者は購入者の招待とSTORES契約台帳への記録を一度�
   }, dependencies);
 });
 
-test('管理者は登録済み会員の購入を契約台帳と利用プランへ同時に反映できる', async () => {
+test('管理者は登録済み会員の購入を契約台帳へ反映し合成済み利用プランを採用できる', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const memberId = '22222222-2222-4222-8222-222222222222';
-  let contractInput = null, accessInput = null;
+  let contractInput = null;
   const dependencies = {
     authenticateMember: async () => ({ok: true, member: {id: adminId, email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}),
     listMemberUsage: async () => ({ok: true, members: [{id: memberId, display_name: '既存会員A', role: 'member', plan_id: 'free', account_status: 'active', saved_subject_count: 0, last_login_at: null}]}),
-    recordManualSubscription: async input => { contractInput = input; return {ok: true, status: 'recorded'}; },
-    updateMemberAccess: async input => { accessInput = input; return {ok: true, status: 'updated'}; },
+    recordManualSubscription: async input => { contractInput = input; return {ok: true, status: 'recorded', accessPlanId: 'starter'}; },
   };
   await withServer(async base => {
     const login = await fetch(`${base}/members/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'email=admin%40example.com&password=correct'});
@@ -761,7 +763,6 @@ test('管理者は登録済み会員の購入を契約台帳と利用プラン�
     assert.equal(response.headers.get('location'), '/members/admin?contractCreated=1');
     assert.equal(contractInput.memberUserId, memberId);
     assert.equal(contractInput.planId, 'starter');
-    assert.deepEqual(accessInput, {actorUserId: adminId, targetUserId: memberId, planId: 'starter', accountStatus: 'active'});
   }, dependencies);
 });
 

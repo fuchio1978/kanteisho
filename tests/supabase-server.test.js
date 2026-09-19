@@ -147,6 +147,8 @@ test('契約期限切れへの更新は会員を削除せずフリープラン�
   const requests = [];
   const responses = [
     {ok: true, status: 200, json: async () => [{id: subscriptionId, member_user_id: memberUserId, plan_id: 'premium', status: 'expired'}]},
+    {ok: true, status: 200, json: async () => [{id: memberUserId, audience_type: 'general'}]},
+    {ok: true, status: 200, json: async () => [{plan_id: 'premium', status: 'expired', current_period_ends_at: '2026-08-19T00:00:00.000Z'}]},
     {ok: true, status: 204, json: async () => null},
     {ok: true, status: 201, json: async () => null},
   ];
@@ -156,9 +158,9 @@ test('契約期限切れへの更新は会員を削除せずフリープラン�
   });
   assert.equal(result.ok, true);
   assert.equal(result.accessPlanId, 'free');
-  assert.deepEqual(JSON.parse(requests[1].options.body), {plan_id: 'free', account_status: 'active'});
-  assert.equal(JSON.parse(requests[2].options.body).action, 'manual_subscription_updated');
-  assert.equal(JSON.parse(requests[2].options.body).details.access_plan_id, 'free');
+  assert.deepEqual(JSON.parse(requests[3].options.body), {plan_id: 'free', account_status: 'active'});
+  assert.equal(JSON.parse(requests[4].options.body).action, 'manual_subscription_updated');
+  assert.equal(JSON.parse(requests[4].options.body).details.access_plan_id, 'free');
 });
 
 test('1か月更新は現在の更新日が一致する契約だけを変更して二重更新を防ぐ', async () => {
@@ -215,7 +217,7 @@ test('Supabase Authで本人確認後に有効な会員プロフィールだけ�
     ok: true,
     status: 'authenticated',
     member: {
-      id: 'user-1', email: 'member@example.com', displayName: 'テスト会員', role: 'member', planId: 'standard',
+      id: 'user-1', email: 'member@example.com', displayName: 'テスト会員', role: 'member', planId: 'standard', audienceType: 'general',
     },
   });
   assert.match(requests[0].url, /\/auth\/v1\/token\?grant_type=password/);
@@ -338,6 +340,7 @@ test('管理者によるプラン変更は会員プロフィールと監査記�
     actorUserId,
     targetUserId,
     planId: 'premium',
+    audienceType: 'graduate',
     accountStatus: 'active',
     env: validEnv,
     fetchImpl: async (url, options) => {
@@ -349,7 +352,7 @@ test('管理者によるプラン変更は会員プロフィールと監査記�
   assert.equal(result.status, 'updated');
   assert.match(requests[0].url, /id=eq\.22222222/);
   assert.match(requests[0].url, /role=eq\.member/);
-  assert.deepEqual(JSON.parse(requests[0].options.body), {plan_id: 'premium', account_status: 'active'});
+  assert.deepEqual(JSON.parse(requests[0].options.body), {plan_id: 'premium', audience_type: 'graduate', account_status: 'active'});
   assert.match(requests[1].url, /admin_audit_logs/);
   assert.equal(JSON.parse(requests[1].options.body).action, 'member_access_updated');
 });
@@ -378,7 +381,7 @@ test('管理者の招待はSupabase Authへメールを送り会員を招待中�
   assert.equal(result.status, 'invited');
   assert.match(requests[0].url, /\/auth\/v1\/invite\?redirect_to=/);
   assert.deepEqual(JSON.parse(requests[0].options.body), {email: 'customer@example.com', data: {display_name: '購入者A'}});
-  assert.deepEqual(JSON.parse(requests[1].options.body), {display_name: '購入者A', plan_id: 'premium', account_status: 'invited'});
+  assert.deepEqual(JSON.parse(requests[1].options.body), {display_name: '購入者A', plan_id: 'premium', audience_type: 'general', account_status: 'invited'});
   assert.equal(JSON.parse(requests[2].options.body).action, 'member_invited');
 });
 
@@ -398,7 +401,7 @@ test('共同管理者の招待は専用の管理者権限を設定して監査�
   });
   assert.equal(result.status, 'invited');
   assert.deepEqual(JSON.parse(requests[0].options.body), {email: 'zasso2nd@gmail.com', data: {display_name: '共同管理者'}});
-  assert.deepEqual(JSON.parse(requests[1].options.body), {display_name: '共同管理者', plan_id: 'admin', account_status: 'invited', role: 'admin'});
+  assert.deepEqual(JSON.parse(requests[1].options.body), {display_name: '共同管理者', plan_id: 'admin', audience_type: 'admin', account_status: 'invited', role: 'admin'});
   assert.equal(JSON.parse(requests[2].options.body).action, 'admin_invited');
 });
 
@@ -439,6 +442,9 @@ test('管理者はSTORES購入情報を招待会員の契約台帳へ手動記�
   const requests = [];
   const responses = [
     {ok: true, status: 201, json: async () => [{id: 'subscription-one', stores_order_id: 'ORDER-100'}]},
+    {ok: true, status: 200, json: async () => [{id: memberUserId, audience_type: 'general'}]},
+    {ok: true, status: 200, json: async () => [{plan_id: 'premium', status: 'active', current_period_ends_at: '2026-09-19T00:00:00.000Z'}]},
+    {ok: true, status: 204, json: async () => null},
     {ok: true, status: 201, json: async () => null},
   ];
   const result = await recordManualSubscription({
@@ -454,7 +460,7 @@ test('管理者はSTORES購入情報を招待会員の契約台帳へ手動記�
   assert.equal(subscription.stores_order_id, 'ORDER-100');
   assert.equal(subscription.purchaser_email, 'customer@example.com');
   assert.equal(subscription.source_payload.source, 'manual_admin');
-  assert.equal(JSON.parse(requests[1].options.body).action, 'manual_subscription_recorded');
+  assert.equal(JSON.parse(requests[4].options.body).action, 'manual_subscription_recorded');
   assert.equal((await recordManualSubscription({actorUserId, memberUserId, email: 'customer@example.com', planId: 'free', storesOrderId: 'ORDER-101', currentPeriodStartedAt: '2026-08-19', currentPeriodEndsAt: '2026-09-19'})).status, 'invalid_subscription');
 });
 
