@@ -789,6 +789,19 @@ test('六柱の強中弱では大運支を月支、年運支を年支と同じ�
   assert.equal(context.api.fiveElementStrengths(annualSide, [['戊', '子'], ['己', '寅']]).wood, '中', '年運支の寅は月支側として扱わない');
 });
 
+test('五行変化で寅が木を失った場合は乙の通根に数えず木を弱と判定する', () => {
+  const pillars = {
+    year: ['丁', '丑'], month: ['戊', '申'], day: ['丙', '午'], hour: ['庚', '寅'],
+  };
+  const luck = ['乙', '巳'], annual = ['丙', '午'];
+  const resolution = context.api.resolveSixPillarFiveElements(pillars, luck, annual);
+  assert.equal(context.api.branchStateScores(resolution.states[0]).wood, 0, '時支の寅は木を失う');
+  assert.ok(context.api.branchStateScores(resolution.states[0]).fire > 0, '時支の寅は火へ変化する');
+  assert.equal(context.api.fiveElementStrengths(pillars, [luck, annual]).wood, '中', '変化前は乙と寅で通根する');
+  assert.equal(context.api.fiveElementStrengths(pillars, [luck, annual], resolution.states).wood, '弱', '変化後は通根なし');
+  assert.equal(context.api.sixElementScores(pillars, luck, annual, resolution).elementStrengths.wood, '弱');
+});
+
 test('推命気温は五行の強中弱と月支温度を表どおり合算する', () => {
   const allStrong = context.api.destinyTemperature(
     { wood: '強', fire: '強', earth: '強', metal: '強', water: '強' }, ['巳'],
