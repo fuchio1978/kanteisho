@@ -35,6 +35,18 @@ function calculate(date, time, localOffset, sex, unknown = false) {
   return { text, apparent, luck: context.api.getLuckCycles(input, pillars), input, pillars };
 }
 
+test('南半球は月柱と年柱の天干を維持し地支だけを対冲へ変更する', () => {
+  const northern = calculate('1988-12-10', '12:00', 0, '女性');
+  const southernInput = { ...northern.input, hemisphere: 'south' };
+  const southern = context.api.getPillars(southernInput);
+  assert.deepEqual([...northern.pillars.month], ['甲', '子']);
+  assert.deepEqual([...northern.pillars.year], ['戊', '辰']);
+  assert.deepEqual([...southern.month], ['甲', '午']);
+  assert.deepEqual([...southern.year], ['戊', '戌']);
+  assert.deepEqual([...southern.day], [...northern.pillars.day]);
+  assert.deepEqual([...southern.hour], [...northern.pillars.hour]);
+});
+
 test('会員版は受け取った権限からプラン別の表示範囲を決める', () => {
   const free = context.api.memberFeatureVisibility(['original_chart']);
   assert.deepEqual({...free}, {fiveElements:false,luckCycles:false,annualFortune:false,sixPillars:false,pdfReport:false,savedSubjects:false,changeEvidence:false,compatibility:false});
