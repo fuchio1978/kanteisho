@@ -324,7 +324,7 @@ function applyNearbyStemStamps(values,stemResolution){const dayStem=values[1]?.[
 function resolveNatalFiveElements(p){
   const values=[p.hour,p.day,p.month,p.year],states=values.map((value,index)=>makeBranchState(value?.[1],index===2?'major':'minor',index));
   const stemScores=EMPTY_SCORES(),stemElements=[];for(const value of values)if(value){const element=ELEMENT_BY_CHAR[value[0]];stemScores[element]++;stemElements.push(element)}
-  const notes=applyNatalBranchTransformations(states,stemScores,p.month?.[1],stemElements),stemResolution=resolveStemTransformations(values,states);notes.push(...stemResolution.notes);applyFireEarthRoot(states,stemResolution.elements.includes('earth'));
+  const notes=applyNatalBranchTransformations(states,stemScores,p.month?.[1],stemElements);applyFireEarthRoot(states,stemElements.includes('earth'));const stemResolution=resolveStemTransformations(values,states);notes.push(...stemResolution.notes);applyFireEarthRoot(states,stemResolution.elements.includes('earth'));
   applyNearbyStemStamps(values,stemResolution);
   return{states,stemScores:stemResolution.scores,stemElements:stemResolution.elements,stemStamps:stemResolution.stamps,stemStampElements:stemResolution.stampElements,scores:sumStateScores(states,stemResolution.scores),notes};
 }
@@ -337,7 +337,7 @@ function sixModeRelationFactor(a,b){return a>=4||b>=4?1:relationFactor(a,b)}
 function resolveSixPillarFiveElements(p,luckValue,annualValue){
   const values=[p.hour,p.day,p.month,p.year,luckValue,annualValue],states=values.map((value,index)=>makeBranchState(value?.[1],[2,4].includes(index)?'major':'minor',index));
   const stemScores=EMPTY_SCORES(),stemElements=[];for(const value of values)if(value){const element=ELEMENT_BY_CHAR[value[0]];stemScores[element]++;stemElements.push(element)}
-  const pairs=sixModeAdjacentPairs(values),notes=applyNatalBranchTransformations(states,stemScores,p.month?.[1],stemElements,{adjacentPairs:pairs,relationFactor:sixModeRelationFactor}),stemResolution=resolveStemTransformations(values,states,{adjacentPairs:pairs});notes.push(...stemResolution.notes);applyFireEarthRoot(states,stemResolution.elements.includes('earth'));applyNearbyStemStamps(values,stemResolution);
+  const pairs=sixModeAdjacentPairs(values),notes=applyNatalBranchTransformations(states,stemScores,p.month?.[1],stemElements,{adjacentPairs:pairs,relationFactor:sixModeRelationFactor});applyFireEarthRoot(states,stemElements.includes('earth'));const stemResolution=resolveStemTransformations(values,states,{adjacentPairs:pairs});notes.push(...stemResolution.notes);applyFireEarthRoot(states,stemResolution.elements.includes('earth'));applyNearbyStemStamps(values,stemResolution);
   return{values,states,stemScores:stemResolution.scores,stemElements:stemResolution.elements,stemStamps:stemResolution.stamps,stemStampElements:stemResolution.stampElements,scores:sumStateScores(states,stemResolution.scores),notes};
 }
 function cloneBranchState(state,index=state.index){return{...state,index,fixed:{...state.fixed},flex:state.flex.map(part=>({...part})),overlays:{...state.overlays},transformations:[...state.transformations],stamps:[...state.stamps],relations:state.relations.map(relation=>({...relation}))}}

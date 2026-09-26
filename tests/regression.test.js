@@ -1553,6 +1553,18 @@ test('干合は隣接・地支4点・漏財官3点以下を満たすと化気す
   assert.equal(model[0].cells[0].element, 'earth');
 });
 
+test('既存土干による火土同根を先に反映して甲己干合の化気を判定する', () => {
+  const pillars = {
+    hour: ['甲', '午'], day: ['丙', '辰'], month: ['己', '巳'], year: ['甲', '寅'],
+  };
+  const result = context.api.resolveNatalFiveElements(pillars);
+  assert.deepEqual(Array.from(result.stemElements), ['wood', 'fire', 'earth', 'earth']);
+  assert.ok(result.notes.some(note => note.startsWith('干合(己・甲)→earth')));
+  const model = context.api.originalPillarModel(pillars);
+  assert.equal(model[3].cells[0].transformedChar, '戊');
+  assert.equal(model[2].cells[0].transformedChar, null);
+});
+
 test('化金は漏財官の各点ではなく合計が3点以下のときだけ成立する', () => {
   const base = calculate('1981-11-15', '19:27', 16, '女性');
   const natalValues = [base.pillars.hour, base.pillars.day, base.pillars.month, base.pillars.year];
