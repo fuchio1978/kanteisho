@@ -207,6 +207,28 @@
         <button class="primary pdf-download-button" id="pdfDownloadButton" type="button">PDFとして保存 <span>↓</span></button>
         <p class="pdf-save-note">印刷画面が開いたら、送信先で「PDFに保存」を選択してください。</p>
       </section>
+      <section class="private-report-section" id="privateReportSection" aria-labelledby="privateReportTitle" hidden>
+        <div class="private-report-heading">
+          <div><span>ADMIN PRIVATE REPORT</span><h2 id="privateReportTitle">私用鑑定書PDF</h2><p>原命式・出力時点の年・指定年を、画像貼り付け用の空白を残してA4横1枚にまとめます。</p></div>
+          <label class="private-report-year-control"><span>指定年</span><select id="privateReportYearInput" aria-label="私用鑑定書に掲載する指定年"></select></label>
+        </div>
+        <div class="private-report-preview-wrap">
+          <article class="private-report" id="privateReport" aria-label="私用鑑定書PDFプレビュー">
+            <div class="private-report-left">
+              <header class="private-report-person"><strong id="privateReportName"></strong><span id="privateReportMeta"></span></header>
+              <section class="private-reading-row"><h3>原命式</h3><div class="pillars private-report-pillars" id="privateOriginalPillars"></div><div class="five-elements-chart private-report-elements" id="privateOriginalElements"></div></section>
+              <section class="private-reading-row"><h3 id="privateCurrentTitle"></h3><div class="pillars private-report-pillars" id="privateCurrentPillars"></div><div class="five-elements-chart private-report-elements" id="privateCurrentElements"></div></section>
+              <section class="private-reading-row"><h3 id="privateSelectedTitle"></h3><div class="pillars private-report-pillars" id="privateSelectedPillars"></div><div class="five-elements-chart private-report-elements" id="privateSelectedElements"></div></section>
+            </div>
+            <div class="private-report-right">
+              <div class="private-image-placeholders" aria-label="画像貼り付け用の空白"><div class="private-image-placeholder"></div><div class="private-image-placeholder"></div></div>
+              <section class="private-cycle-panel"><div class="pdf-cycle-grid pdf-luck-grid" id="privateLuckGrid"></div><div class="pdf-cycle-grid pdf-annual-grid" id="privateAnnualGrid"></div></section>
+            </div>
+          </article>
+        </div>
+        <button class="primary private-report-print-button" id="privateReportPrintButton" type="button">私用鑑定書をPDF保存 <span>↓</span></button>
+        <p class="pdf-save-note">管理者だけに表示されます。印刷画面の送信先で「PDFに保存」を選択してください。</p>
+      </section>
       <section class="compatibility-section" id="compatibilitySection" aria-labelledby="compatibilityTitle" hidden>
         <div class="compatibility-heading">
           <div>

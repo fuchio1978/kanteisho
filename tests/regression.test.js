@@ -20,7 +20,7 @@ const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
   dataSource + '\n' + source.replace(/init\(\);\s*$/, '') +
-    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,westernDateFromInput,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,savedSubjectReading,compatibilityYearOptions,reorderedIds,ELEMENT_BY_CHAR};',
+    ';globalThis.api={getPillars,getLuckCycles,equationOfTime,japanSummerTimeCorrection,correctedBirthTime,utcDate,westernDateFromCalendar,eraDateFromWestern,westernDateFromInput,ageOnDate,originalPillarModel,sixPillarModel,elementColumnsModel,natalElementScores,sixElementScores,bodyStrengthAnalysis,fiveElementStrengths,destinyTemperature,useGodFromStrengths,elementCircleDiameters,formatScore,makeBranchState,branchStateScores,resolveNatalFiveElements,resolveSixPillarFiveElements,resolveDownstreamBranch,resolveDownstreamPillar,downstreamPillarColumn,resolveStemTransformations,applyNatalBranchTransformations,annualPillarForYear,selectedLuckForYear,annualRelationLuckForYear,sixYearOptions,buildSixPillarContext,annualWindowYears,pdfFortuneCycleContext,pdfReportContext,privateReportContext,standardChartContext,monthlyHiddenStemForBranch,tenGod,twelveFortune,voidBranches,hiddenStemModel,originalCellClasses,outlinePathForRects,connectedOutlineRects,memberFeatureVisibility,savedSubjectReading,compatibilityYearOptions,reorderedIds,ELEMENT_BY_CHAR};',
   context,
 );
 
@@ -34,6 +34,33 @@ function calculate(date, time, localOffset, sex, unknown = false) {
   const text = [pillars.hour, pillars.day, pillars.month, pillars.year].map(x => x ? x.join('') : '？').join(' ');
   return { text, apparent, luck: context.api.getLuckCycles(input, pillars), input, pillars };
 }
+
+test('管理者専用の私用鑑定書を既存PDFとは独立してA4横1枚で出力する', () => {
+  const html = fs.readFileSync(require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
+  const css = fs.readFileSync(require('node:path').join(__dirname, '..', 'styles.css'), 'utf8');
+  assert.match(html, /id="privateReportSection"[^>]*hidden/);
+  assert.match(html, /id="privateReportYearInput"/);
+  assert.match(html, /id="privateReportPrintButton"/);
+  assert.equal((html.match(/class="private-image-placeholder"/g) || []).length, 2);
+  assert.match(source, /data\.member\.role==='admin'\|\|data\.member\.planId==='admin'/);
+  assert.match(source, /classList\.add\('printing-private-report'\)/);
+  assert.match(css, /body\.printing-private-report \.private-report\{display:grid!important;width:297mm;height:210mm/);
+});
+
+test('私用鑑定書は出力日の満年齢と原命式・その年・指定年を使う', () => {
+  const base = calculate('1973-12-24', '13:30', -17, '女性');
+  const beforeBirthday = new Date(2026, 11, 23, 12, 0, 0);
+  const onBirthday = new Date(2026, 11, 24, 12, 0, 0);
+  assert.equal(context.api.ageOnDate(base.input, beforeBirthday), 52);
+  assert.equal(context.api.ageOnDate(base.input, onBirthday), 53);
+  const report = context.api.privateReportContext(base.input, base.pillars, 2025, beforeBirthday);
+  assert.equal(report.currentYear, 2026);
+  assert.equal(report.selectedYear, 2025);
+  assert.equal(report.age, 52);
+  assert.equal(report.natalModel.length, 4);
+  assert.ok(report.current.model.length >= 5);
+  assert.ok(report.selected.model.length >= 5);
+});
 
 test('南半球は月柱と年柱の天干を維持し地支だけを対冲へ変更する', () => {
   const northern = calculate('1988-12-10', '12:00', 0, '女性');
