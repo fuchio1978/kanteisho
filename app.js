@@ -110,18 +110,22 @@ function lockFlexibleAmount(state,amount,priority){
 }
 function applyTransformationDemands(states,demands,budgets,priority,label){
   const usable=demands.filter(demand=>demand.amount>0&&!states[demand.source].canceled&&!states[demand.target].canceled&&(demand.consumeSource===false||budgets[demand.source]>0)&&eligibleFlexibleAmount(states[demand.target],priority)>0);
-  const availableBudgets=[...budgets];
+  const availableBudgets=[...budgets],incomingCapacityCaps=new Map();
   for(let target=0;target<states.length;target++){
     const native=nativeTransformElement(states[target].char);
     const nativeFlexible=states[target].flex.filter(part=>part.element===native&&part.priority>=priority).reduce((sum,part)=>sum+part.amount,0);
-    const incoming=usable.filter(demand=>demand.target===target&&!demand.dualEarth&&demand.element!==native).reduce((sum,demand)=>sum+Math.min(demand.amount,budgets[demand.source]||0),0);
-    availableBudgets[target]=Math.max(0,availableBudgets[target]-Math.min(nativeFlexible,incoming));
+    const incomingByEffect={};for(const demand of usable.filter(demand=>demand.target===target&&!demand.dualEarth&&demand.element!==native))incomingByEffect[demand.element]=Math.max(incomingByEffect[demand.element]||0,Math.min(demand.amount,budgets[demand.source]||0));
+    const incoming=Object.values(incomingByEffect).reduce((sum,amount)=>sum+amount,0);
+    const outgoing=usable.filter(demand=>demand.source===target&&demand.consumeSource!==false).reduce((sum,demand)=>sum+demand.amount,0);
+    const incomingShare=incoming>0&&outgoing>0?Math.min(nativeFlexible,incoming)*incoming/(incoming+outgoing):Math.min(nativeFlexible,incoming);
+    availableBudgets[target]=Math.max(0,availableBudgets[target]-incomingShare);
+    if(incoming>0&&outgoing>0)incomingCapacityCaps.set(target,incomingShare);
   }
   const bySource=new Map();for(const demand of usable){if(!bySource.has(demand.source))bySource.set(demand.source,[]);bySource.get(demand.source).push(demand)}
   for(const [source,items] of bySource){let remaining=availableBudgets[source];items.sort((a,b)=>(a.targetOrder??a.priority??priority)-(b.targetOrder??b.priority??priority)||a.target-b.target);for(const item of items){item.provisional=item.consumeSource===false?item.amount:Math.min(item.amount,remaining);if(item.consumeSource!==false)remaining-=item.provisional}}
   const byTarget=new Map();for(const demand of usable)if(demand.provisional>0){if(!byTarget.has(demand.target))byTarget.set(demand.target,[]);byTarget.get(demand.target).push(demand)}
   for(let index=0;index<budgets.length;index++)budgets[index]=Math.min(budgets[index],availableBudgets[index]);
-  for(const [target,items] of byTarget){const state=states[target],capacity=eligibleFlexibleAmount(state,priority),sourceTier=source=>source<4?0:source===4?1:2,tierGroups=new Map();
+  for(const [target,items] of byTarget){const state=states[target],capacity=Math.min(eligibleFlexibleAmount(state,priority),incomingCapacityCaps.get(target)??Infinity),sourceTier=source=>source<4?0:source===4?1:2,tierGroups=new Map();
     for(const item of items){const tier=item.equalSourceTier?0:sourceTier(item.source);if(!tierGroups.has(tier))tierGroups.set(tier,[]);tierGroups.get(tier).push(item)}
     let remainingCapacity=capacity;
     for(const tierItems of [...tierGroups.entries()].sort((a,b)=>a[0]-b[0]).map(entry=>entry[1])){const requested=tierItems.reduce((sum,item)=>sum+item.provisional,0),scale=requested>remainingCapacity?remainingCapacity/requested:1,effectGroups=new Map();for(const item of tierItems){const key=`${item.dualEarth?'dual':'normal'}:${item.element}`;if(!effectGroups.has(key))effectGroups.set(key,[]);effectGroups.get(key).push(item)}for(const group of effectGroups.values()){let allowance=group.reduce((sum,item)=>sum+item.provisional,0)*scale;for(const item of group){item.actual=Math.min(item.provisional,allowance);allowance-=item.actual}}remainingCapacity=Math.max(0,remainingCapacity-tierItems.reduce((sum,item)=>sum+(item.actual||0),0))}
@@ -140,7 +144,7 @@ function applyFormation(states,entries,priority,label,condition=()=>true,amount=
   for(const [element,chars] of entries){const indices=findFormation(states,chars,excluded);if(!indices||!condition(element,chars,indices))continue;
     const resolvedLabel=typeof label==='function'?label(element):label;
     const changedByIndex={};
-    for(const index of indices){changedByIndex[index]=assignFlexible(states[index],element,amount,priority,resolvedLabel);if(Number.isFinite(amount)&&!resolvedLabel.startsWith('三合'))for(const part of states[index].flex)part.priority=Math.min(part.priority,priority);states[index].transformations.push(resolvedLabel);addStateStamp(states[index],resolvedLabel);addStateRelation(states[index],{type:'formation',label:resolvedLabel,element})}
+    for(const index of indices){changedByIndex[index]=assignFlexible(states[index],element,amount,priority,resolvedLabel);if(resolvedLabel==='南方合'&&states[index].char==='未'&&changedByIndex[index]>0)overlayAtLeast(states[index],'earth',changedByIndex[index],resolvedLabel);if(Number.isFinite(amount)&&!resolvedLabel.startsWith('三合'))for(const part of states[index].flex)part.priority=Math.min(part.priority,priority);states[index].transformations.push(resolvedLabel);addStateStamp(states[index],resolvedLabel);addStateRelation(states[index],{type:'formation',label:resolvedLabel,element})}
     return{element,chars,indices,label:resolvedLabel,priority,changedByIndex};
   }
   return null;
@@ -201,7 +205,7 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
       const centerByElement={water:'子',wood:'卯',fire:'午',metal:'酉'},source=complete.indices.find(index=>states[index].char===centerByElement[complete.element]);
       if(source!==undefined){
         if(complete.label==='亡神'||complete.label.startsWith('三合')){const changed=Object.values(complete.changedByIndex).reduce((sum,amount)=>sum+amount,0);if(changed>0)formationBudgets[source]=Math.max(0,formationBudgets[source]-Math.min(1,formationBudgets[source]));}
-        else if(['北方合','東方合','南方合','西方合'].includes(complete.label)){const changed=complete.indices.reduce((sum,index)=>sum+states[index].transformations.reduce((partSum,item)=>{const match=item.match(new RegExp(`^${complete.label}:${complete.element}([\\d.]+)$`));return partSum+(match?Number(match[1]):0)},0),0);formationBudgets[source]=Math.max(0,formationBudgets[source]-Math.min(changed,formationBudgets[source]))}
+        else if(['北方合','東方合','南方合','西方合'].includes(complete.label)){const changed=complete.indices.reduce((sum,index)=>sum+states[index].transformations.reduce((partSum,item)=>{const match=item.match(new RegExp(`^${complete.label}:${complete.element}([\\d.]+)$`));return partSum+(match?Number(match[1]):0)},0),0),unchanged=complete.indices.filter(index=>(complete.changedByIndex[index]||0)<=1e-9),sponsor=unchanged.reduce((best,index)=>formationBudgets[index]>formationBudgets[best]?index:best,source);formationBudgets[sponsor]=Math.max(0,formationBudgets[sponsor]-Math.min(changed,formationBudgets[sponsor]))}
       }
       if(complete.label.startsWith('疑似')){const changed=Object.values(complete.changedByIndex).reduce((sum,amount)=>sum+amount,0),pseudoCenter=complete.indices[1];if(changed>0)formationBudgets[pseudoCenter]=Math.max(0,formationBudgets[pseudoCenter]-Math.min(1,formationBudgets[pseudoCenter]))}
       notes.push(`${complete.label}(${complete.chars.join('・')})→${complete.element}`);
@@ -257,7 +261,7 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
   for(const [a,b] of pairs){
     if(blockedPairs.has(pairId(a,b)))continue;const first=states[a],second=states[b],key=PAIR_KEY(first.char,second.char),byChar=char=>first.char===char?first:second;
     if((['巳','午'].includes(first.char)&&['丑','辰'].includes(second.char))||(['巳','午'].includes(second.char)&&['丑','辰'].includes(first.char))){
-      const source=['巳','午'].includes(first.char)?a:b,target=source===a?b:a;soilDemands.push({source,target,element:'earth',amount:1,sourceOverlay:'earth',targetOrder:soilTargetOrder(target)});
+      const source=['巳','午'].includes(first.char)?a:b,target=source===a?b:a;soilDemands.push({source,target,element:'earth',amount:states[source].role==='major'?budgets[source]:1,sourceOverlay:'earth',targetOrder:soilTargetOrder(target)});
     }else if((first.char==='未'&&['丑','辰','戌'].includes(second.char))||(second.char==='未'&&['丑','辰','戌'].includes(first.char))){
       const source=first.char==='未'?a:b,target=source===a?b:a;if(states[source].role==='major')soilDemands.push({source,target,element:'earth',amount:1,targetOrder:soilTargetOrder(target)});
     }

@@ -504,6 +504,29 @@ test('六柱推命モードは半方合と半会を同順位で配分する', ()
   assert.equal(result.states[2].remainingTransformCapacity, 3);
 });
 
+test('寅が半会を受けながら辰への半方合を起こし南方合は変化余力の大きい支が担う', () => {
+  const pillars = { hour: ['庚', '午'], day: ['甲', '寅'], month: ['庚', '辰'], year: ['庚', '午'] };
+  const natal = context.api.resolveNatalFiveElements(pillars);
+  assert.deepEqual({...context.api.branchStateScores(natal.states[1])},{wood:0.5,fire:0.5,earth:0,metal:0,water:0});
+  assert.equal(context.api.branchStateScores(natal.states[2]).wood,0.5);
+  assert.equal(context.api.branchStateScores(natal.states[2]).earth,1);
+  assert.equal(context.api.branchStateScores(natal.states[3]).earth,1);
+
+  const six = context.api.resolveSixPillarFiveElements(pillars, ['辛', '巳'], ['癸', '未']);
+  const expected = [
+    {fire:1},
+    {wood:0.5,fire:0.5},
+    {wood:0.5,earth:2.5},
+    {fire:1,earth:1},
+    {fire:3,earth:1.5},
+    {fire:1,earth:1}
+  ];
+  expected.forEach((scores,index)=>Object.entries(scores).forEach(([element,amount])=>assert.equal(context.api.branchStateScores(six.states[index])[element],amount,`${index}:${element}`)));
+  assert.ok(six.states[1].relations.some(relation=>relation.label==='半会'&&relation.amount===0.5));
+  assert.ok(six.states[2].relations.some(relation=>relation.label==='半方合'&&relation.amount===0.5));
+  assert.equal(six.states[4].remainingTransformCapacity,0.5);
+});
+
 test('巳午の半方合は変化力を消費せず午から戌への半会を続ける', () => {
   const pillars = { hour: ['甲', '辰'], day: ['壬', '子'], month: ['庚', '戌'], year: ['丁', '巳'] };
   const result = context.api.resolveSixPillarFiveElements(pillars, ['乙', '巳'], ['丙', '午']);
@@ -1641,12 +1664,14 @@ test('妬合は化気させない', () => {
   assert.equal(result.notes.some(note => note.startsWith('干合')), false);
 });
 
-test('亥が卯との半会で木化した場合は水化力を失い丑を水化しない', () => {
+test('亥が卯との半会を受けながら丑への半方合も按分して起こす', () => {
   const result = context.api.resolveNatalFiveElements({
     hour: ['乙', '丑'], day: ['甲', '辰'], month: ['乙', '卯'], year: ['癸', '亥'],
   });
-  assert.deepEqual({ ...context.api.branchStateScores(result.states[0]) }, { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 });
-  assert.deepEqual({ ...context.api.branchStateScores(result.states[3]) }, { wood: 1, fire: 0, earth: 0, metal: 0, water: 0 });
-  assert.equal(result.states[0].relations.some(relation => relation.direction === 'in' && relation.element === 'water'), false);
+  const ox=context.api.branchStateScores(result.states[0]),boar=context.api.branchStateScores(result.states[3]);
+  assert.ok(Math.abs(ox.water-0.2)<1e-9);
+  assert.ok(Math.abs(boar.wood-0.8)<1e-9);
+  assert.ok(Math.abs(boar.water-0.2)<1e-9);
+  assert.equal(result.states[0].relations.some(relation => relation.direction === 'in' && relation.element === 'water' && Math.abs(relation.amount-0.2)<1e-9), true);
   assert.equal(result.states[3].remainingTransformCapacity, 0);
 });
