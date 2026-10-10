@@ -224,7 +224,7 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
     if(key==='亥寅'&&!cold&&branchTotals.wood>=4&&branchTotals.water<=1)supportDemands.push({source:indexOf('寅'),target:indexOf('亥'),element:'wood',amount:1});
     if(key==='辰酉')supportDemands.push({source:indexOf('酉'),target:indexOf('辰'),element:'metal',amount:states[indexOf('酉')].capacity});
     if(key==='巳申'&&!hot&&branchTotals.metal>=4&&branchTotals.fire<=1)supportDemands.push({source:indexOf('申'),target:indexOf('巳'),element:'metal',amount:1});
-    if(key==='午未')supportDemands.push({source:indexOf('午'),target:indexOf('未'),element:'fire',amount:1,dualEarth:true});
+    if(key==='午未')supportDemands.push({source:indexOf('午'),target:indexOf('未'),element:'fire',amount:distance(a,b),dualEarth:true});
   }
   applyTransformationDemands(states,supportDemands,budgets,5,'支合');
 

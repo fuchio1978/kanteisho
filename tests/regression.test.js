@@ -1279,6 +1279,42 @@ test('支合・半会・土化の明記された変化量を反映する', () =>
   assert.equal(context.api.branchStateScores(soil[1]).earth, 1);
 });
 
+test('巳午による土化・半会・半方合は受け手だけを変え火を維持する', () => {
+  const scores={wood:0,fire:0,earth:0,metal:0,water:0};
+  const applyPair=(source,target,amount=1)=>{
+    const states=[context.api.makeBranchState(source,'minor',0),context.api.makeBranchState(target,'minor',1)];
+    context.api.applyNatalBranchTransformations(states,scores,'卯',[],{adjacentPairs:[[0,1]],relationFactor:()=>amount});
+    return states.map(state=>context.api.branchStateScores(state));
+  };
+
+  for(const source of ['巳','午'])for(const target of ['辰','丑']){
+    const [sourceScores,targetScores]=applyPair(source,target);
+    assert.equal(sourceScores.fire,1,`${source}${target}:source fire`);
+    assert.equal(sourceScores.earth,1,`${source}${target}:source earth`);
+    assert.equal(targetScores.earth,1,`${source}${target}:target earth`);
+  }
+
+  const [snake,dogBySnake]=applyPair('巳','戌');
+  assert.equal(snake.fire,1);
+  assert.equal(snake.earth,0);
+  assert.equal(dogBySnake.earth,1);
+
+  for(const amount of [1,.5,.25]){
+    const [horse,dog]=applyPair('午','戌',amount);
+    assert.equal(horse.fire,1);
+    assert.equal(horse.earth,0);
+    assert.equal(dog.fire,amount);
+    assert.equal(dog.earth,amount);
+    for(const source of ['巳','午']){
+      const [fireSource,sheep]=applyPair(source,'未',amount);
+      assert.equal(fireSource.fire,1);
+      assert.equal(fireSource.earth,0);
+      assert.equal(sheep.fire,amount);
+      assert.equal(sheep.earth,1);
+    }
+  }
+});
+
 test('半方合と半会が重なる場合は同順位で受け手の残り枠を分ける', () => {
   const states = ['子', '辰', '卯'].map((branch, index) => context.api.makeBranchState(branch, 'minor', index));
   context.api.applyNatalBranchTransformations(states, { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 }, '卯', []);
