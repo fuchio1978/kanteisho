@@ -53,6 +53,9 @@ test('管理者専用の私用鑑定書を既存PDFとは独立してA4横1枚�
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.relation-stamp\{[^}]*border:1px solid currentColor/);
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.stem-stamps\{display:none\}/);
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.branch-stamps\{[^}]*scale\(\.76\)/);
+  assert.match(css, /\.private-cycle-panel\{align-self:center;padding-top:0\}/);
+  assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.relation-stamp\{padding:2px 7px;border:0;border-radius:6px;font:600 10px\/1\.35/);
+  assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.branch-stamps\{transform:translateX\(-50%\) scale\(\.58\)/);
   assert.match(html, /保存したPDFをCanvaへアップロード/);
 });
 
