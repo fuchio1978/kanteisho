@@ -1099,6 +1099,19 @@ test('東西南北の方合・三合局・疑似局は変化可能枠へ優先�
   assert.equal(pseudo.states[1].remainingTransformCapacity, 0);
 });
 
+test('三合水局で水化した申は寅との冲と抜根をキャンセルする', () => {
+  const result = context.api.resolveNatalFiveElements({
+    hour: ['甲', '子'], day: ['甲', '申'], month: ['丙', '寅'], year: ['甲', '辰'],
+  });
+  const monkey=result.states[1];
+  assert.deepEqual({...context.api.branchStateScores(monkey)},{wood:0,fire:0,earth:0,metal:0,water:1});
+  assert.equal(monkey.canceled,false);
+  assert.ok(monkey.stamps.includes('三合水局'));
+  assert.equal(monkey.stamps.includes('冲'),false);
+  assert.equal(monkey.transformations.includes('冲・抜根'),false);
+  assert.equal(result.notes.some(note=>note==='冲(申・寅)'),false);
+});
+
 test('申亥辰の疑似水局は中心の亥1枠で申と辰を各水1にし辰の無作用2を残す', () => {
   const pseudo = context.api.resolveNatalFiveElements({
     hour: ['壬', '寅'], day: ['壬', '申'], month: ['壬', '辰'], year: ['辛', '亥'],
