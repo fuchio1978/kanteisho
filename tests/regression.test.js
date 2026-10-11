@@ -35,21 +35,25 @@ function calculate(date, time, localOffset, sex, unknown = false) {
   return { text, apparent, luck: context.api.getLuckCycles(input, pillars), input, pillars };
 }
 
-test('管理者専用の私用鑑定書を既存PDFとは独立してA4横1枚で出力する', () => {
+test('管理者専用の私用鑑定書を既存PDFとは独立して16対9のPDFとPNGで出力する', () => {
   const html = fs.readFileSync(require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
   const css = fs.readFileSync(require('node:path').join(__dirname, '..', 'styles.css'), 'utf8');
   assert.match(html, /id="privateReportSection"[^>]*hidden/);
   assert.match(html, /id="privateReportYearInput"/);
   assert.match(html, /id="privateReportPrintButton"/);
+  assert.match(html, /id="privateReportPngButton"/);
   assert.equal((html.match(/class="private-image-placeholder"/g) || []).length, 2);
   assert.match(source, /data\.member\.role==='admin'\|\|data\.member\.planId==='admin'/);
   assert.match(source, /classList\.add\('printing-private-report'\)/);
-  assert.match(css, /body\.printing-private-report \.private-report\{display:grid!important;width:297mm;height:210mm/);
-  assert.match(css, /\.private-report\{display:grid;grid-template-columns:50% 50%;width:100%;max-width:1040px;aspect-ratio:1040\/735/);
+  assert.match(css, /@page private-report-page\{size:320mm 180mm;margin:0\}/);
+  assert.match(css, /body\.printing-private-report \.private-report\{display:grid!important;width:320mm;height:180mm/);
+  assert.match(css, /\.private-report\{display:grid;grid-template-columns:50% 50%;width:100%;max-width:1040px;aspect-ratio:16\/9/);
+  assert.match(source, /canvas\.width=1920;canvas\.height=1080/);
+  assert.match(source, /privateReportDownloadName\('png'\)/);
   assert.match(css, /\.private-report-elements\{width:189px;max-width:100%/);
   assert.match(css, /\.private-report-pillars \.kanji\{height:43px;border-width:1\.5px/);
   assert.match(css, /\.private-reading-row\{[^}]*column-gap:5mm/);
-  assert.match(css, /\.private-cycle-panel\{display:grid;grid-template-rows:auto auto;align-self:start;gap:22px/);
+  assert.match(css, /\.private-cycle-panel\{display:grid;grid-template-rows:auto auto;align-self:start;gap:14px/);
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.relation-stamp\{[^}]*border:1px solid currentColor/);
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.stem-stamps\{display:none\}/);
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.branch-stamps\{[^}]*scale\(\.76\)/);
@@ -59,7 +63,7 @@ test('管理者専用の私用鑑定書を既存PDFとは独立してA4横1枚�
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.relation-stamp\{display:inline-block!important;padding:2px 7px!important;border:0!important/);
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.stamp-fire\{color:#d92121!important;background:#fff0f0!important/);
   assert.match(css, /\.private-cycle-panel \.pdf-cycle-kanji \.stamp-clash\{color:#626a70!important;background:#eceff1!important;border:0!important/);
-  assert.match(html, /保存したPDFをCanvaへアップロード/);
+  assert.match(html, /PDF・PNGとも16:9/);
 });
 
 test('私用鑑定書は出力日の満年齢と原命式・その年・指定年を使う', () => {

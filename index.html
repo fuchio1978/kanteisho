@@ -209,11 +209,11 @@
       </section>
       <section class="private-report-section" id="privateReportSection" aria-labelledby="privateReportTitle" hidden>
         <div class="private-report-heading">
-          <div><span>ADMIN PRIVATE REPORT</span><h2 id="privateReportTitle">私用鑑定書PDF</h2><p>原命式・出力時点の年・指定年を、画像貼り付け用の空白を残してA4横1枚にまとめます。</p></div>
+          <div><span>ADMIN PRIVATE REPORT</span><h2 id="privateReportTitle">私用鑑定書</h2><p>原命式・出力時点の年・指定年を、画像貼り付け用の空白を残して16:9の1枚にまとめます。</p></div>
           <label class="private-report-year-control"><span>指定年</span><select id="privateReportYearInput" aria-label="私用鑑定書に掲載する指定年"></select></label>
         </div>
         <div class="private-report-preview-wrap">
-          <article class="private-report" id="privateReport" aria-label="私用鑑定書PDFプレビュー">
+          <article class="private-report" id="privateReport" aria-label="私用鑑定書16:9プレビュー">
             <div class="private-report-left">
               <header class="private-report-person"><strong id="privateReportName"></strong><span id="privateReportMeta"></span></header>
               <section class="private-reading-row"><h3>原命式</h3><div class="pillars private-report-pillars" id="privateOriginalPillars"></div><div class="five-elements-chart private-report-elements" id="privateOriginalElements"></div></section>
@@ -226,8 +226,8 @@
             </div>
           </article>
         </div>
-        <button class="primary private-report-print-button" id="privateReportPrintButton" type="button">私用鑑定書をPDF保存 <span>↓</span></button>
-        <p class="pdf-save-note">管理者だけに表示されます。保存したPDFをCanvaへアップロードすると、A4の鮮明さを保ったまま空白枠へ画像を配置できます。</p>
+        <div class="private-report-export-buttons"><button class="primary private-report-print-button" id="privateReportPrintButton" type="button">16:9 PDFを保存 <span>↓</span></button><button class="primary private-report-png-button" id="privateReportPngButton" type="button">1920×1080 PNGを保存 <span>↓</span></button></div>
+        <p class="pdf-save-note">管理者だけに表示されます。PDF・PNGとも16:9で、Canvaの画像サイズへそのまま配置できます。</p>
       </section>
       <section class="compatibility-section" id="compatibilitySection" aria-labelledby="compatibilityTitle" hidden>
         <div class="compatibility-heading">
