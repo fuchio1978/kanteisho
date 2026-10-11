@@ -50,6 +50,9 @@ test('管理者専用の私用鑑定書を既存PDFとは独立して16対9のPD
   assert.match(css, /\.private-report\{display:grid;grid-template-columns:50% 50%;width:100%;max-width:1040px;aspect-ratio:16\/9/);
   assert.match(source, /canvas\.width=1920;canvas\.height=1080/);
   assert.match(source, /privateReportDownloadName\('png'\)/);
+  assert.match(source, /imageUrl=`data:image\/svg\+xml;charset=utf-8,\$\{encodeURIComponent\(svg\)\}`/);
+  assert.doesNotMatch(source, /createObjectURL\(new Blob\(\[svg\]/);
+  assert.match(source, /PNGを保存できませんでした。ページを再読み込みして、もう一度お試しください。/);
   assert.match(css, /\.private-report-elements\{width:189px;max-width:100%/);
   assert.match(css, /\.private-report-pillars \.kanji\{height:43px;border-width:1\.5px/);
   assert.match(css, /\.private-reading-row\{[^}]*column-gap:5mm/);
