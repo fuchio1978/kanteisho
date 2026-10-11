@@ -232,10 +232,10 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
   for(const [a,b] of pairs){
     const first=states[a],second=states[b],key=PAIR_KEY(first.char,second.char);if(!clashes.has(key)||blockedPairs.has(pairId(a,b)))continue;
     const firstElement=clashElement[first.char],secondElement=clashElement[second.char];
-    if(firstElement&&secondElement&&((branchStateScores(first)[firstElement]||0)<=1e-9||(branchStateScores(second)[secondElement]||0)<=1e-9))continue;
     notes.push(`冲(${first.char}・${second.char})`);
     addStateStamp(first,'冲');addStateStamp(second,'冲');addStateRelation(first,{type:'pair',label:'冲',partner:b});addStateRelation(second,{type:'pair',label:'冲',partner:a});
     if(key==='丑未'||key==='戌辰')continue;const totals=sumStateScores(states,stemScores);
+    if((branchStateScores(first)[firstElement]||0)<=1e-9||(branchStateScores(second)[secondElement]||0)<=1e-9)continue;
     const firstPower=totals[firstElement]||0,secondPower=totals[secondElement]||0;
     if(firstPower>=5&&secondPower<=1){second.canceled=true;budgets[b]=0;second.transformations.push('冲・抜根')}
     else if(secondPower>=5&&firstPower<=1){first.canceled=true;budgets[a]=0;first.transformations.push('冲・抜根')}
