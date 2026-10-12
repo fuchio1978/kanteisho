@@ -103,6 +103,17 @@ test('STORES通知はイベントIDで重複処理を防ぎブラウザへ公開
   assert.match(migration, /grant select, insert, update, delete on table public\.stores_webhook_events to service_role/);
 });
 
+test('決済契約台帳は既存STORES記録を保持したままPayPalへ拡張する', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202610090001_payment_provider_neutral.sql'), 'utf8');
+  assert.match(migration, /add column if not exists payment_provider text/);
+  assert.match(migration, /external_reference_id text/);
+  assert.match(migration, /payment_provider = coalesce\(payment_provider, 'stores'\)/);
+  assert.match(migration, /check \(payment_provider in \('paypal', 'stores', 'manual'\)\)/);
+  assert.match(migration, /create unique index if not exists stores_subscriptions_provider_reference_unique_idx/);
+  assert.match(migration, /create table if not exists public\.payment_webhook_events/);
+  assert.match(migration, /revoke all on public\.payment_webhook_events from anon, authenticated/);
+});
+
 test('新規会員はパスワード設定完了まで招待中として作成する', () => {
   const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202608170001_member_invitations.sql'), 'utf8');
   assert.match(migration, /alter column account_status set default 'invited'/);

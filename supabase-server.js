@@ -572,14 +572,16 @@ async function inviteAdmin(input = {}) {
   return inviteAccount({...input, role: 'admin', planId: 'admin'});
 }
 
-async function recordManualSubscription({actorUserId, memberUserId, email, planId, storesOrderId, currentPeriodStartedAt, currentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
+async function recordManualSubscription({actorUserId, memberUserId, email, planId, paymentProvider, paymentReference, storesOrderId, currentPeriodStartedAt, currentPeriodEndsAt, env = process.env, fetchImpl = globalThis.fetch, timeoutMs = 7000} = {}) {
   const userIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const paidPlans = new Set(MANAGED_PLAN_IDS.filter(planId => planId !== 'free'));
   const normalizedEmail = validMemberEmail(email);
-  const orderId = String(storesOrderId || '').trim().slice(0, 240);
+  const provider = String(paymentProvider || (storesOrderId ? 'stores' : 'manual')).trim().toLowerCase();
+  const allowedProviders = new Set(['paypal', 'stores', 'manual']);
+  const referenceId = String(paymentReference || storesOrderId || '').trim().slice(0, 240);
   const startedAt = new Date(String(currentPeriodStartedAt || ''));
   const endsAt = new Date(String(currentPeriodEndsAt || ''));
-  if (!userIdPattern.test(String(actorUserId || '')) || !userIdPattern.test(String(memberUserId || '')) || !normalizedEmail || !paidPlans.has(planId) || !orderId || !Number.isFinite(startedAt.getTime()) || !Number.isFinite(endsAt.getTime()) || startedAt > endsAt) {
+  if (!userIdPattern.test(String(actorUserId || '')) || !userIdPattern.test(String(memberUserId || '')) || !normalizedEmail || !paidPlans.has(planId) || !allowedProviders.has(provider) || !referenceId || !Number.isFinite(startedAt.getTime()) || !Number.isFinite(endsAt.getTime()) || startedAt > endsAt) {
     return {ok: false, status: 'invalid_subscription'};
   }
   const config = loadSupabaseServerConfig(env);
@@ -597,13 +599,16 @@ async function recordManualSubscription({actorUserId, memberUserId, email, planI
         member_user_id: memberUserId,
         plan_id: planId,
         status: 'active',
-        stores_item_id: `manual:${planId}`,
-        stores_order_id: orderId,
+        payment_provider: provider,
+        external_reference_id: referenceId,
+        external_subscription_id: provider === 'paypal' ? referenceId : null,
+        stores_item_id: provider === 'stores' ? `manual:${planId}` : null,
+        stores_order_id: provider === 'stores' ? referenceId : null,
         purchaser_email: normalizedEmail,
         current_period_started_at: startedAt.toISOString(),
         current_period_ends_at: endsAt.toISOString(),
         last_synced_at: new Date().toISOString(),
-        source_payload: {source: 'manual_admin'},
+        source_payload: {source: 'manual_admin', payment_provider: provider},
       }),
       signal: controller.signal,
     });
@@ -619,7 +624,7 @@ async function recordManualSubscription({actorUserId, memberUserId, email, planI
     await fetchImpl(auditUrl, {
       method: 'POST',
       headers: serverHeaders(config, {'Content-Type': 'application/json', Prefer: 'return=minimal'}),
-      body: JSON.stringify({actor_user_id: actorUserId, target_user_id: memberUserId, action: 'manual_subscription_recorded', details: {plan_id: planId, stores_order_id: orderId}}),
+      body: JSON.stringify({actor_user_id: actorUserId, target_user_id: memberUserId, action: 'manual_subscription_recorded', details: {plan_id: planId, payment_provider: provider, payment_reference: referenceId}}),
       signal: controller.signal,
     });
     return {ok: true, status: 'recorded', subscription, accessPlanId: access.planId};
@@ -705,7 +710,7 @@ async function listManualSubscriptions({env = process.env, fetchImpl = globalThi
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const subscriptionUrl = new URL('/rest/v1/stores_subscriptions', config.url);
-    subscriptionUrl.searchParams.set('select', 'id,member_user_id,plan_id,status,stores_order_id,purchaser_email,current_period_started_at,current_period_ends_at,created_at,updated_at');
+    subscriptionUrl.searchParams.set('select', 'id,member_user_id,plan_id,status,payment_provider,external_reference_id,external_subscription_id,stores_order_id,purchaser_email,current_period_started_at,current_period_ends_at,created_at,updated_at');
     subscriptionUrl.searchParams.set('order', 'created_at.desc');
     const response = await fetchImpl(subscriptionUrl, {headers: serverHeaders(config), signal: controller.signal});
     if (!response.ok) return {ok: false, status: 'subscription_unavailable'};

@@ -464,6 +464,41 @@ test('管理者はSTORES購入情報を招待会員の契約台帳へ手動記�
   assert.equal((await recordManualSubscription({actorUserId, memberUserId, email: 'customer@example.com', planId: 'free', storesOrderId: 'ORDER-101', currentPeriodStartedAt: '2026-08-19', currentPeriodEndsAt: '2026-09-19'})).status, 'invalid_subscription');
 });
 
+test('管理者はPayPal契約IDを決済サービス共通の契約台帳へ記録できる', async () => {
+  const actorUserId = '11111111-1111-4111-8111-111111111111';
+  const memberUserId = '22222222-2222-4222-8222-222222222222';
+  const requests = [];
+  const responses = [
+    {ok: true, status: 201, json: async () => [{id: 'subscription-paypal', external_reference_id: 'I-PAYPAL-100'}]},
+    {ok: true, status: 200, json: async () => [{id: memberUserId, audience_type: 'student'}]},
+    {ok: true, status: 200, json: async () => [{plan_id: 'student_graduate', status: 'active', current_period_ends_at: '2026-11-10T00:00:00.000Z'}]},
+    {ok: true, status: 204, json: async () => null},
+    {ok: true, status: 201, json: async () => null},
+  ];
+  const result = await recordManualSubscription({
+    actorUserId,
+    memberUserId,
+    email: 'buyer@example.com',
+    planId: 'student_graduate',
+    paymentProvider: 'paypal',
+    paymentReference: 'I-PAYPAL-100',
+    currentPeriodStartedAt: '2026-10-10',
+    currentPeriodEndsAt: '2026-11-10',
+    env: validEnv,
+    fetchImpl: async (url, options) => { requests.push({url: String(url), options}); return responses.shift(); },
+  });
+  assert.equal(result.status, 'recorded');
+  const subscription = JSON.parse(requests[0].options.body);
+  assert.equal(subscription.payment_provider, 'paypal');
+  assert.equal(subscription.external_reference_id, 'I-PAYPAL-100');
+  assert.equal(subscription.external_subscription_id, 'I-PAYPAL-100');
+  assert.equal(subscription.stores_item_id, null);
+  assert.equal(subscription.stores_order_id, null);
+  const audit = JSON.parse(requests[4].options.body);
+  assert.equal(audit.details.payment_provider, 'paypal');
+  assert.equal(audit.details.payment_reference, 'I-PAYPAL-100');
+});
+
 test('招待リンクの本人だけが初期パスワードを設定して利用中になる', async () => {
   const userId = '22222222-2222-4222-8222-222222222222';
   const requests = [];

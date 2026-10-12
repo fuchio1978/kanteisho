@@ -53,11 +53,11 @@ test('販売LPは認証なしでmeisikiから表示できる', async () => {
       assert.match(html, /<strong>5,500<\/strong>/);
       assert.doesNotMatch(html, /<strong>1,650<\/strong>/);
       assert.match(html, /1か月ごとの自動更新/);
-      assert.match(html, /STORESの購入履歴から解約/);
+      assert.match(html, /PayPalの「自動支払い」からキャンセル/);
       assert.match(html, /途中解約の日割り返金はありません/);
       assert.match(html, /解約・返金条件の詳細を確認/);
       assert.match(html, /原則2営業日以内/);
-      assert.match(html, /data-stores-plan="starter"/);
+      assert.match(html, /data-payment-plan="starter"/);
       assert.match(html, /販売準備中/);
       assert.doesNotMatch(html, /href="https:\/\/fuchilabo\.stores\.jp\/items\//);
     }
@@ -73,15 +73,29 @@ test('販売LPは認証なしでmeisikiから表示できる', async () => {
   });
 });
 
-test('販売導線をONにしたプランだけSTORESの商品URLへ切り替える', () => {
-  const source = '<a class="button" data-stores-plan="starter" href="#plans" aria-disabled="true">販売準備中</a><a class="button" data-stores-plan="premium" href="#plans" aria-disabled="true">販売準備中</a>';
+test('販売導線をONにしたプランだけPayPalの申込URLへ切り替える', () => {
+  const source = '<a class="button" data-payment-plan="starter" href="#plans" aria-disabled="true">販売準備中</a><a class="button" data-payment-plan="premium" href="#plans" aria-disabled="true">販売準備中</a>';
   const html = renderSalesLandingPage(source, {products: [
-    {planId: 'starter', salesEnabled: true, purchaseUrl: 'https://fuchilabo.stores.jp/items/starter'},
+    {planId: 'starter', providerLabel: 'PayPal', salesEnabled: true, purchaseUrl: 'https://www.paypal.com/subscribe/starter'},
     {planId: 'premium', salesEnabled: false, purchaseUrl: ''},
   ]});
-  assert.match(html, /href="https:\/\/fuchilabo\.stores\.jp\/items\/starter" target="_blank" rel="noopener">STORESで申し込む/);
-  assert.match(html, /data-stores-plan="premium" href="#plans" aria-disabled="true">販売準備中/);
-  assert.doesNotMatch(html, /data-stores-plan="starter"[^>]*aria-disabled/);
+  assert.match(html, /href="https:\/\/www\.paypal\.com\/subscribe\/starter" target="_blank" rel="noopener">PayPalで申し込む/);
+  assert.match(html, /data-payment-plan="premium" href="#plans" aria-disabled="true">販売準備中/);
+  assert.doesNotMatch(html, /data-payment-plan="starter"[^>]*aria-disabled/);
+});
+
+test('受講生・卒業生向け申込ページはPayPal販売OFFの間は決済リンクを出さない', async () => {
+  await withServer(async base => {
+    const response = await fetch(`${base}/subscribe/student-graduate`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('x-robots-tag'), /noindex/);
+    const html = await response.text();
+    assert.match(html, /命式サイト継続プラン/);
+    assert.match(html, /2,200/);
+    assert.match(html, /PayPal申込ページの公開準備中/);
+    assert.match(html, /無料会員登録へ/);
+    assert.doesNotMatch(html, /href="https:\/\/www\.paypal\.com\/.*">PayPalで申し込む/);
+  });
 });
 
 test('講座生版を維持したまま会員版を独立した準備中入口として分離する', async () => {
@@ -124,7 +138,7 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.equal((await fetch(`${base}/privacy`)).status, 200);
     const cancellation = await fetch(`${base}/cancellation`);
     assert.equal(cancellation.status, 200);
-    assert.match(await cancellation.text(), /次回注文が作成される前日まで/);
+    assert.match(await cancellation.text(), /次回請求日の前日まで/);
     const legal = await fetch(`${base}/legal`);
     assert.equal(legal.status, 200);
     const legalHtml = await legal.text();
@@ -148,8 +162,8 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.equal(response.headers.get('location'), '/members/register?sent=1');
     assert.equal(registration.displayName, '無料会員');
     assert.equal(registration.email, 'free@example.com');
-    assert.equal(registration.termsVersion, '2026-08-29');
-    assert.equal(registration.privacyVersion, '2026-08-31');
+    assert.equal(registration.termsVersion, '2026-10-10');
+    assert.equal(registration.privacyVersion, '2026-10-10');
     assert.equal(registration.userAgent, 'Test Browser');
     assert.match(registration.requestFingerprint, /^[A-Za-z0-9_-]+$/);
 
@@ -317,12 +331,12 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     const html = await page.text();
     assert.match(html, /利用者A/);
     assert.match(html, /3件/);
-    assert.match(html, /STORES商品対応/);
+    assert.match(html, /PayPal商品対応/);
     assert.match(html, /初回販売テストの手順/);
-    assert.match(html, /無料登録と同じメールアドレスでSTORESの商品を購入/);
+    assert.match(html, /無料登録と同じメールアドレスでPayPalの月額2,200円プランを申し込む/);
     assert.match(html, /実際の決済が完了するまでは「購入を反映」を押さない/);
     assert.match(html, /ご紹介者/);
-    assert.match(html, /0\/7商品を設定済み/);
+    assert.match(html, /0\/1商品のPayPalプランIDを設定済み/);
     assert.match(html, /受講生・卒業生/);
     assert.match(html, /卒業生・サイト＋勉強会/);
   }, {authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}), listMemberUsage});
@@ -514,7 +528,7 @@ test('管理者だけが契約台帳をExcel対応CSVで保存できる', async 
     const bytes = new Uint8Array(await response.arrayBuffer());
     assert.deepEqual([...bytes.slice(0, 3)], [0xef, 0xbb, 0xbf]);
     const csv = new TextDecoder('utf-8').decode(bytes);
-    assert.match(csv, /"お名前","購入メールアドレス","STORES注文番号"/);
+    assert.match(csv, /"お名前","購入メールアドレス","決済サービス","決済参照ID"/);
     assert.match(csv, /"'=危険な式"/);
     assert.match(csv, /"'\+ORDER-CSV"/);
     assert.match(csv, /"スターター"/);
@@ -710,7 +724,7 @@ test('登録済みの共同管理者には復旧用パスワード再設定メ�
   }, dependencies);
 });
 
-test('管理者は購入者の招待とSTORES契約台帳への記録を一度に行える', async () => {
+test('管理者は購入者の招待とPayPal契約台帳への記録を一度に行える', async () => {
   const adminId = '11111111-1111-4111-8111-111111111111';
   const invitedId = '22222222-2222-4222-8222-222222222222';
   let contractInput = null;
@@ -725,16 +739,17 @@ test('管理者は購入者の招待とSTORES契約台帳への記録を一度�
     const cookie = login.headers.get('set-cookie').split(';')[0];
     const page = await fetch(`${base}/members/admin`, {headers: {Cookie: cookie}});
     const html = await page.text();
-    assert.match(html, /STORES注文番号/);
+    assert.match(html, /決済参照ID/);
     const token = html.match(/action="\/members\/admin\/invite"[\s\S]*?name="token" value="([^"]+)"/)[1];
     const response = await fetch(`${base}/members/admin/invite`, {
       method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({token, displayName: '購入者A', email: 'customer@example.com', planId: 'premium', storesOrderId: 'ORDER-100', currentPeriodStartedAt: '2026-08-19', currentPeriodEndsAt: '2026-09-19'}),
+      body: new URLSearchParams({token, displayName: '購入者A', email: 'customer@example.com', planId: 'premium', paymentProvider: 'paypal', paymentReference: 'I-SUBSCRIPTION-100', currentPeriodStartedAt: '2026-08-19', currentPeriodEndsAt: '2026-09-19'}),
     });
     assert.equal(response.status, 303);
     assert.equal(response.headers.get('location'), '/members/admin?invited=1');
     assert.equal(contractInput.memberUserId, invitedId);
-    assert.equal(contractInput.storesOrderId, 'ORDER-100');
+    assert.equal(contractInput.paymentProvider, 'paypal');
+    assert.equal(contractInput.paymentReference, 'I-SUBSCRIPTION-100');
   }, dependencies);
 });
 
@@ -757,7 +772,7 @@ test('管理者は登録済み会員の購入を契約台帳へ反映し合成�
     const token = html.match(/action="\/members\/admin\/subscription\/new"[\s\S]*?name="token" value="([^"]+)"/)[1];
     const response = await fetch(`${base}/members/admin/subscription/new`, {
       method: 'POST', redirect: 'manual', headers: {Cookie: cookie, 'Content-Type': 'application/x-www-form-urlencoded'},
-      body: new URLSearchParams({token, targetUserId: memberId, email: 'member@example.com', planId: 'starter', storesOrderId: 'ORDER-UPGRADE-1', currentPeriodStartedAt: '2026-08-22', currentPeriodEndsAt: '2026-09-22'}),
+      body: new URLSearchParams({token, targetUserId: memberId, email: 'member@example.com', planId: 'starter', paymentProvider: 'paypal', paymentReference: 'I-UPGRADE-1', currentPeriodStartedAt: '2026-08-22', currentPeriodEndsAt: '2026-09-22'}),
     });
     assert.equal(response.status, 303);
     assert.equal(response.headers.get('location'), '/members/admin?contractCreated=1');

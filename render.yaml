@@ -24,6 +24,14 @@ services:
         sync: false
       - key: PUBLIC_APP_URL
         value: https://kanteisho.onrender.com
+      - key: PAYPAL_STUDENT_GRADUATE_PRODUCT_ID
+        value: KANTEISHO-STUDENT-GRADUATE
+      - key: PAYPAL_STUDENT_GRADUATE_PLAN_ID
+        value: P-39272220BU229050SNLEP5DQ
+      - key: PAYPAL_STUDENT_GRADUATE_PURCHASE_URL
+        sync: false
+      - key: PAYPAL_STUDENT_GRADUATE_SALES_ENABLED
+        value: "false"
       - key: STORES_STARTER_ITEM_ID
         sync: false
       - key: STORES_PREMIUM_ITEM_ID
