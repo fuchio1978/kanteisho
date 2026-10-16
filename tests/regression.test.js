@@ -1397,6 +1397,24 @@ test('月支3枠は距離順に変化力を配り残量も保持する', () => {
   assert.equal(states[2].remainingTransformCapacity, .5);
 });
 
+test('年支卯の作用力は最も近い月支辰へ木1を適用して使い切る', () => {
+  const pillars = {
+    hour: ['戊', '辰'], day: ['甲', '辰'], month: ['丙', '辰'], year: ['癸', '卯'],
+  };
+  const result = context.api.resolveNatalFiveElements(pillars);
+  const [hourBranch, dayBranch, monthBranch, yearBranch] = result.states;
+  assert.deepEqual({ ...context.api.branchStateScores(hourBranch) }, { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 });
+  assert.deepEqual({ ...context.api.branchStateScores(dayBranch) }, { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 });
+  assert.deepEqual({ ...context.api.branchStateScores(monthBranch) }, { wood: 1, fire: 0, earth: 0, metal: 0, water: 0 });
+  assert.equal(yearBranch.remainingTransformCapacity, 0);
+  assert.deepEqual(
+    Array.from(yearBranch.relations)
+      .filter(relation => relation.label === '半方合' && relation.direction === 'out')
+      .map(relation => ({ partner: relation.partner, amount: relation.amount })),
+    [{ partner: 2, amount: 1 }],
+  );
+});
+
 test('月支巳は半方合を土化より先に使い、未と二つの戌へ距離順に作用する', () => {
   const pillars = {
     hour: ['癸', '未'], day: ['庚', '戌'], month: ['丁', '巳'], year: ['戊', '戌'],

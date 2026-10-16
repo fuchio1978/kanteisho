@@ -249,7 +249,8 @@ function applyNatalBranchTransformations(states,stemScores,monthBranch,stemEleme
       for(const source of sourceIndices)for(const target of targetIndices){
         if(source===target||states[source].char===states[target].char||blockedPairs.has(pairId(source,target))||eligibleFlexibleAmount(states[target],priority)<=0)continue;
         const nonConsuming=label==='半方合'&&NON_CONSUMING_HALF_DIRECTION_PAIRS.has(PAIR_KEY(states[source].char,states[target].char));
-        demands.push({source,target,element,amount:distance(source,target),priority,label,equalSourceTier:true,consumeSource:nonConsuming?false:undefined,dualEarth:element==='fire'&&['未','戌'].includes(states[target].char)});
+        const amount=distance(source,target);
+        demands.push({source,target,element,amount,targetOrder:-amount,priority,label,equalSourceTier:true,consumeSource:nonConsuming?false:undefined,dualEarth:element==='fire'&&['未','戌'].includes(states[target].char)});
       }
     }
     return demands;
