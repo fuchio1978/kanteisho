@@ -80,6 +80,8 @@ test('私用鑑定書は出力日の満年齢と原命式・その年・指定�
   const report = context.api.privateReportContext(base.input, base.pillars, 2025, beforeBirthday);
   assert.equal(report.currentYear, 2026);
   assert.equal(report.selectedYear, 2025);
+  assert.equal(report.fortune.selectedYear, 2026);
+  assert.deepEqual(Array.from(report.fortune.years), [2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031]);
   assert.equal(report.age, 52);
   assert.equal(report.natalModel.length, 4);
   assert.ok(report.current.model.length >= 5);
