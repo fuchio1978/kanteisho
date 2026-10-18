@@ -64,7 +64,7 @@ const PLANS = Object.freeze({
     FEATURES.COMPATIBILITY,
     FEATURES.SAVED_SUBJECTS,
   ], 100),
-  student_graduate: plan('student_graduate', '受講生・卒業生', 2200, [
+  student_graduate: plan('student_graduate', '受講中・卒業後', 2200, [
     FEATURES.ORIGINAL_CHART,
     FEATURES.FIVE_ELEMENT_BALANCE,
     FEATURES.LUCK_CYCLES,

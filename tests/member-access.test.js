@@ -19,6 +19,7 @@ test('確定した料金体系と公開範囲を保持する', () => {
   assert.equal(PLANS.starter.monthlyPrice, 3300);
   assert.equal(PLANS.premium.monthlyPrice, 5500);
   assert.equal(PLANS.student_graduate.monthlyPrice, 2200);
+  assert.equal(PLANS.student_graduate.label, '受講中・卒業後');
   assert.equal(PLANS.referral.monthlyPrice, 2200);
   assert.equal(PLANS.graduate_study.monthlyPrice, 3300);
   assert.equal(PLANS.graduate_bundle.monthlyPrice, 4400);

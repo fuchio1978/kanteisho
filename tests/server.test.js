@@ -5,7 +5,7 @@ process.env.KANTEISHO_ACCESS_PASSWORD = 'test-access-password';
 process.env.SESSION_SECRET = 'test-session-secret-that-is-long-enough';
 process.env.SESSION_HOURS = '1';
 
-const {createServer, renderSalesLandingPage} = require('../server');
+const {createServer, renderSalesLandingPage, studentGraduateSubscriptionPage} = require('../server');
 
 async function withServer(run, dependencies = {}) {
   const server = createServer({listManualSubscriptions: async () => ({ok: true, status: 'ok', subscriptions: []}), listAdminAuditLogs: async () => ({ok: true, status: 'ok', logs: []}), ...dependencies});
@@ -84,18 +84,37 @@ test('販売導線をONにしたプランだけPayPalの申込URLへ切り替え
   assert.doesNotMatch(html, /data-payment-plan="starter"[^>]*aria-disabled/);
 });
 
-test('受講生・卒業生向け申込ページはPayPal販売OFFの間は決済リンクを出さない', async () => {
+test('受講中・卒業後向け申込ページはPayPal販売OFFの間は決済リンクを出さない', async () => {
   await withServer(async base => {
     const response = await fetch(`${base}/subscribe/student-graduate`);
     assert.equal(response.status, 200);
     assert.match(response.headers.get('x-robots-tag'), /noindex/);
     const html = await response.text();
     assert.match(html, /命式サイト継続プラン/);
+    assert.match(html, /受講中・卒業後/);
     assert.match(html, /2,200/);
+    assert.match(html, /原命式/);
+    assert.match(html, /五行バランス・五行変化の根拠/);
+    assert.match(html, /大運・年運/);
+    assert.match(html, /六柱推命/);
+    assert.match(html, /相性鑑定/);
+    assert.match(html, /鑑定書PDF/);
+    assert.match(html, /命式保存（無制限）/);
+    assert.match(html, /<strong>サイトの登録とPayPalのお申し込みには、同じメールアドレスをご使用ください。<\/strong>/);
     assert.match(html, /PayPal申込ページの公開準備中/);
     assert.match(html, /無料会員登録へ/);
+    assert.ok(html.indexOf('無料会員登録へ') < html.indexOf('PayPal申込ページの公開準備中'));
     assert.doesNotMatch(html, /href="https:\/\/www\.paypal\.com\/.*">PayPalで申し込む/);
   });
+});
+
+test('受講中・卒業後向け申込ページは無料登録をPayPal申込みより先に案内する', async () => {
+  const html = studentGraduateSubscriptionPage({products: [{
+    planId: 'student_graduate',
+    salesEnabled: true,
+    purchaseUrl: 'https://www.paypal.com/subscribe/student-graduate',
+  }]});
+  assert.ok(html.indexOf('無料会員登録へ') < html.indexOf('PayPalで申し込む'));
 });
 
 test('講座生版を維持したまま会員版を独立した準備中入口として分離する', async () => {
@@ -337,7 +356,7 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     assert.match(html, /実際の決済が完了するまでは「購入を反映」を押さない/);
     assert.match(html, /ご紹介者/);
     assert.match(html, /0\/1商品のPayPalプランIDを設定済み/);
-    assert.match(html, /受講生・卒業生/);
+    assert.match(html, /受講中・卒業後/);
     assert.match(html, /卒業生・サイト＋勉強会/);
   }, {authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}), listMemberUsage});
 
