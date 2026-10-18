@@ -1234,16 +1234,23 @@ test('年運午が中心の三合火局は大運戌を火1土1まで変化させ
   assert.deepEqual({ ...context.api.branchStateScores(result.states[3]) }, { wood: 0, fire: 0, earth: 0, metal: 0, water: 1 });
 });
 
-test('同じ支を共有する亡神・会局・疑似局もそれぞれ同時成立する', () => {
+test('亡神・三合局・疑似局は同時成立しても表示は亡神だけにする', () => {
   const pillars = { hour: ['壬', '申'], day: ['壬', '亥'], month: ['壬', '辰'], year: ['辛', '子'] };
   const result = context.api.resolveSixPillarFiveElements(pillars, ['甲', '子'], ['甲', '申']);
   for (const label of ['亡神', '三合水局', '疑似水局']) {
     assert.ok(result.notes.some(note => note.startsWith(label)), label);
   }
-  assert.ok(result.states[0].stamps.includes('亡神'));
-  assert.ok(result.states[0].stamps.includes('三合水局'));
-  assert.ok(result.states[0].stamps.includes('疑似水局'));
+  assert.deepEqual(Array.from(result.states[0].stamps).filter(label => label === '亡神' || label.startsWith('三合') || label.startsWith('疑似')), ['亡神']);
   assert.equal(result.states[4].remainingTransformCapacity, 2);
+});
+
+test('亡神と三合局だけが同時成立する場合も表示は亡神だけにする', () => {
+  const pillars = { hour: ['甲', '申'], day: ['甲', '亥'], month: ['甲', '辰'], year: ['甲', '子'] };
+  const result = context.api.resolveNatalFiveElements(pillars);
+  assert.ok(result.notes.some(note => note.startsWith('亡神')));
+  assert.ok(result.notes.some(note => note.startsWith('三合水局')));
+  assert.equal(result.notes.some(note => note.startsWith('疑似水局')), false);
+  assert.deepEqual(Array.from(result.states[0].stamps).filter(label => label === '亡神' || label.startsWith('三合') || label.startsWith('疑似')), ['亡神']);
 });
 
 test('2025年の年運支巳は疑似火局と疑似金局に各0.5を配分し火土同根を加える', () => {

@@ -62,7 +62,12 @@ function makeBranchState(char,role='minor',index=0){
   const rule=BRANCH_BASE_RULES[role][char]||{},fixed={...rule.fixed},flex=rule.flex?[{element:rule.flex[0],amount:rule.flex[1],priority:99}]:[];
   return{char,role,index,capacity:role==='major'?3:1,fixed,flex,overlays:{},canceled:false,transformations:[],stamps:[],relations:[]};
 }
-function addStateStamp(state,label){if(!state.stamps.includes(label))state.stamps.push(label)}
+function addStateStamp(state,label){
+  const hiddenByBojin=item=>item.startsWith('三合')||item.startsWith('疑似');
+  if(label==='亡神')state.stamps=state.stamps.filter(item=>!hiddenByBojin(item));
+  if(state.stamps.includes('亡神')&&hiddenByBojin(label))return;
+  if(!state.stamps.includes(label))state.stamps.push(label);
+}
 function addStateRelation(state,relation){state.relations.push(relation)}
 function branchStateScores(state){
   const scores=EMPTY_SCORES();if(state.canceled)return scores;
