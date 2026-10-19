@@ -100,7 +100,12 @@ test('受講中・卒業後向け申込ページはPayPal販売OFFの間は決�
     assert.match(html, /相性鑑定/);
     assert.match(html, /鑑定書PDF/);
     assert.match(html, /命式保存（無制限）/);
-    assert.match(html, /<strong>サイトの登録とPayPalのお申し込みには、同じメールアドレスをご使用ください。<\/strong>/);
+    assert.match(html, /中級・上級講座を受講中の方・卒業後の方向け/);
+    assert.match(html, /受講中の方は卒業月末まで/);
+    assert.doesNotMatch(html, /中級・上級講座の受講生・卒業後/);
+    assert.doesNotMatch(html, /受講生は卒業月末まで/);
+    assert.match(html, /サイトの登録とPayPalのお申し込みには、<strong class="email-emphasis">同じメールアドレスをご使用ください<\/strong>。/);
+    assert.match(html, /\.notice \.email-emphasis\{[^}]*font-weight:700/);
     assert.match(html, /PayPal申込ページの公開準備中/);
     assert.match(html, /無料会員登録へ/);
     assert.ok(html.indexOf('無料会員登録へ') < html.indexOf('PayPal申込ページの公開準備中'));
