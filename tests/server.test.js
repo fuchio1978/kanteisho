@@ -30,7 +30,18 @@ test('Render実証サーバーはヘルスチェックを公開し鑑定画面�
 
     const login = await fetch(`${base}/login`);
     assert.equal(login.status, 200);
-    assert.match(await login.text(), /講座生ログイン/);
+    const loginHtml = await login.text();
+    assert.match(loginHtml, /講座生ログイン/);
+    assert.match(loginHtml, /password-visibility\.css/);
+    assert.match(loginHtml, /password-visibility\.js/);
+
+    const visibilityScript = await fetch(`${base}/password-visibility.js`);
+    assert.equal(visibilityScript.status, 200);
+    assert.match(await visibilityScript.text(), /パスワードを表示する/);
+
+    const visibilityStyles = await fetch(`${base}/password-visibility.css`);
+    assert.equal(visibilityStyles.status, 200);
+    assert.match(await visibilityStyles.text(), /\.password-toggle/);
   });
 });
 
@@ -158,6 +169,8 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.match(html, /無料会員登録/);
     assert.match(html, /利用規約/);
     assert.match(html, /プライバシーポリシー/);
+    assert.match(html, /password-visibility\.css/);
+    assert.match(html, /password-visibility\.js/);
     assert.equal((await fetch(`${base}/terms`)).status, 200);
     assert.equal((await fetch(`${base}/privacy`)).status, 200);
     const cancellation = await fetch(`${base}/cancellation`);

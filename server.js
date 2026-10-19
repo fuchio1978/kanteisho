@@ -26,6 +26,8 @@ const PUBLIC_FILES = new Map([
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
   ['/member-setup.js', ['member-setup.js', 'text/javascript; charset=utf-8']],
   ['/member-password-reset.js', ['member-password-reset.js', 'text/javascript; charset=utf-8']],
+  ['/password-visibility.css', ['password-visibility.css', 'text/css; charset=utf-8']],
+  ['/password-visibility.js', ['password-visibility.js', 'text/javascript; charset=utf-8']],
   ['/meisiki', ['meisiki.html', 'text/html; charset=utf-8']],
   ['/meisiki/', ['meisiki.html', 'text/html; charset=utf-8']],
   ['/meisiki.html', ['meisiki.html', 'text/html; charset=utf-8']],
@@ -57,6 +59,12 @@ function securityHeaders(extra = {}) {
 }
 
 function send(res, status, body, headers = {}) {
+  const contentType = String(headers['Content-Type'] || '');
+  if (typeof body === 'string' && contentType.includes('text/html') && /type=["']password["']/.test(body)) {
+    body = body
+      .replace('</head>', '<link rel="stylesheet" href="/password-visibility.css"></head>')
+      .replace('</body>', '<script src="/password-visibility.js" defer></script></body>');
+  }
   res.writeHead(status, securityHeaders({'Cache-Control': 'no-store', ...headers}));
   res.end(body);
 }
@@ -532,7 +540,7 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
   }
-  if (req.method === 'GET' && (SALES_LP_PATHS.has(url.pathname) || url.pathname === '/meisiki.css')) {
+  if (req.method === 'GET' && (SALES_LP_PATHS.has(url.pathname) || ['/meisiki.css', '/password-visibility.css', '/password-visibility.js'].includes(url.pathname))) {
     return servePublic(res, url.pathname);
   }
   if (req.method === 'GET' && url.pathname === '/subscribe/student-graduate') {
