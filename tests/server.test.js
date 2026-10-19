@@ -37,11 +37,16 @@ test('Render実証サーバーはヘルスチェックを公開し鑑定画面�
 
     const visibilityScript = await fetch(`${base}/password-visibility.js`);
     assert.equal(visibilityScript.status, 200);
-    assert.match(await visibilityScript.text(), /パスワードを表示する/);
+    const visibilityScriptText = await visibilityScript.text();
+    assert.match(visibilityScriptText, /パスワードを表示する/);
+    assert.match(visibilityScriptText, /password-toggle-icon/);
+    assert.doesNotMatch(visibilityScriptText, /👁|🙈/);
 
     const visibilityStyles = await fetch(`${base}/password-visibility.css`);
     assert.equal(visibilityStyles.status, 200);
-    assert.match(await visibilityStyles.text(), /\.password-toggle/);
+    const visibilityStylesText = await visibilityStyles.text();
+    assert.match(visibilityStylesText, /\.password-toggle/);
+    assert.match(visibilityStylesText, /\.password-toggle-icon/);
   });
 });
 
