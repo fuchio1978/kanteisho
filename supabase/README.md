@@ -32,3 +32,13 @@ Row Level Securityをすべての会員テーブルで有効にします。会�
 サーバー専用の設定読込と接続確認は `supabase-server.js` にあります。`SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` の両方が未設定でも、現在の講座生共有版はそのまま動作します。
 
 設定後は `npm run check:member-db` で接続状態を確認できます。この確認処理でも秘密鍵そのものは画面やログへ表示しません。新しいマイグレーションは、テスト通過後にSupabase SQL Editorへ適用し、その後Renderへデプロイして実際の確認メールと初回ログインを確認します。
+
+## Data APIの権限方針
+
+2026年10月30日以降、`public`へ新しく作成するテーブルとシーケンスは、Supabaseの暗黙の既定権限へ依存しません。テーブルを作成するマイグレーションには、RLS・ポリシー・必要最小限の`GRANT`を同時に記載します。
+
+- `anon`へは会員・契約データを公開しない。
+- `authenticated`には会員本人がブラウザから必要とする操作だけを付与し、RLSで本人の行に限定する。
+- 契約台帳、同意履歴、監査記録、Webhook履歴は`service_role`だけに付与する。
+- identity列を持つサーバー専用テーブルでは、対応するシーケンスへ`usage, select`を明示する。
+- 現在の全オブジェクトの明示権限は`202610210001_explicit_data_api_grants.sql`で再適用できる。

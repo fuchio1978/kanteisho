@@ -131,3 +131,18 @@ test('無料自己登録は規約とプライバシーポリシーの同意版�
   assert.match(migration, /revoke all on public\.member_consents from anon, authenticated/);
   assert.doesNotMatch(migration, /ip_address/i);
 });
+
+test('Data APIの権限を暗黙の既定値に頼らず最小権限で明示する', () => {
+  const migration = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'migrations', '202610210001_explicit_data_api_grants.sql'), 'utf8');
+  assert.match(migration, /grant usage on schema public to authenticated, service_role/i);
+  assert.match(migration, /grant select on table public\.member_profiles to authenticated/i);
+  assert.match(migration, /grant select, insert, update, delete on table public\.saved_subjects to authenticated/i);
+  assert.doesNotMatch(migration, /grant .+ on (table )?public\.[a-z_]+ to anon/i);
+  for (const table of ['admin_audit_logs', 'member_consents', 'stores_subscriptions', 'stores_webhook_events', 'payment_webhook_events']) {
+    assert.match(migration, new RegExp(`revoke all on table public\\.${table} from anon, authenticated`, 'i'));
+    assert.match(migration, new RegExp(`grant select, insert, update, delete on table public\\.${table} to service_role`, 'i'));
+  }
+  for (const sequence of ['member_feature_overrides_id_seq', 'admin_audit_logs_id_seq', 'member_consents_id_seq', 'stores_webhook_events_id_seq', 'payment_webhook_events_id_seq']) {
+    assert.match(migration, new RegExp(`grant usage, select on sequence public\\.${sequence} to service_role`, 'i'));
+  }
+});
