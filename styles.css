@@ -382,6 +382,11 @@
 }
 
 /* 会員版：本人専用の命式保存バー */
+.member-session-actions{max-width:1225px;margin:0 auto 12px;display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.member-session-actions[hidden]{display:none}
+.member-session-actions form{margin:0}
+.member-session-actions a,.member-session-actions button{display:inline-flex;align-items:center;justify-content:center;min-height:40px;margin:0;padding:8px 17px;border:1px solid #b9d2df;border-radius:999px;background:#fff;color:#1766b1;text-decoration:none;font:600 12px inherit;cursor:pointer}
+.member-session-actions a:hover,.member-session-actions button:hover{background:#edf5f8}
 .member-subjects{max-width:1225px;margin:24px auto 0;padding:18px 22px;border:1px solid #d4e4eb;border-radius:16px;background:#f7fbfd;color:#52798f;display:grid;grid-template-columns:minmax(230px,.7fr) minmax(0,2fr);gap:12px 24px;align-items:center}
 .member-subjects[hidden]{display:none}
 .member-subjects>div:first-child{display:grid;gap:4px}
@@ -410,3 +415,4 @@
 .member-plan-guide a:hover{background:#1766b1;color:#fff;border-color:#1766b1}
 @media(max-width:760px){.member-subjects{margin:12px 14px 0;grid-template-columns:1fr}.member-subjects-actions{grid-template-columns:1fr}.member-subjects #savedSubjectSearch,.member-subjects #savedSubjectSort,.member-subjects #savedSubjectSelect{grid-column:1/-1}.member-subject-buttons{display:grid;grid-template-columns:1fr 1fr}.member-subjects #saveSubjectButton{grid-column:1/-1}}
 @media(max-width:760px){.member-plan-guide{margin:12px 14px 0;padding:14px 15px;align-items:flex-start;flex-direction:column;gap:10px}.member-plan-guide a{width:100%;text-align:center}}
+@media(max-width:760px){.member-session-actions{margin:0 14px 10px}.member-session-actions a,.member-session-actions button{padding:8px 13px}}

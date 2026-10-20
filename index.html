@@ -12,6 +12,12 @@
 </head>
 <body>
   <main>
+    <nav class="member-session-actions" id="memberSessionActions" hidden aria-label="会員メニュー">
+      <a href="/members">会員トップへ</a>
+      <form method="post" action="/members/logout">
+        <button type="submit">ログアウト</button>
+      </form>
+    </nav>
     <section class="member-plan-guide" id="memberPlanGuide" hidden aria-label="現在の料金プランと利用できる機能">
       <div>
         <span class="member-plan-guide-label">MEMBER PLAN</span>

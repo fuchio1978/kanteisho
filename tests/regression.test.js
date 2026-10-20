@@ -16,6 +16,16 @@ test('会員版はフリーとスターターだけに料金プラン案内を�
   assert.match(source, /guide\.hidden=true/);
   assert.match(css, /\.member-plan-guide\[hidden\]\{display:none\}/);
 });
+
+test('会員版の鑑定画面にはログアウト導線を表示する', () => {
+  const html = fs.readFileSync(require('node:path').join(__dirname, '..', 'index.html'), 'utf8');
+  const css = fs.readFileSync(require('node:path').join(__dirname, '..', 'styles.css'), 'utf8');
+  assert.match(html, /id="memberSessionActions" hidden/);
+  assert.match(html, /method="post" action="\/members\/logout"/);
+  assert.match(html, />ログアウト<\/button>/);
+  assert.match(source, /memberSessionActions'\)\.hidden=false/);
+  assert.match(css, /\.member-session-actions\[hidden\]\{display:none\}/);
+});
 const context = { Date, Math, console };
 context.globalThis = context;
 vm.runInNewContext(
