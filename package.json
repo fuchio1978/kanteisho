@@ -9,6 +9,6 @@
     "check:member-db": "node scripts/check-member-db.js"
   },
   "engines": {
-    "node": ">=22"
+    "node": "22.23.4"
   }
 }
