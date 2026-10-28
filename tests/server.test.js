@@ -5,7 +5,7 @@ process.env.KANTEISHO_ACCESS_PASSWORD = 'test-access-password';
 process.env.SESSION_SECRET = 'test-session-secret-that-is-long-enough';
 process.env.SESSION_HOURS = '1';
 
-const {createServer, renderSalesLandingPage, studentGraduateSubscriptionPage} = require('../server');
+const {createServer, renderSalesLandingPage, studentGraduateSubscriptionPage, studentPlanGuidePage} = require('../server');
 
 async function withServer(run, dependencies = {}) {
   const server = createServer({listManualSubscriptions: async () => ({ok: true, status: 'ok', subscriptions: []}), listAdminAuditLogs: async () => ({ok: true, status: 'ok', logs: []}), ...dependencies});
@@ -158,6 +158,34 @@ test('残り3商品の申込ページは販売準備中の内容と対象を正�
       assert.doesNotMatch(html, />PayPalで申し込む</);
     }
   });
+});
+
+test('講座生専用の購入案内は登録から対象別購入までを誤購入なく案内する', async () => {
+  await withServer(async base => {
+    const response = await fetch(`${base}/student-plans`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('x-robots-tag'), /noindex/);
+    const html = await response.text();
+    assert.match(html, /フリープランへ登録/);
+    assert.match(html, /10文字以上のパスワード/);
+    assert.match(html, /無料会員登録とPayPalのお申込みは、必ず同じメールアドレス/);
+    assert.match(html, /受講中の方/);
+    assert.match(html, /勉強会追加プランの購入は必要ありません/);
+    assert.match(html, /卒業後の方｜命式サイト＋勉強会/);
+    assert.match(html, /次の2商品を両方ご購入ください/);
+    assert.match(html, /月額合計4,400円/);
+    assert.match(html, /卒業後の方｜命式サイトのみ/);
+    assert.match(html, /卒業後の方｜勉強会のみ/);
+    assert.match(html, /公式LINEで問い合わせる/);
+    assert.match(html, /href="\/members\/register"/);
+    assert.match(html, /href="\/subscribe\/student-graduate"/);
+    assert.match(html, /href="\/subscribe\/graduate-study-addon"/);
+    assert.match(html, /href="\/subscribe\/graduate-study"/);
+    assert.doesNotMatch(html, /href="https:\/\/www\.fuchilabo\.com\/"/);
+  });
+  const html = studentPlanGuidePage();
+  assert.match(html, /2026年11月1日/);
+  assert.match(html, /次回請求日の5日前まで/);
 });
 
 test('PayPal商品画像3枚を公開URLからPNGとして配信する', async () => {
