@@ -5,6 +5,13 @@
   const graduatePreference = document.getElementById('graduate-preference');
   const diagnosis = document.getElementById('diagnosis-message');
 
+  document.querySelector('#register-title').closest('.step').querySelector('.step-intro').textContent =
+    '命式サイトを購入する方も、勉強会だけを利用する方も、最初に無料会員登録をお願いします。フリープランの登録時にはクレジットカードは不要です。有料プランのお申込み時には、PayPalでクレジットカードなどのお支払い方法の登録が必要です。';
+
+  const definitionCards = document.querySelectorAll('.definition > div');
+  definitionCards[0].innerHTML = '<strong>受講中の方</strong><span class="key-condition">中級講座は14講座目まで</span>、<span class="key-condition">上級講座は17講座目まで</span>の方です。<span class="key-condition">月1勉強会は無料</span>でご利用いただけます。';
+  definitionCards[1].innerHTML = '<strong>卒業後の方</strong><span class="key-condition">中級講座は15講座目</span>、<span class="key-condition">上級講座は18講座目</span>を受講した月の<span class="key-condition">翌月から「卒業後」</span>となります。<span class="key-condition">受講した月の月末までは「受講中」</span>です。';
+
   const graduateLegend = graduatePreference.querySelector('legend');
   const graduateChoices = graduatePreference.querySelector('.choices');
   graduateLegend.textContent = '③ 卒業後に希望する内容を1つ選んでください';
