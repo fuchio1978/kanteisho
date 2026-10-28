@@ -5,6 +5,7 @@
   const graduatePreference = document.getElementById('graduate-preference');
   const diagnosis = document.getElementById('diagnosis-message');
 
+  document.getElementById('register-title').textContent = 'まずフリープランへ登録';
   document.querySelector('#register-title').closest('.step').querySelector('.step-intro').innerHTML =
     '命式サイトを購入する方も、勉強会だけを利用する方も、最初に無料会員登録をお願いします。<span class="payment-key">フリープランの登録時にはクレジットカードは不要</span>です。<span class="payment-key">有料プランのお支払い方法はクレジットカードのみ</span>です。お申込み時にPayPalでクレジットカードをご登録ください。';
 

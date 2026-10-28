@@ -198,6 +198,7 @@ test('講座生専用の購入案内は登録から対象別購入までを誤�
     assert.match(guideScript.headers.get('content-type'), /text\/javascript/);
     const guideScriptSource = await guideScript.text();
     assert.match(guideScriptSource, /showLessonChoices/);
+    assert.match(guideScriptSource, /まずフリープランへ登録/);
     assert.match(guideScriptSource, /14コマ以下/);
     assert.match(guideScriptSource, /18コマ以上/);
     assert.match(guideScriptSource, /命式サイトと勉強会の両方を希望/);
