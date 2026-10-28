@@ -18,6 +18,7 @@ const TERMS_VERSION = '2026-10-10';
 const PRIVACY_VERSION = '2026-10-10';
 const COMMERCE_VERSION = '2026-10-10';
 const OFFICIAL_LINE_URL = 'https://lin.ee/U8JMJPz';
+const REFERRAL_SUPPORT_LINE_URL = 'https://lin.ee/V09LIin';
 const PUBLIC_FILES = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/index.html', ['index.html', 'text/html; charset=utf-8']],
@@ -286,7 +287,7 @@ function studentPlanGuidePage() {
     <article class="audience-card" id="graduate-both"><h3>卒業後の方｜命式サイト＋勉強会</h3><p class="both">次の2商品を両方ご購入ください（月額合計4,400円・税込）</p><div class="products"><div class="product"><img src="/assets/paypal/student-graduate-plan.png" alt="命式サイト継続プラン"><div><h4>命式サイト継続プラン</h4><p class="price">月額2,200円（税込）</p><a class="button" href="/subscribe/student-graduate">1つ目を申込む</a></div></div><div class="product"><img src="/assets/paypal/graduate-study-addon.png" alt="勉強会追加プラン"><div><h4>勉強会追加プラン</h4><p class="price">月額2,200円（税込）</p><a class="button" href="/subscribe/graduate-study-addon">2つ目を申込む</a></div></div></div><p class="note">PayPalでは2商品を別々にお申込みいただきます。両方のお申込み完了後、命式サイトと勉強会を利用できます。</p></article>
     <article class="audience-card" id="graduate-site"><h3>卒業後の方｜命式サイトのみ</h3><p>命式サイトの全機能と命式の無制限保存をご利用いただけます。</p><div class="products"><div class="product"><img src="/assets/paypal/student-graduate-plan.png" alt="命式サイト継続プラン"><div><h4>命式サイト継続プラン</h4><p class="price">月額2,200円（税込）</p><a class="button" href="/subscribe/student-graduate">内容確認・お申込みへ</a></div></div></div></article>
     <article class="audience-card" id="graduate-study"><h3>卒業後の方｜勉強会のみ</h3><p>月1勉強会へのオンライン参加とアーカイブ視聴をご利用いただけます。命式サイトは含まれません。</p><div class="products"><div class="product"><img src="/assets/paypal/graduate-study-plan.png" alt="勉強会のみプラン"><div><h4>勉強会のみプラン</h4><p class="price">月額3,300円（税込）</p><a class="button" href="/subscribe/graduate-study">内容確認・お申込みへ</a></div></div></div></article>
-    <article class="audience-card"><h3>ご紹介者プランをご希望の方</h3><p>ご紹介者プランは対象確認後に個別でご案内します。購入前に、ふちLABO.公式LINEへお問い合わせください。</p><a class="button line" href="${OFFICIAL_LINE_URL}" target="_blank" rel="noopener noreferrer">公式LINEで問い合わせる</a></article>
+    <article class="audience-card"><h3>ご紹介者プランをご希望の方</h3><p>ご紹介者プランは対象確認後に個別でご案内します。購入前に、てつ先生質問対応LINEへお問い合わせください。</p><a class="button line" href="${REFERRAL_SUPPORT_LINE_URL}" target="_blank" rel="noopener noreferrer">てつ先生質問対応LINE</a></article>
   </div></section>
   <section class="step" aria-labelledby="after-title"><div class="step-head"><span class="step-no">3</span><h2 id="after-title">お申込み後の流れ</h2></div><div class="after"><div><strong>1. PayPalで申込み</strong>月額料金と毎月自動更新であることを確認してお手続きください。</div><div><strong>2. お支払いを確認</strong>運営側で、無料登録と同じメールアドレスの決済を確認します。</div><div><strong>3. 利用内容を反映</strong>お支払い確認後、原則2営業日以内に対象内容を利用できるようにします。</div></div><p class="legal">各プランは1か月ごとの自動更新です。解約手続きは、次回請求日の5日前までにPayPalの「自動支払い」から行ってください。解約後も支払い済み期間の終了日まで利用でき、日割り返金はありません。</p><nav class="legal-nav" aria-label="法務情報"><a href="/terms">利用規約</a><a href="/privacy">プライバシーポリシー</a><a href="/cancellation">解約・返金ポリシー</a><a href="/legal">特定商取引法に基づく表記</a></nav></section>
   </div></main><footer>© ふちLABO. / 自然の景色でみる四柱推命を探究するラボ</footer><script src="/student-plan-guide.js" defer></script></body></html>`;

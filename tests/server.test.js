@@ -185,7 +185,9 @@ test('講座生専用の購入案内は登録から対象別購入までを誤�
     assert.match(html, /月額合計4,400円/);
     assert.match(html, /卒業後の方｜命式サイトのみ/);
     assert.match(html, /卒業後の方｜勉強会のみ/);
-    assert.match(html, /公式LINEで問い合わせる/);
+    assert.match(html, /てつ先生質問対応LINE/);
+    assert.match(html, /href="https:\/\/lin\.ee\/V09LIin"/);
+    assert.doesNotMatch(html, /購入前に、ふちLABO\.公式LINEへお問い合わせください/);
     assert.match(html, /href="\/members\/register"/);
     assert.match(html, /href="\/subscribe\/student-graduate"/);
     assert.match(html, /href="\/subscribe\/graduate-study-addon"/);
