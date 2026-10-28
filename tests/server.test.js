@@ -170,6 +170,11 @@ test('講座生専用の購入案内は登録から対象別購入までを誤�
     assert.match(html, /10文字以上のパスワード/);
     assert.match(html, /無料会員登録とPayPalのお申込みは、必ず同じメールアドレス/);
     assert.match(html, /受講中の方/);
+    assert.match(html, /中級講座は14講座目まで、上級講座は17講座目まで/);
+    assert.match(html, /中級講座は15講座目、上級講座は18講座目を受講した月の翌月/);
+    assert.match(html, /かんたんプラン選択/);
+    assert.match(html, /data-plan-target="current-site"/);
+    assert.match(html, /data-plan-target="graduate-both"/);
     assert.match(html, /勉強会追加プランの購入は必要ありません/);
     assert.match(html, /卒業後の方｜命式サイト＋勉強会/);
     assert.match(html, /次の2商品を両方ご購入ください/);
