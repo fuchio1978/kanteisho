@@ -32,6 +32,30 @@ services:
         sync: false
       - key: PAYPAL_STUDENT_GRADUATE_SALES_ENABLED
         value: "false"
+      - key: PAYPAL_GRADUATE_STUDY_PRODUCT_ID
+        value: SUIMEI-STUDY-ONLY-GRADUATE
+      - key: PAYPAL_GRADUATE_STUDY_PLAN_ID
+        value: P-8UV03045MA063292SNLQNBOY
+      - key: PAYPAL_GRADUATE_STUDY_PURCHASE_URL
+        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8UV03045MA063292SNLQNBOY
+      - key: PAYPAL_GRADUATE_STUDY_SALES_ENABLED
+        value: "false"
+      - key: PAYPAL_GRADUATE_STUDY_ADDON_PRODUCT_ID
+        value: SUIMEI-STUDY-ADDON-GRADUATE
+      - key: PAYPAL_GRADUATE_STUDY_ADDON_PLAN_ID
+        value: P-9BV10265GA4849743NLQNB3Q
+      - key: PAYPAL_GRADUATE_STUDY_ADDON_PURCHASE_URL
+        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-9BV10265GA4849743NLQNB3Q
+      - key: PAYPAL_GRADUATE_STUDY_ADDON_SALES_ENABLED
+        value: "false"
+      - key: PAYPAL_REFERRAL_PRODUCT_ID
+        value: KANTEISHO-REFERRAL
+      - key: PAYPAL_REFERRAL_PLAN_ID
+        value: P-3VA805581U135260ANLQNCFI
+      - key: PAYPAL_REFERRAL_PURCHASE_URL
+        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-3VA805581U135260ANLQNCFI
+      - key: PAYPAL_REFERRAL_SALES_ENABLED
+        value: "false"
       - key: STORES_STARTER_ITEM_ID
         sync: false
       - key: STORES_PREMIUM_ITEM_ID
