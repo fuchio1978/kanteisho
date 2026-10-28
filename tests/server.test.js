@@ -138,6 +138,28 @@ test('受講中・卒業後向け申込ページは無料登録をPayPal申込�
   assert.ok(html.indexOf('無料会員登録へ') < html.indexOf('PayPalで申し込む'));
 });
 
+test('残り3商品の申込ページは販売準備中の内容と対象を正しく表示する', async () => {
+  const cases = [
+    ['/subscribe/graduate-study', /勉強会のみプラン/, /3,300/, /命式サイトの利用は含まれません/],
+    ['/subscribe/graduate-study-addon', /勉強会追加プラン/, /2,200/, /月額合計4,400円/],
+    ['/subscribe/referral', /ご紹介者プラン/, /2,200/, /命式保存（無制限）/],
+  ];
+  await withServer(async base => {
+    for (const [path, title, price, detail] of cases) {
+      const response = await fetch(`${base}${path}`);
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get('x-robots-tag'), /noindex/);
+      const html = await response.text();
+      assert.match(html, title);
+      assert.match(html, price);
+      assert.match(html, detail);
+      assert.match(html, /同じメールアドレスをご使用ください/);
+      assert.match(html, /PayPal申込ページの公開準備中/);
+      assert.doesNotMatch(html, />PayPalで申し込む</);
+    }
+  });
+});
+
 test('講座生版を維持したまま会員版を独立した準備中入口として分離する', async () => {
   await withServer(async base => {
     const studentEntry = await fetch(`${base}/students`, {redirect: 'manual'});
@@ -380,7 +402,7 @@ test('管理者だけが会員ごとのプランと保存数を確認できる',
     assert.match(html, /無料登録と同じメールアドレスでPayPalの月額2,200円プランを申し込む/);
     assert.match(html, /実際の決済が完了するまでは「購入を反映」を押さない/);
     assert.match(html, /ご紹介者/);
-    assert.match(html, /0\/1商品のPayPalプランIDを設定済み/);
+    assert.match(html, /0\/4商品のPayPalプランIDを設定済み/);
     assert.match(html, /受講中・卒業後/);
     assert.match(html, /卒業生・サイト＋勉強会/);
   }, {authenticateMember: async () => ({ok: true, member: {id: 'admin-user', email: 'admin@example.com', displayName: '管理者', role: 'admin', planId: 'admin'}}), listMemberUsage});

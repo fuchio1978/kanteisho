@@ -12,6 +12,21 @@ const PAYPAL_PRODUCTS = Object.freeze([
     purchaseUrlEnv: 'PAYPAL_STUDENT_GRADUATE_PURCHASE_URL',
     salesEnabledEnv: 'PAYPAL_STUDENT_GRADUATE_SALES_ENABLED',
   }),
+  Object.freeze({
+    key: 'graduate_study', planId: 'graduate_study',
+    productIdEnv: 'PAYPAL_GRADUATE_STUDY_PRODUCT_ID', planIdEnv: 'PAYPAL_GRADUATE_STUDY_PLAN_ID',
+    purchaseUrlEnv: 'PAYPAL_GRADUATE_STUDY_PURCHASE_URL', salesEnabledEnv: 'PAYPAL_GRADUATE_STUDY_SALES_ENABLED',
+  }),
+  Object.freeze({
+    key: 'graduate_study_addon', planId: 'graduate_study_addon',
+    productIdEnv: 'PAYPAL_GRADUATE_STUDY_ADDON_PRODUCT_ID', planIdEnv: 'PAYPAL_GRADUATE_STUDY_ADDON_PLAN_ID',
+    purchaseUrlEnv: 'PAYPAL_GRADUATE_STUDY_ADDON_PURCHASE_URL', salesEnabledEnv: 'PAYPAL_GRADUATE_STUDY_ADDON_SALES_ENABLED',
+  }),
+  Object.freeze({
+    key: 'referral', planId: 'referral',
+    productIdEnv: 'PAYPAL_REFERRAL_PRODUCT_ID', planIdEnv: 'PAYPAL_REFERRAL_PLAN_ID',
+    purchaseUrlEnv: 'PAYPAL_REFERRAL_PURCHASE_URL', salesEnabledEnv: 'PAYPAL_REFERRAL_SALES_ENABLED',
+  }),
 ]);
 
 const PROVIDER_LABELS = Object.freeze({
