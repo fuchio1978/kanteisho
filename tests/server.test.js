@@ -160,6 +160,17 @@ test('残り3商品の申込ページは販売準備中の内容と対象を正�
   });
 });
 
+test('PayPal商品画像3枚を公開URLからPNGとして配信する', async () => {
+  await withServer(async base => {
+    for (const path of ['/assets/paypal/graduate-study-plan.png', '/assets/paypal/graduate-study-addon.png', '/assets/paypal/referral-plan.png']) {
+      const response = await fetch(`${base}${path}`);
+      assert.equal(response.status, 200);
+      assert.match(response.headers.get('content-type'), /image\/png/);
+      assert.ok((await response.arrayBuffer()).byteLength > 100000);
+    }
+  });
+});
+
 test('講座生版を維持したまま会員版を独立した準備中入口として分離する', async () => {
   await withServer(async base => {
     const studentEntry = await fetch(`${base}/students`, {redirect: 'manual'});

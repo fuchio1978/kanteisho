@@ -32,6 +32,9 @@ const PUBLIC_FILES = new Map([
   ['/meisiki/', ['meisiki.html', 'text/html; charset=utf-8']],
   ['/meisiki.html', ['meisiki.html', 'text/html; charset=utf-8']],
   ['/meisiki.css', ['meisiki.css', 'text/css; charset=utf-8']],
+  ['/assets/paypal/graduate-study-plan.png', ['assets/store-products/2026-09-pricing/graduate-study-plan-3300.png', 'image/png']],
+  ['/assets/paypal/graduate-study-addon.png', ['assets/store-products/2026-09-pricing/graduate-study-addon-2200.png', 'image/png']],
+  ['/assets/paypal/referral-plan.png', ['assets/store-products/2026-09-pricing/referral-plan-2200.png', 'image/png']],
 ]);
 const attempts = new Map();
 
@@ -553,7 +556,7 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
   if (req.method === 'GET' && url.pathname === '/health') {
     return send(res, 200, JSON.stringify({ok: true}), {'Content-Type': 'application/json; charset=utf-8'});
   }
-  if (req.method === 'GET' && (SALES_LP_PATHS.has(url.pathname) || ['/meisiki.css', '/password-visibility.css', '/password-visibility.js'].includes(url.pathname))) {
+  if (req.method === 'GET' && (SALES_LP_PATHS.has(url.pathname) || url.pathname.startsWith('/assets/paypal/') || ['/meisiki.css', '/password-visibility.css', '/password-visibility.js'].includes(url.pathname))) {
     return servePublic(res, url.pathname);
   }
   if (req.method === 'GET' && url.pathname === '/subscribe/student-graduate') {
