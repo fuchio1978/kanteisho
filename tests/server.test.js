@@ -257,7 +257,7 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     assert.equal((await fetch(`${base}/privacy`)).status, 200);
     const cancellation = await fetch(`${base}/cancellation`);
     assert.equal(cancellation.status, 200);
-    assert.match(await cancellation.text(), /次回請求日の前日まで/);
+    assert.match(await cancellation.text(), /次回請求日の5日前まで/);
     const legal = await fetch(`${base}/legal`);
     assert.equal(legal.status, 200);
     const legalHtml = await legal.text();
