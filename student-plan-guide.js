@@ -22,9 +22,11 @@
     input.type = 'radio';
     input.name = 'graduate-preference-choice';
     input.value = value;
+    input.addEventListener('change', () => showGraduatePlan(value));
     label.append(input, labelText);
     graduateChoices.append(label);
   });
+  document.getElementById('show-plan')?.remove();
 
   function resetFollowingQuestions() {
     currentPreference.hidden = true;
@@ -103,17 +105,10 @@
     });
   });
 
-  document.getElementById('show-plan').addEventListener('click', () => {
-    const selected = document.querySelector('input[name="graduate-preference-choice"]:checked');
-    if (!selected) {
-      diagnosis.textContent = 'ご希望の内容を1つ選択してください。';
-      diagnosis.classList.add('no-purchase');
-      diagnosis.hidden = false;
-      return diagnosis.scrollIntoView({behavior: 'smooth', block: 'center'});
-    }
-    if (selected.value === 'both') return goToPlan('graduate-both');
-    if (selected.value === 'site') return goToPlan('graduate-site');
-    if (selected.value === 'study') return goToPlan('graduate-study');
+  function showGraduatePlan(value) {
+    if (value === 'both') return goToPlan('graduate-both');
+    if (value === 'site') return goToPlan('graduate-site');
+    if (value === 'study') return goToPlan('graduate-study');
     showNoPurchaseMessage();
-  });
+  }
 })();
