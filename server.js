@@ -35,6 +35,7 @@ const PUBLIC_FILES = new Map([
   ['/assets/paypal/graduate-study-plan.png', ['assets/store-products/2026-09-pricing/graduate-study-plan-3300.png', 'image/png']],
   ['/assets/paypal/graduate-study-addon.png', ['assets/store-products/2026-09-pricing/graduate-study-addon-2200.png', 'image/png']],
   ['/assets/paypal/referral-plan.png', ['assets/store-products/2026-09-pricing/referral-plan-2200.png', 'image/png']],
+  ['/assets/paypal/student-graduate-plan.png', ['assets/store-products/2026-09-pricing/student-graduate-plan-2200-v2.png', 'image/png']],
 ]);
 const attempts = new Map();
 
