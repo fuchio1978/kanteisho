@@ -243,13 +243,15 @@ test('講座生専用の購入案内は登録から対象別購入までを誤�
   assert.match(html, /\.product-link-card\{cursor:pointer/);
 });
 
-test('PayPal商品画像3枚を公開URLからPNGとして配信する', async () => {
+test('PayPal商品画像4枚を軽量WebP・長期キャッシュ付きで配信する', async () => {
   await withServer(async base => {
-    for (const path of ['/assets/paypal/student-graduate-plan.png', '/assets/paypal/graduate-study-plan.png', '/assets/paypal/graduate-study-addon.png', '/assets/paypal/referral-plan.png']) {
+    for (const path of ['/assets/paypal/student-graduate-plan.webp', '/assets/paypal/graduate-study-plan.webp', '/assets/paypal/graduate-study-addon.webp', '/assets/paypal/referral-plan.webp']) {
       const response = await fetch(`${base}${path}`);
       assert.equal(response.status, 200);
-      assert.match(response.headers.get('content-type'), /image\/png/);
-      assert.ok((await response.arrayBuffer()).byteLength > 100000);
+      assert.match(response.headers.get('content-type'), /image\/webp/);
+      assert.match(response.headers.get('cache-control'), /max-age=2592000/);
+      assert.match(response.headers.get('cache-control'), /immutable/);
+      assert.ok((await response.arrayBuffer()).byteLength < 250000);
     }
   });
 });
