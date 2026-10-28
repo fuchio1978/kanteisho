@@ -5,12 +5,14 @@
   const graduatePreference = document.getElementById('graduate-preference');
   const diagnosis = document.getElementById('diagnosis-message');
 
-  document.querySelector('#register-title').closest('.step').querySelector('.step-intro').textContent =
-    '命式サイトを購入する方も、勉強会だけを利用する方も、最初に無料会員登録をお願いします。フリープランの登録時にはクレジットカードは不要です。有料プランのお申込み時には、PayPalでクレジットカードなどのお支払い方法の登録が必要です。';
+  document.querySelector('#register-title').closest('.step').querySelector('.step-intro').innerHTML =
+    '命式サイトを購入する方も、勉強会だけを利用する方も、最初に無料会員登録をお願いします。<span class="payment-key">フリープランの登録時にはクレジットカードは不要</span>です。<span class="payment-key">有料プランのお申込み時には、PayPalでクレジットカードなどのお支払い方法の登録が必要</span>です。';
 
   const definitionCards = document.querySelectorAll('.definition > div');
   definitionCards[0].innerHTML = '<strong>受講中の方</strong><span class="key-condition">中級講座は14講座目まで</span>、<span class="key-condition">上級講座は17講座目まで</span>の方です。<span class="key-condition">月1勉強会は無料</span>でご利用いただけます。';
   definitionCards[1].innerHTML = '<strong>卒業後の方</strong><span class="key-condition">中級講座は15講座目</span>、<span class="key-condition">上級講座は18講座目</span>を受講した月の<span class="key-condition">翌月から「卒業後」</span>となります。<span class="key-condition">受講した月の月末までは「受講中」</span>です。';
+
+  document.querySelector('.legal').innerHTML = '各プランは<span class="legal-key">1か月ごとの自動更新</span>です。解約手続きは、<span class="legal-key">次回請求日の5日前まで</span>にPayPalの「自動支払い」から行ってください。解約後も<span class="legal-key">支払い済み期間の終了日まで利用可能</span>です。<span class="legal-key">日割り返金はありません</span>。';
 
   const graduateLegend = graduatePreference.querySelector('legend');
   const graduateChoices = graduatePreference.querySelector('.choices');

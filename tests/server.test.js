@@ -215,6 +215,11 @@ test('講座生専用の購入案内は登録から対象別購入までを誤�
     assert.match(guideScriptSource, /中級講座は14講座目まで/);
     assert.match(guideScriptSource, /上級講座は18講座目/);
     assert.match(guideScriptSource, /翌月から「卒業後」/);
+    assert.match(guideScriptSource, /payment-key/);
+    assert.match(guideScriptSource, /legal-key/);
+    assert.match(guideScriptSource, /1か月ごとの自動更新/);
+    assert.match(guideScriptSource, /支払い済み期間の終了日まで利用可能/);
+    assert.match(guideScriptSource, /日割り返金はありません/);
     assert.match(guideScriptSource, /ご購入いただく商品はございません/);
     assert.match(guideScriptSource, /plan-highlight/);
     assert.doesNotMatch(guideScriptSource, /現在の選択では、購入する商品はありません/);
@@ -227,6 +232,8 @@ test('講座生専用の購入案内は登録から対象別購入までを誤�
   assert.match(html, /#show-plan\{display:none\}/);
   assert.match(html, /\.important\{border-left-color:#d94747/);
   assert.match(html, /\.key-condition\{display:inline/);
+  assert.match(html, /\.payment-key\{color:#9d2b20/);
+  assert.match(html, /\.legal-key\{display:inline/);
 });
 
 test('PayPal商品画像3枚を公開URLからPNGとして配信する', async () => {
