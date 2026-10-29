@@ -241,6 +241,8 @@ test('講座生専用の購入案内は登録から対象別購入までを誤�
   assert.match(html, /\.payment-key\{color:#9d2b20/);
   assert.match(html, /\.legal-key\{display:inline/);
   assert.match(html, /\.product-link-card\{cursor:pointer/);
+  assert.match(html, /\.product img\{display:block;width:112px;height:112px;object-fit:contain/);
+  assert.doesNotMatch(html, /\.product img\{[^}]*object-fit:cover/);
 });
 
 test('PayPal商品画像4枚を軽量WebP・長期キャッシュ付きで配信する', async () => {
