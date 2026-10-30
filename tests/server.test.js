@@ -332,14 +332,16 @@ test('一般利用者は規約同意とメール確認を経て無料会員登�
     const confirmed = await fetch(`${base}/members/confirmed`);
     const confirmedHtml = await confirmed.text();
     assert.match(confirmedHtml, /メール確認が完了しました/);
-    assert.match(confirmedHtml, /用神が出せるようになるまでの道のりを、10日間でお話ししています/);
+    assert.match(confirmedHtml, /てつ先生公式LINEを追加する/);
+    assert.match(confirmedHtml, /通変星の出し方 入門PDF＋解説動画（30分）/);
     assert.match(confirmedHtml, /https:\/\/lin\.ee\/U8JMJPz/);
-    assert.match(confirmedHtml, /ふちLABO\.公式LINEを追加する/);
+    assert.doesNotMatch(confirmedHtml, /10日間/);
     assert.match(confirmedHtml, /講座・イベント等のお知らせ/);
     assert.match(confirmedHtml, /LINE上でいつでもブロック/);
 
     const privacyHtml = await (await fetch(`${base}/privacy`)).text();
-    assert.match(privacyHtml, /公式LINEへの登録は任意/);
+    assert.match(privacyHtml, /てつ先生公式LINEへの登録は任意/);
+    assert.doesNotMatch(privacyHtml, /10日間のご案内/);
     assert.match(privacyHtml, /広告・宣伝メールの一斉配信に利用する場合は、別途ご本人の同意/);
   }, {registerFreeMember: async input => { registration = input; return {ok: true, status: 'confirmation_sent'}; }});
 });
