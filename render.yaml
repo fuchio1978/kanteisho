@@ -35,25 +35,25 @@ services:
       - key: PAYPAL_GRADUATE_STUDY_PRODUCT_ID
         value: SUIMEI-STUDY-ONLY-GRADUATE
       - key: PAYPAL_GRADUATE_STUDY_PLAN_ID
-        value: P-8UV03045MA063292SNLQNBOY
+        value: P-7SG54334UB939783ENLSWWRY
       - key: PAYPAL_GRADUATE_STUDY_PURCHASE_URL
-        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-8UV03045MA063292SNLQNBOY
+        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-7SG54334UB939783ENLSWWRY
       - key: PAYPAL_GRADUATE_STUDY_SALES_ENABLED
         value: "false"
       - key: PAYPAL_GRADUATE_STUDY_ADDON_PRODUCT_ID
         value: SUIMEI-STUDY-ADDON-GRADUATE
       - key: PAYPAL_GRADUATE_STUDY_ADDON_PLAN_ID
-        value: P-9BV10265GA4849743NLQNB3Q
+        value: P-09M04819MN506452HNLSWV5Q
       - key: PAYPAL_GRADUATE_STUDY_ADDON_PURCHASE_URL
-        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-9BV10265GA4849743NLQNB3Q
+        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-09M04819MN506452HNLSWV5Q
       - key: PAYPAL_GRADUATE_STUDY_ADDON_SALES_ENABLED
         value: "false"
       - key: PAYPAL_REFERRAL_PRODUCT_ID
         value: KANTEISHO-REFERRAL
       - key: PAYPAL_REFERRAL_PLAN_ID
-        value: P-3VA805581U135260ANLQNCFI
+        value: P-99N57588NJ7737632NLSWXGA
       - key: PAYPAL_REFERRAL_PURCHASE_URL
-        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-3VA805581U135260ANLQNCFI
+        value: https://www.paypal.com/webapps/billing/plans/subscribe?plan_id=P-99N57588NJ7737632NLSWXGA
       - key: PAYPAL_REFERRAL_SALES_ENABLED
         value: "false"
       - key: STORES_STARTER_ITEM_ID
