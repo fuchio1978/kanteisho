@@ -33,6 +33,40 @@
     });
   });
 
+  const planCards = Array.from(document.querySelectorAll('.audience-card[id]'));
+  const plansToggle = document.createElement('button');
+  plansToggle.type = 'button';
+  plansToggle.className = 'plans-toggle';
+  document.querySelector('.audience')?.prepend(plansToggle);
+  plansToggle.addEventListener('click', () => {
+    const anyCollapsed = planCards.some(card => card.classList.contains('is-collapsed'));
+    planCards.forEach(card => setCardOpen(card, anyCollapsed));
+  });
+
+  planCards.forEach(card => {
+    const heading = card.querySelector('h3');
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'card-toggle';
+    toggle.append(...heading.childNodes);
+    heading.append(toggle);
+    toggle.addEventListener('click', () => setCardOpen(card, card.classList.contains('is-collapsed')));
+  });
+
+  function setCardOpen(card, open) {
+    card.classList.toggle('is-collapsed', !open);
+    card.querySelector('.card-toggle')?.setAttribute('aria-expanded', String(open));
+    const anyCollapsed = planCards.some(item => item.classList.contains('is-collapsed'));
+    plansToggle.textContent = anyCollapsed ? 'すべてのプランを見る' : 'すべてたたむ';
+  }
+
+  function openOnly(id) {
+    planCards.forEach(card => setCardOpen(card, card.id === id));
+  }
+
+  const linkedCard = planCards.find(card => `#${card.id}` === location.hash);
+  openOnly(linkedCard ? linkedCard.id : null);
+
   const graduateLegend = graduatePreference.querySelector('legend');
   const graduateChoices = graduatePreference.querySelector('.choices');
   graduateLegend.textContent = '③ 卒業後に希望する内容を1つ選んでください';
@@ -89,6 +123,7 @@
     if (!target) return;
     clearPlanHighlight(true);
     diagnosis.hidden = true;
+    openOnly(id);
     target.classList.add('plan-highlight');
     target.setAttribute('aria-current', 'true');
     history.replaceState(null, '', `#${id}`);
