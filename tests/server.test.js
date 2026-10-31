@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 process.env.KANTEISHO_ACCESS_PASSWORD = 'test-access-password';
 process.env.SESSION_SECRET = 'test-session-secret-that-is-long-enough';
 process.env.SESSION_HOURS = '1';
+process.env.KANTEISHO_SHARED_ACCESS_UNTIL = '2099-01-01T00:00:00+09:00';
 
 const {createServer, renderSalesLandingPage, studentGraduateSubscriptionPage, studentPlanGuidePage} = require('../server');
 
@@ -1060,5 +1061,34 @@ test('正しいパスワードだけが署名付きCookieを受け取りAPIと�
 
     const privateSource = await fetch(`${base}/server.js`, {headers: {Cookie: cookie}});
     assert.equal(privateSource.status, 404);
+  });
+});
+
+test('講座生共有版は利用期限を過ぎると入れず、ログイン済みでも締め出される', async () => {
+  await withServer(async base => {
+    const login = await fetch(`${base}/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'password=test-access-password'});
+    assert.equal(login.status, 303);
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    assert.equal((await fetch(`${base}/`, {redirect: 'manual', headers: {Cookie: cookie}})).status, 200);
+
+    process.env.KANTEISHO_SHARED_ACCESS_UNTIL = '2020-01-01T00:00:00+09:00';
+    try {
+      const page = await fetch(`${base}/login`);
+      assert.equal(page.status, 200);
+      const html = await page.text();
+      assert.match(html, /講座生共有版のご利用は<br>終了しました/);
+      assert.doesNotMatch(html, /type="password"/);
+
+      const retry = await fetch(`${base}/login`, {method: 'POST', redirect: 'manual', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: 'password=test-access-password'});
+      assert.equal(retry.status, 403);
+
+      const kept = await fetch(`${base}/`, {redirect: 'manual', headers: {Cookie: cookie}});
+      assert.equal(kept.status, 302);
+      assert.equal(kept.headers.get('location'), '/login');
+
+      assert.doesNotMatch(await (await fetch(`${base}/members`)).text(), /講座生共有版のログインへ/);
+    } finally {
+      process.env.KANTEISHO_SHARED_ACCESS_UNTIL = '2099-01-01T00:00:00+09:00';
+    }
   });
 });

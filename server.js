@@ -11,6 +11,8 @@ const COOKIE_NAME = 'kanteisho_session';
 const MEMBER_COOKIE_NAME = 'kanteisho_member_session';
 const SESSION_HOURS = Number(process.env.SESSION_HOURS || 12);
 const MEMBER_SESSION_HOURS = Number(process.env.MEMBER_SESSION_HOURS || 24);
+// 講座生共有版（共有パスワード）の利用期限。再開するときは KANTEISHO_SHARED_ACCESS_UNTIL に先の日時を入れる
+const SHARED_ACCESS_DEFAULT_UNTIL = '2026-11-08T00:00:00+09:00';
 const ROOT = __dirname;
 const MEMBER_ENTRY_PATHS = new Set(['/members', '/members/']);
 const SALES_LP_PATHS = new Set(['/meisiki', '/meisiki/', '/meisiki.html']);
@@ -102,12 +104,22 @@ function signMember(value) {
   return crypto.createHmac('sha256', SESSION_SECRET).update(`member:${value}`).digest('base64url');
 }
 
+function sharedAccessUntil() {
+  const configured = Date.parse(process.env.KANTEISHO_SHARED_ACCESS_UNTIL || '');
+  return Number.isFinite(configured) ? configured : Date.parse(SHARED_ACCESS_DEFAULT_UNTIL);
+}
+
+function sharedAccessOpen(now = Date.now()) {
+  return now < sharedAccessUntil();
+}
+
 function createSession() {
   const payload = Buffer.from(JSON.stringify({exp: Date.now() + SESSION_HOURS * 3600000, nonce: crypto.randomBytes(12).toString('hex')})).toString('base64url');
   return `${payload}.${sign(payload)}`;
 }
 
 function validSession(req) {
+  if (!sharedAccessOpen()) return false;
   const token = parseCookies(req)[COOKIE_NAME];
   if (!token) return false;
   const [payload, signature] = token.split('.');
@@ -223,6 +235,10 @@ function loginPage(message = '') {
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>講座生ログイン｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#f4f8fa;color:#17384b;font-family:serif}.card{width:min(100%,420px);padding:42px 36px;background:#fff;border:1px solid #d7e3e9;border-radius:20px;box-shadow:0 18px 55px rgba(20,63,88,.12)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:8px 0 10px;color:#1766b1;font-size:31px;font-weight:500}p{color:#6e8795;font-size:13px;line-height:1.8}.error{padding:9px 12px;border-radius:8px;background:#fff0f0;color:#b53b3b}label{display:grid;gap:8px;margin-top:24px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button{width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}</style></head><body><main class="card"><div class="eyebrow">STUDENT ACCESS</div><h1>講座生ログイン</h1><p>四柱推命 鑑定書の実証用ページです。お知らせしたパスワードを入力してください。</p>${notice}<form method="post" action="/login"><label>アクセスパスワード<input name="password" type="password" autocomplete="current-password" required autofocus></label><button type="submit">鑑定書を開く</button></form></main></body></html>`;
 }
 
+function sharedAccessClosedPage() {
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>講座生共有版のご利用終了｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#f4f8fa;color:#17384b;font-family:serif}.card{width:min(100%,460px);padding:42px 36px;background:#fff;border:1px solid #d7e3e9;border-radius:20px;box-shadow:0 18px 55px rgba(20,63,88,.12)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:8px 0 14px;color:#1766b1;font-size:27px;font-weight:500;line-height:1.4}p{margin:0 0 12px;color:#52798f;font-size:14px;line-height:1.9}a{display:block;margin-top:14px;padding:13px;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;text-align:center;text-decoration:none}a.secondary{background:#fff;color:#1766b1;border:1px solid #b9d2df}@media(max-width:560px){.card{padding:28px 20px}h1{font-size:23px}}</style></head><body><main class="card"><div class="eyebrow">STUDENT ACCESS</div><h1>講座生共有版のご利用は<br>終了しました</h1><p>講座生共有版（モニター版）は、2026年11月7日をもってご利用を終了しました。ご協力ありがとうございました。</p><p>引き続き命式サイトをご利用の方は、会員版からお申し込みください。</p><a href="/members">会員版へ</a><a class="secondary" href="/student-plans">受講生・卒業生のプランを見る</a></main></body></html>`;
+}
+
 function memberEntryPage({member = null, message = ''} = {}) {
   const planCards = PUBLIC_PLAN_IDS.map(planId => {
     const current = PLANS[planId];
@@ -247,7 +263,7 @@ function memberEntryPage({member = null, message = ''} = {}) {
     <a class="open-app signup-link" href="/members/register">無料会員に登録する</a>
     <a class="password-help" href="/members/password/forgot">パスワードを忘れた方</a>
     <details><summary>準備中の料金プラン</summary><ul>${planCards}</ul></details>`;
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif;overflow-x:hidden}.card{width:min(680px,100%);min-width:0;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9;overflow-wrap:anywhere}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.open-app{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.open-app{display:block;text-align:center;text-decoration:none}.signup-link,.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}.signup-link{margin-top:12px}.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu a{display:grid;place-items:center;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px;color:#17384b;text-decoration:none}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.preparing{margin-top:13px}.student,.password-help{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}.password-help{margin-top:14px;font-size:13px}@media(max-width:560px){body{display:flex;align-items:flex-start;justify-content:center;padding:12px}.card{width:100%;padding:22px 18px;border-radius:18px}.eyebrow{font-size:9px}h1{margin:7px 0 8px;font-size:29px}p{font-size:12px;line-height:1.55}.notice,.error{margin:14px 0 12px;padding:12px 14px}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}.member-menu a{padding:10px 4px;font-size:12px;white-space:nowrap}button,.open-app{margin-top:12px;padding:11px 8px;font-size:14px}.preparing{margin-top:8px;font-size:10px;line-height:1.45}.student{margin-top:14px;font-size:13px}ul{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}<a class="student" href="/login">講座生共有版のログインへ</a></main></body></html>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>会員版｜四柱推命 鑑定書</title><style>:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#f7fbfd,#edf5f8);color:#17384b;font-family:serif;overflow-x:hidden}.card{width:min(680px,100%);min-width:0;padding:48px 40px;background:#fff;border:1px solid #d7e3e9;border-radius:22px;box-shadow:0 18px 55px rgba(20,63,88,.1)}.eyebrow{font:600 10px sans-serif;letter-spacing:.24em;color:#8ca1ac}h1{margin:10px 0 14px;color:#1766b1;font-size:34px;font-weight:500}p{margin:0;color:#6e8795;font-size:14px;line-height:1.9;overflow-wrap:anywhere}.notice,.error{margin:26px 0 18px;padding:16px 18px;border-radius:12px;background:#f2f8fb;color:#52798f}.error{background:#fff0f0;color:#b53b3b}.notice strong{color:#1766b1}label{display:grid;gap:8px;margin-top:18px;color:#52798f;font-size:13px}input{width:100%;padding:13px 14px;border:1px solid #bfd1db;border-radius:10px;font-size:16px}button,.open-app{width:100%;margin-top:20px;padding:13px;border:0;border-radius:10px;background:#1766b1;color:#fff;font-size:15px;cursor:pointer}.open-app{display:block;text-align:center;text-decoration:none}.signup-link,.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}.signup-link{margin-top:12px}.secondary,.secondary-link{background:#fff;color:#1766b1;border:1px solid #b9d2df}details{margin-top:25px;color:#52798f}summary{cursor:pointer}ul,.member-menu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0;list-style:none}li,.member-menu a{display:grid;place-items:center;gap:6px;padding:14px;border:1px solid #dce8ed;border-radius:12px;color:#17384b;text-decoration:none}li strong{color:#1766b1;font-size:14px}li span,.preparing{color:#738b98;font-size:12px;line-height:1.6}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));margin:22px 0}.preparing{margin-top:13px}.student,.password-help{display:inline-block;margin-top:22px;color:#1766b1;text-underline-offset:4px}.password-help{margin-top:14px;font-size:13px}@media(max-width:560px){body{display:flex;align-items:flex-start;justify-content:center;padding:12px}.card{width:100%;padding:22px 18px;border-radius:18px}.eyebrow{font-size:9px}h1{margin:7px 0 8px;font-size:29px}p{font-size:12px;line-height:1.55}.notice,.error{margin:14px 0 12px;padding:12px 14px}.member-menu{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}.member-menu a{padding:10px 4px;font-size:12px;white-space:nowrap}button,.open-app{margin-top:12px;padding:11px 8px;font-size:14px}.preparing{margin-top:8px;font-size:10px;line-height:1.45}.student{margin-top:14px;font-size:13px}ul{grid-template-columns:1fr}}</style></head><body><main class="card"><div class="eyebrow">MEMBER ACCESS</div><h1>会員版</h1><p>個別アカウント、命式保存、料金プランに対応する新しい入口です。</p>${memberContent}${sharedAccessOpen() ? '<a class="student" href="/login">講座生共有版のログインへ</a>' : ''}</main></body></html>`;
 }
 
 const SUBSCRIPTION_PAGES = Object.freeze({
@@ -1053,6 +1069,9 @@ async function handle(req, res, dependencies = {authenticateMember, listSavedSub
   }
   if (req.method === 'GET' && (url.pathname === '/students' || url.pathname === '/students/')) {
     return send(res, 302, '', {Location: validSession(req) ? '/' : '/login'});
+  }
+  if ((req.method === 'GET' || req.method === 'POST') && url.pathname === '/login' && !sharedAccessOpen()) {
+    return send(res, req.method === 'GET' ? 200 : 403, sharedAccessClosedPage(), {'Content-Type': 'text/html; charset=utf-8', 'Set-Cookie': sessionCookie('', 0)});
   }
   if (req.method === 'GET' && url.pathname === '/login') {
     if (validSession(req)) return send(res, 302, '', {Location: '/'});
