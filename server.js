@@ -280,7 +280,97 @@ function studentPlanGuidePage() {
   @media(max-width:820px){.register-flow,.after{grid-template-columns:1fr 1fr}.products{grid-template-columns:1fr}.product{grid-template-columns:96px 1fr}.product img{width:96px}}
   @media(max-width:560px){.wrap{width:min(100% - 20px,1100px)}.hero{padding:52px 0 44px}.hero h1{font-size:34px}.hero .lead{font-size:14px}.main{padding:28px 0 52px}.step{padding:22px 17px;border-radius:14px}.step-head{align-items:flex-start}.step-no{width:38px;height:38px;font-size:16px}.step h2{font-size:24px}.definition,.choices,.register-flow,.after{grid-template-columns:1fr}.product{grid-template-columns:78px 1fr;gap:12px;padding:12px;margin-top:8px}.product img{width:78px}.audience-card.plan-highlight .product::before{top:-18px;right:8px;font-size:12px}.button{width:100%}.legal-nav{display:grid}}
   @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.audience-card.plan-highlight .product{animation:none}}
-  </style></head><body><header class="hero"><div class="wrap"><p class="brand">自然の景色でみる四柱推命講座</p><h1>命式サイト・月1勉強会<br>お申込みのご案内</h1><p class="lead">中級・上級講座を受講中の方、卒業後の方へ。ご利用内容に合わせて、必要なプランだけをお選びください。</p><span class="start">2026年11月1日 お申込み受付開始</span></div></header><main class="main"><div class="wrap">
+  </style><style id="kintsugi-repair">
+/* ══ 金継ぎ追補スタイル（naoshi planner 自動生成・2026-10-31）══
+   元の規則と同じセレクタ・同じmediaで後から上書きする。:root の変数は触らない。
+   直した行: 33・手で見る行: 12 */
+/* [contrast] コントラスト比4.27→基準4.5以上（既存色 #9D2B20・背景#E8F1E9） ⚠via-var --muted（共有6箇所。変数は触らず規則側で上書き） */
+/* 手で差し替え（下の手仕事を参照） */
+/* [contrast] コントラスト比4.27→基準4.5以上（既存色 #9D2B20・背景#E8F1E9） ⚠via-var --muted（共有6箇所。変数は触らず規則側で上書き） */
+/* 手で差し替え（下の手仕事を参照） */
+/* [font] 役割「本文」の 17.3px を近いサイズ 21px へ寄せる（25%以内・一番使われている値へ） */
+/* 手で差し替え（下の手仕事を参照） */
+/* [font] 役割「本文」の 17px を近いサイズ 21px へ寄せる（25%以内・一番使われている値へ） */
+/* 手で差し替え（下の手仕事を参照） */
+/* [font] 役割「本文」の 14px を近いサイズ 16px へ寄せる（25%以内・一番使われている値へ） */
+.flow-item p { font-size: 16px; }
+/* [font] 役割「本文」の 14px を近いサイズ 16px へ寄せる（25%以内・一番使われている値へ） */
+.selector > p { font-size: 16px; }
+/* [font] 役割「本文」の 13px を近いサイズ 16px へ寄せる（25%以内・一番使われている値へ） */
+/* 手で差し替え（下の手仕事を参照） */
+/* [font] 役割「本文」の 13px を近いサイズ 16px へ寄せる（25%以内・一番使われている値へ） */
+/* 手で差し替え（下の手仕事を参照） */
+/* [font] 役割「本文」の 13px を近いサイズ 16px へ寄せる（25%以内・一番使われている値へ） */
+/* 手で差し替え（下の手仕事を参照） */
+/* [font] 役割「その他」の 19px を近いサイズ 16px へ寄せる（25%以内・一番使われている値へ） */
+.step-no { font-size: 16px; }
+/* [font] 役割「その他」の 18px を近いサイズ 16px へ寄せる（25%以内・一番使われている値へ） */
+.definition strong { font-size: 16px; }
+/* [font] 役割「その他」の 12px を近いサイズ 14px へ寄せる（25%以内・一番使われている値へ） */
+footer { font-size: 14px; }
+/* [font] 役割「ボタン」の 13px を近いサイズ 15px へ寄せる（25%以内・一番使われている値へ） */
+.product .button { font-size: 15px; }
+/* [font] 役割「h3」の 20px を近いサイズ 22px へ寄せる（25%以内・一番使われている値へ） */
+.selector h3 { font-size: 22px; }
+/* [font] 役割「補足」の 14px を近いサイズ 16px へ寄せる（25%以内・一番使われている値へ） */
+.choice { font-size: 16px; }
+/* [radius] 角丸 10px を 9px へ（7種→3） */
+.free-study { border-radius: 9px; }
+/* [radius] 角丸 14px を 12px へ（7種→3） */
+.selector { border-radius: 12px; }
+/* [radius] 角丸 14px を 12px へ（7種→3） */
+.audience-card { border-radius: 12px; }
+/* [radius] 角丸 18px を 12px へ（7種→3） */
+.step { border-radius: 12px; }
+/* [color] 似て非なる色 #FFFFFF → #FFFDF8 */
+.hero { color: #FFFDF8; }
+/* [color] 似て非なる色 #FFFFFF → #FFFDF8 */
+.start { border-color: #FFFDF8; }
+/* [color] 似て非なる色 #FFFFFF → #FFFDF8 */
+.step-no { color: #FFFDF8; }
+/* [color] 似て非なる色 #FFFFFF → #FFFDF8 */
+.choice { background-color: #FFFDF8; }
+/* [color] 似て非なる色 #FFFFFF → #FFFDF8 */
+.audience-card { background-color: #FFFDF8; }
+/* [color] 似て非なる色 #FFFFFF → #FFFDF8 */
+.product img { background-color: #FFFDF8; }
+/* [color] 似て非なる色 #FFFFFF → #FFFDF8 ⚠split-by-bg（規則 .button は a.button でも効き、そこでは基準を割るので、この要素に限る） */
+div.products div.product a.button { color: #FFFDF8; }
+/* [color] 似て非なる色 #F4F8F3 → #FFFDF8 */
+/* 手で差し替え（下の手仕事を参照） */
+/* [color] 似て非なる色 #DCE8E1 → #D6DFD7 */
+footer { color: #D6DFD7; }
+/* [color] 似て非なる色 #A51F1F → #9D2B20 */
+.important { color: #9D2B20; }
+/* [color] 似て非なる色 #FFF1F1 → #FFFDF8 */
+/* 手で差し替え（下の手仕事を参照） */
+/* [color] 似て非なる色 #C8D9CC → #D6DFD7 */
+.selector { border-color: #D6DFD7; }
+/* [color] 似て非なる色 #7F4B09 → #8A5410 */
+.legal-key { color: #8A5410; }
+/* [color] 似て非なる色 #8E1616 → #9D2B20 */
+.important strong { color: #9D2B20; }
+
+/* ══ 手仕事（2026-10-31 こよみ・依頼主の狙い「深緑・生成り・和の上質」を保つ）══ */
+/* 低コントラスト: 説明文の灰緑を同じ色相のまま濃く（#60756D→#566B63・淡緑地で比4.94） */
+:root { --muted: #566B63; }
+/* 低コントラスト: LINEボタンは同じ緑の色相のまま深く（#06C755→#048237・白文字で比4.94） */
+.button.line { background-color: #048237; border-color: #048237; }
+/* 文字段: 本文は 14（補足の小さな本文）／16（本文）／21（価格）の3段に */
+.brand, .note, .legal { font-size: 14px; }
+.hero .lead { font-size: 16px; }
+.important strong { font-size: 1em; }
+/* 似て非なる色: 診断の枠の地は手順カードと同じ淡緑へ（白っぽい緑#F4F8F3を既存の#E8F1E9に） */
+.selector { background-color: #E8F1E9; }
+/* 泣き別れ: 文節で折る（「メールアドレス」「パスワード」「プラン」の途中で折れないように） */
+p, h3, h4, li, .flow-item p { word-break: auto-phrase; }
+/* 似て非なる色: 本文の深緑2種を1本に（#15382D→既存の#073C2B） */
+:root { --ink: #073C2B; }
+/* 似て非なる色: ボタンの白文字を生成りへ（LINEボタンの深い緑の上でも比4.5以上） */
+.button { color: #FFFDF8; }
+/* 似て非なる色: 冒頭の説明文の淡い緑白を生成りへ */
+.hero .lead { color: #FFFDF8; }
+</style></head><body><header class="hero"><div class="wrap"><p class="brand">自然の景色でみる四柱推命講座</p><h1>命式サイト・月1勉強会<br>お申込みのご案内</h1><p class="lead">中級・上級講座を受講中の方、卒業後の方へ。ご利用内容に合わせて、必要なプランだけをお選びください。</p><span class="start">2026年11月1日 お申込み受付開始</span></div></header><main class="main"><div class="wrap">
   <section class="step" aria-labelledby="register-title"><div class="step-head"><span class="step-no">1</span><h2 id="register-title">最初にフリープランへ登録</h2></div><p class="step-intro">命式サイトを購入する方も、勉強会だけを利用する方も、最初に無料会員登録をお願いします。クレジットカードの登録は不要です。</p><div class="register-flow"><div class="flow-item"><strong>1. 登録画面を開く</strong><p>下の「フリープランに登録する」を押します。</p></div><div class="flow-item"><strong>2. 必要事項を入力</strong><p>お名前・メールアドレス・10文字以上のパスワードを入力します。</p></div><div class="flow-item"><strong>3. 確認メールを開く</strong><p>届いたメールの確認リンクを押すと登録完了です。</p></div><div class="flow-item"><strong>4. 同じメールで申込む</strong><p>PayPalでも、無料登録と同じメールアドレスをご使用ください。</p></div></div><p class="important"><strong>重要：</strong>無料会員登録とPayPalのお申込みは、必ず同じメールアドレスで行ってください。</p><a class="button" href="/members/register">フリープランに登録する（無料）</a></section>
   <section class="step" aria-labelledby="plan-title"><div class="step-head"><span class="step-no">2</span><h2 id="plan-title">ご希望の利用内容を選ぶ</h2></div><div class="definition"><div><strong>受講中の方</strong>中級講座は14講座目まで、上級講座は17講座目までの方です。月1勉強会は無料でご利用いただけます。</div><div><strong>卒業後の方</strong>中級講座は15講座目、上級講座は18講座目を受講した月の翌月から「卒業後」となります。受講した月の月末までは「受講中」です。</div></div><div class="selector" id="plan-selector"><h3>かんたんプラン診断</h3><p>質問に順番に答えると、必要な商品へご案内します。</p><fieldset class="question" id="course-question"><legend>① 受講講座は何ですか？</legend><div class="choices"><label class="choice"><input type="radio" name="course" value="middle">中級講座</label><label class="choice"><input type="radio" name="course" value="advanced">上級講座</label></div></fieldset><fieldset class="question" id="lesson-question" hidden><legend>② 何コマ受講完了していますか？</legend><div class="choices" id="lesson-choices"></div></fieldset><fieldset class="question" id="current-preference" hidden><legend>③ 命式サイトを使いますか？</legend><div class="choices"><label class="choice"><input type="radio" name="current-site-use" value="yes">はい、使います</label><label class="choice"><input type="radio" name="current-site-use" value="no">いいえ、使いません</label></div></fieldset><fieldset class="question" id="graduate-preference" hidden><legend>③ 卒業後に利用したいものを選んでください</legend><div class="choices"><label class="choice"><input type="checkbox" id="graduate-site-use">命式サイトを使います</label><label class="choice"><input type="checkbox" id="graduate-study-use">勉強会に参加します</label></div><button class="button" type="button" id="show-plan">該当プランを見る</button></fieldset><p class="diagnosis" id="diagnosis-message" hidden role="status"></p></div><div class="audience">
     <article class="audience-card" id="current-site"><h3>受講中の方</h3><p class="free-study">月1勉強会への参加・アーカイブ視聴は無料です。勉強会追加プランの購入は必要ありません。</p><p>命式サイトを利用したい方のみ、次の月額2,200円プランをお申込みください。</p><div class="products"><div class="product"><img src="/assets/paypal/student-graduate-plan.webp" alt="命式サイト継続プラン" width="480" height="480" loading="lazy" decoding="async"><div><h4>命式サイト継続プラン</h4><p class="price">月額2,200円（税込）</p><a class="button" href="/subscribe/student-graduate">内容確認・お申込みへ</a></div></div></div></article>
